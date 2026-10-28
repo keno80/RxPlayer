@@ -8,6 +8,14 @@
   const titles = ['夜航', '夜航 · 城市现场', '夜航之后', '夜航 / Midnight Session'];
   const authors = ['拾音计划', '落日工作室', '慢速电台', 'Midnight Collective'];
   const durations = [222, 264, 198, 315];
+  // Original local demonstration lyrics; no online lyric service is connected.
+  const sampleLyrics = [
+    {at:0,text:'风把街灯轻轻点亮'},
+    {at:48,text:'沿着夜色慢慢启航'},
+    {at:82,text:'把喧嚣留在远方'},
+    {at:130,text:'让旋律陪我去流浪'},
+    {at:180,text:'下一站有温柔的光'},
+  ];
   const tracks = sources.flatMap((source, sourceIndex) => titles.map((title, index) => ({
     id: `${sourceIndex}-${index}`, title, author: authors[index], duration: durations[index],
     source, art: index, type: source === '网易云' ? '歌曲' : '视频',
@@ -147,8 +155,25 @@
     return `<div class="progress-line"><span data-position>${time(state.position)}</span><input type="range" min="0" max="${current().duration}" value="${state.position}" style="--progress:${state.position / current().duration * 100}%" aria-label="播放进度" aria-valuetext="${time(state.position)} / ${time(current().duration)}" data-progress><span>${time(current().duration)}</span></div>`;
   }
 
-  function modeButton(action, icon, label, selected) {
-    return `<button class="icon-button mode-toggle" data-action="${action}" aria-label="${label}" data-tip="${label}${selected ? '：已开启' : '：已关闭'}" aria-pressed="${selected}">${symbol(icon,selected)}</button>`;
+  function modeButton(action, icon, label, selected, tip = `${label}${selected ? '：已开启' : '：已关闭'}`) {
+    return `<button class="icon-button mode-toggle" data-action="${action}" aria-label="${label}" data-tip="${tip}" aria-pressed="${selected}">${symbol(icon,selected)}</button>`;
+  }
+
+  function activeLyricIndex() {
+    return Math.max(0,sampleLyrics.findLastIndex(line => state.position >= line.at));
+  }
+
+  function lyricLines(index) {
+    return [index-1,index,index+1].map(i => `<p class="lyric-line${i === index ? ' active' : ''}">${escape(sampleLyrics[i]?.text || '')}</p>`).join('');
+  }
+
+  function updateLyrics() {
+    const lyrics = $('[data-lyrics]');
+    const index = activeLyricIndex();
+    if (lyrics && Number(lyrics.dataset.lyrics) !== index) {
+      lyrics.innerHTML = lyricLines(index);
+      lyrics.dataset.lyrics = index;
+    }
   }
 
   function transport() {
@@ -225,8 +250,9 @@
     let body = '';
     if (state.overlay === 'player') {
       const track = current();
-      title = state.playing ? '正在播放' : '已暂停';
-      body = `<div class="player-layout"><div class="player-art-column"><div class="art-stage">${art(track, 'large')}</div><p class="art-caption">${escape(track.author)} · ORIGINAL SESSIONS</p></div><div class="player-detail"><span class="source-label">${track.source} · ${track.type}</span><div class="player-title-row"><div><h3 class="player-title">${escape(track.title)}</h3><p class="player-sub">${escape(track.author)}</p></div>${favoriteButton(track)}</div><div class="hero-controls">${progress()}<div class="play-controls" role="group" aria-label="播放操作">${iconButton('previous','skip_previous','上一首')}${playButton()}${iconButton('next','skip_next','下一首')}</div></div><div class="player-secondary">${modeButton('shuffle','shuffle','随机播放',state.shuffle)}${modeButton('repeat','repeat','列表循环',state.repeat)}<button class="queue-pill" data-action="open-queue">${symbol('queue_music')}<span>队列 · ${state.queue.length}</span></button></div><section class="player-up-next"><div class="section-head"><h2>接下来</h2><button class="text-button" data-action="open-queue">全部</button></div>${queueItems(true)}</section></div></div>`;
+      title = '播放器';
+      const lyricIndex = activeLyricIndex();
+      body = `<div class="player-layout"><div class="player-art-column"><div class="art-stage">${art(track, 'large')}</div><p class="art-caption">${escape(track.author)} · ORIGINAL SESSIONS</p></div><div class="player-detail"><span class="source-label">${track.source} · ${track.type}</span><div class="player-title-row"><div><h3 class="player-title">${escape(track.title)}</h3><p class="player-sub">${escape(track.author)}</p></div>${favoriteButton(track)}</div><div class="hero-controls">${progress()}<section class="lyrics-preview" aria-label="歌词预览"><div data-lyrics="${lyricIndex}">${lyricLines(lyricIndex)}</div></section><div class="play-controls" role="group" aria-label="播放操作">${modeButton('shuffle','shuffle','随机播放',state.shuffle)}${iconButton('previous','skip_previous','上一首')}${playButton()}${iconButton('next','skip_next','下一首')}${modeButton('repeat','repeat',state.repeat ? '列表循环' : '顺序播放',state.repeat,`当前${state.repeat ? '列表循环' : '顺序播放'}，点击切换`)}</div></div></div></div>`;
     } else if (state.overlay === 'queue') {
       title = `播放队列 · ${state.queue.length}`;
       body = queueItems();
@@ -249,7 +275,7 @@
       body = state.playlists.map((playlist, index) => `<button class="menu-action" data-action="add-to-playlist" data-index="${index}">${symbol('album')}${escape(playlist.name)}</button>`).join('');
     }
     const heading = state.overlay === 'player'
-      ? `<header class="sheet-head player-head">${iconButton('close-overlay','arrow_back','返回')}<h2 id="dialog-title">当前曲目</h2><span class="playback-status">${escape(title)}</span></header>`
+      ? `<header class="sheet-head player-head">${iconButton('close-overlay','arrow_back','返回')}<h2 id="dialog-title" class="sr-only">播放器</h2><button class="queue-pill" data-action="open-queue" aria-label="播放队列，${state.queue.length} 首">${symbol('queue_music')}<span>队列 · ${state.queue.length}</span></button></header>`
       : `<header class="sheet-head"><h2 id="dialog-title">${escape(title)}</h2>${iconButton('close-overlay','close','关闭')}</header>`;
     dialog.innerHTML = `${heading}${body}`;
     if (wasInDialog) requestAnimationFrame(() => {
@@ -314,7 +340,7 @@
         render(); break;
       }
       case 'shuffle': state.shuffle = !state.shuffle; render(); toast(state.shuffle ? '已开启随机播放' : '已关闭随机播放'); break;
-      case 'repeat': state.repeat = !state.repeat; render(); toast(state.repeat ? '已开启列表循环' : '已关闭列表循环'); break;
+      case 'repeat': state.repeat = !state.repeat; render(); toast(state.repeat ? '已切换为列表循环' : '已切换为顺序播放'); break;
       case 'library-tab': state.libraryTab = button.dataset.tab; render(); break;
       case 'new-playlist': openOverlay('new-playlist'); break;
       case 'open-playlist': state.playlist = Number(button.dataset.index); render(); break;
@@ -399,6 +425,7 @@
     if (event.target.matches('.volume')) { state.volume = Number(event.target.value); event.target.style.setProperty('--progress', `${state.volume}%`); }
     if (event.target.matches('[data-progress]')) {
       state.position = Number(event.target.value);
+        updateLyrics();
       $$('[data-position]').forEach(element => { element.textContent = time(state.position); });
       $$('[data-progress]').forEach(element => {
         element.value = state.position;
@@ -443,6 +470,7 @@
       return;
     }
     state.position += 1;
+    updateLyrics();
     $$('[data-position]').forEach(element => { element.textContent = time(state.position); });
     $$('[data-progress]').filter(element => element !== document.activeElement).forEach(element => {
       element.value = state.position;
