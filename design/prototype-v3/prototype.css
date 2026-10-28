@@ -135,8 +135,6 @@ button{color:inherit}a{color:#365e54;text-underline-offset:3px}
 .product .full-player .player-secondary>.mode-toggle{width:56px;height:48px;flex-basis:56px;color:var(--on-surface-variant)}
 .product .full-player .player-secondary>.mode-toggle[aria-pressed=true]{color:var(--on-secondary-container)}
 .product .full-player .controls-with-lyrics>.progress-line{margin-bottom:24px}
-.product .full-player .seek-button{background:var(--surface)!important;color:var(--on-surface-variant)}
-.seek-button svg{width:24px;height:24px;overflow:visible}
 .product[data-device=android] .full-player .hero-controls{margin-top:24px}
 @media(max-width:375px){.product[data-device=android] .full-player .split-controls{grid-template-columns:56px minmax(0,1fr) 56px;grid-template-rows:56px 64px;padding:12px;gap:12px;border-radius:28px}.product[data-device=android] .full-player .split-controls>.play-button,.product[data-device=android] .full-player .split-controls>.icon-button{height:56px}.product[data-device=android] .full-player .split-controls>.icon-button{width:56px}}
 
@@ -173,3 +171,21 @@ button{color:inherit}a{color:#365e54;text-underline-offset:3px}
 .product[data-device=desktop][data-queue-docked=true][data-player-open=true] .support-pane{top:132px;right:var(--desktop-player-pad);bottom:24px;width:calc(100% - var(--desktop-player-column) - var(--desktop-player-gap) - 2 * var(--desktop-player-pad));border:0;border-radius:32px;padding:24px 32px;background:var(--surface-low);z-index:40}
 @media(max-width:1000px){.product[data-device=desktop]{--desktop-player-column:300px;--desktop-player-gap:32px;--desktop-player-pad:24px}.desktop-lyrics{padding:24px}.product .desktop-lyrics .lyric-line{font-size:22px;line-height:28px}}
 @media(max-width:760px){.product[data-device=desktop]{--desktop-player-pad:16px}.desktop-listening-layout{grid-template-columns:minmax(0,1fr);gap:24px;flex:none}.desktop-player-column{overflow:visible;width:100%;max-width:352px;margin:auto}.desktop-lyrics{min-height:480px}.product[data-device=desktop] .desktop-player .player-art-column{max-width:248px}}
+
+/* Lyrics stay readable over a consistently darkened cover in either application theme. */
+.product[data-device=android] .full-player.immersive-player{display:flex;flex-direction:column}
+.product[data-device=android] .immersive-player .player-head{width:100%;margin-inline:0;flex-shrink:0}
+.mobile-lyrics-player{display:flex;flex-direction:column;flex:1;min-height:0;gap:20px}
+.mobile-lyrics-stage{position:relative;isolation:isolate;display:flex;flex:1;min-height:320px;padding:16px 8px;overflow:hidden;border-radius:28px;background:#0e1514;color:#dde4e2}
+.mobile-lyrics-stage:after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.72),rgba(0,0,0,.86));pointer-events:none}
+.product .mobile-lyrics-stage .lyrics-background{position:absolute;inset:0;z-index:0;width:100%;height:100%;aspect-ratio:auto;border-radius:0;filter:blur(2px);transform:scale(1.04)}
+.mobile-lyric-lines{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center;gap:8px;width:100%;min-width:0;flex:1}
+.product .mobile-lyric-lines .lyric-line,.mobile-lyric-lines .lyric-spacer{display:flex;align-items:center;justify-content:center;width:100%;min-height:56px;padding:8px;text-align:center;font-size:18px;line-height:24px;font-weight:500;color:#bec9c6;border-radius:12px;overflow-wrap:anywhere}
+.product .mobile-lyric-lines .lyric-line.is-active{font-size:22px;line-height:28px;font-weight:700;color:var(--lyrics-primary)}
+.product .mobile-lyric-lines .lyric-line:hover{background:#ffffff0a}
+.product .mobile-lyric-lines .lyric-line:focus-visible{outline-color:var(--lyrics-primary)}
+.mobile-player-meta{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.mobile-player-meta>div{flex:1;min-width:0}.mobile-track-title{font-size:24px;line-height:32px;font-weight:500;margin:0;overflow-wrap:anywhere}.mobile-player-meta p{font-size:12px;line-height:16px;color:var(--on-surface-variant);margin:4px 0 0}
+.product[data-device=android] .immersive-player .favorite-list{display:flex!important}
+.product[data-device=android] .immersive-player .hero-controls{margin:0 auto;flex-shrink:0}
+.product[data-device=android] .immersive-player .progress-line{margin-bottom:20px}

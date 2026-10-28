@@ -221,15 +221,12 @@
 
   const hasLyrics = () => state.lyricsLayout === 'auto' ? current().hasLyrics : state.lyricsLayout === 'available';
 
-  function seekButton(forward) {
-    const label = forward ? '前进 10 秒' : '后退 10 秒';
-    return `<button class="icon-button seek-button" data-action="seek-${forward ? 'forward' : 'back'}" aria-label="${label}" data-tip="${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><g ${forward ? 'transform="translate(24 0) scale(-1 1)"' : ''}><path d="M6 6.5a8 8 0 1 1-1.7 10M6 2.5v4.8h4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><text x="12" y="15.5" text-anchor="middle" fill="currentColor" font-size="8" font-weight="700">10</text></svg></button>`;
-  }
-
   function playerControls(desktop = false) {
+    const shuffle = modeButton('shuffle','shuffle','随机播放',state.shuffle);
+    const repeat = modeButton('repeat','repeat',state.repeat ? '列表循环' : '顺序播放',state.repeat,`当前${state.repeat ? '列表循环' : '顺序播放'}，点击切换`);
+    if (!desktop && hasLyrics()) return `<div class="hero-controls controls-with-lyrics">${progress()}<div class="play-controls" role="group" aria-label="播放操作">${iconButton('previous','skip_previous','上一首')}${shuffle}${playButton()}${repeat}${iconButton('next','skip_next','下一首')}</div></div>`;
     const volume = desktop ? `<label class="player-volume">${symbol('volume_up')}<input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="音量"></label>` : '';
-    const modes = `<div class="player-secondary" role="group" aria-label="${desktop ? '播放模式与音量' : '播放模式'}">${modeButton('shuffle','shuffle','随机播放',state.shuffle)}${modeButton('repeat','repeat',state.repeat ? '列表循环' : '顺序播放',state.repeat,`当前${state.repeat ? '列表循环' : '顺序播放'}，点击切换`)}${volume}</div>`;
-    if (!desktop && hasLyrics()) return `<div class="hero-controls controls-with-lyrics">${progress()}<div class="play-controls" role="group" aria-label="播放操作">${iconButton('previous','skip_previous','上一首')}${seekButton(false)}${playButton()}${seekButton(true)}${iconButton('next','skip_next','下一首')}</div>${modes}</div>`;
+    const modes = `<div class="player-secondary" role="group" aria-label="${desktop ? '播放模式与音量' : '播放模式'}">${shuffle}${repeat}${volume}</div>`;
     return `<div class="hero-controls controls-no-lyrics"><div class="split-controls" role="group" aria-label="播放操作">${playButton()}${iconButton('next','skip_next','下一首')}${iconButton('previous','skip_previous','上一首')}${progress()}</div>${modes}</div>`;
   }
 
@@ -241,7 +238,7 @@
       element.style.setProperty('--progress', `${state.position / current().duration * 100}%`);
       element.setAttribute('aria-valuetext', `${time(state.position)} / ${time(current().duration)}`);
     });
-    updateDesktopLyrics();
+    updateLyrics();
   }
 
   function lyricLines() {
@@ -254,14 +251,29 @@
     return lyricLines().findLastIndex(line => state.position >= line.at);
   }
 
-  function desktopLyrics() {
-    const active = activeLyricIndex();
-    return `<section class="desktop-lyrics" aria-labelledby="lyrics-title"><h3 id="lyrics-title">歌词</h3>${hasLyrics() ? `<div class="lyrics-lines">${lyricLines().map((line,index) => `<button class="lyric-line${index === active ? ' is-active' : ''}" data-action="seek-lyric" data-index="${index}" aria-label="跳转至 ${time(line.at)}，${escape(line.text)}" ${index === active ? 'aria-current="true"' : ''}>${escape(line.text)}</button>`).join('')}</div>` : `<div class="lyrics-empty">${symbol('music_note')}<h4>暂无歌词</h4><p>这首歌暂未提供歌词</p></div>`}</section>`;
+  function lyricButtons(windowed = false) {
+    const lines = lyricLines(), active = activeLyricIndex();
+    const indices = windowed ? Array.from({length:5},(_,index) => active + index - 2) : lines.map((_,index) => index);
+    return indices.map(index => {
+      const line = lines[index];
+      return line ? `<button class="lyric-line${index === active ? ' is-active' : ''}" data-action="seek-lyric" data-index="${index}" aria-label="跳转至 ${time(line.at)}，${escape(line.text)}" ${index === active ? 'aria-current="true"' : ''}>${escape(line.text)}</button>` : '<span class="lyric-spacer" aria-hidden="true"></span>';
+    }).join('');
   }
 
-  function updateDesktopLyrics() {
+  function desktopLyrics() {
+    return `<section class="desktop-lyrics" aria-labelledby="lyrics-title"><h3 id="lyrics-title">歌词</h3>${hasLyrics() ? `<div class="lyrics-lines">${lyricButtons()}</div>` : `<div class="lyrics-empty">${symbol('music_note')}<h4>暂无歌词</h4><p>这首歌暂未提供歌词</p></div>`}</section>`;
+  }
+
+  function updateLyrics() {
     const active = activeLyricIndex();
-    $$('.desktop-lyrics .lyric-line').forEach(line => {
+    const mobile = $('.mobile-lyric-lines');
+    if (mobile && Number(mobile.dataset.active) !== active) {
+      const focusedIndex = mobile.contains(document.activeElement) ? document.activeElement.dataset.index : null;
+      mobile.innerHTML = lyricButtons(true);
+      mobile.dataset.active = active;
+      if (focusedIndex !== null) ($(`[data-index="${focusedIndex}"]`,mobile) || $('[aria-current="true"]',mobile))?.focus({preventScroll:true});
+    }
+    $$('#dialog .lyric-line').forEach(line => {
       const selected = Number(line.dataset.index) === active;
       line.classList.toggle('is-active',selected);
       if (selected) line.setAttribute('aria-current','true');
@@ -288,6 +300,7 @@
     const palette = globalThis.rxCoverPalettes.covers[current().art];
     product.dataset.coverArt = palette.art;
     Object.entries(palette[state.theme]).forEach(([role,color]) => product.style.setProperty(`--cover-${role}`,color));
+    product.style.setProperty('--lyrics-primary',palette.dark.primary);
     product.classList.remove('is-searching');
     $('#rail').innerHTML = '<div class="brand" aria-label="RxPlayer">Rx.</div>' + nav();
     $('#bottom-nav').innerHTML = nav();
@@ -346,8 +359,8 @@
   function renderOverlay() {
     const dialog = $('#dialog');
     const wasInDialog = dialog.contains(document.activeElement);
-    const focusedAction = wasInDialog ? document.activeElement.dataset.action : null;
-    dialog.className = `sheet ${state.overlay === 'player' ? `full-player${state.device === 'desktop' ? ' desktop-player' : ''}${state.artworkColor ? ' artwork-tone' : ''}` : ''}`;
+    const focusedData = wasInDialog ? focusKey(document.activeElement) : null;
+    dialog.className = `sheet ${state.overlay === 'player' ? `full-player${state.device === 'desktop' ? ' desktop-player' : hasLyrics() ? ' immersive-player' : ''}${state.artworkColor ? ' artwork-tone' : ''}` : ''}`;
     let title = '';
     let body = '';
     if (state.overlay === 'player') {
@@ -356,7 +369,9 @@
       const desktop = state.device === 'desktop';
       const artwork = `<div class="player-art-column"><div class="art-stage">${art(track, 'large')}</div></div>`;
       const detail = `<div class="player-detail"><span class="source-label">${track.source} · ${track.type}</span><div class="player-title-row"><div><h3 class="player-title">${escape(track.title)}</h3><p class="player-sub">${escape(track.author)}</p></div>${favoriteButton(track)}</div>${playerControls(desktop)}</div>`;
-      body = desktop ? `<div class="desktop-listening-layout"><section class="desktop-player-column" aria-label="当前播放控制">${artwork}${detail}</section>${desktopLyrics()}</div>` : `<div class="player-layout">${artwork}${detail}</div>`;
+      if (desktop) body = `<div class="desktop-listening-layout"><section class="desktop-player-column" aria-label="当前播放控制">${artwork}${detail}</section>${desktopLyrics()}</div>`;
+      else if (hasLyrics()) body = `<div class="mobile-lyrics-player"><section class="mobile-lyrics-stage" aria-labelledby="mobile-lyrics-title">${art(track,'lyrics-background')}<h3 id="mobile-lyrics-title" class="sr-only">歌词</h3><div class="mobile-lyric-lines" data-active="${activeLyricIndex()}">${lyricButtons(true)}</div></section><div class="mobile-player-meta"><div><h3 class="mobile-track-title">${escape(track.title)}</h3><p>${escape(track.author)} · ${track.source}</p></div>${favoriteButton(track)}</div>${playerControls()}</div>`;
+      else body = `<div class="player-layout">${artwork}${detail}</div>`;
     } else if (state.overlay === 'menu') {
       const track = trackById(state.menuTrack);
       title = track.title;
@@ -380,7 +395,7 @@
       : `<header class="sheet-head"><h2 id="dialog-title">${escape(title)}</h2>${iconButton('close-overlay','close','关闭')}</header>`;
     dialog.innerHTML = `${heading}${body}`;
     if (wasInDialog) requestAnimationFrame(() => {
-      const target = focusedAction ? $(`[data-action="${focusedAction}"]`, dialog) : null;
+      const target = focusedData ? $$('[data-action]',dialog).find(element => Object.entries(focusedData).every(([key,value]) => element.dataset[key] === value)) : null;
       (target || $('button,input,select', dialog))?.focus();
     });
   }
@@ -422,8 +437,6 @@
       case 'toggle-play': state.playing = !state.playing; if (state.position >= current().duration) state.position = 0; render(); break;
       case 'next': step(1); break;
       case 'previous': step(-1); break;
-      case 'seek-back': seekTo(state.position - 10); break;
-      case 'seek-forward': seekTo(state.position + 10); break;
       case 'seek-lyric': seekTo(lyricLines()[Number(button.dataset.index)].at); break;
       case 'favorite': state.favorites = state.favorites.includes(id) ? state.favorites.filter(item => item !== id) : [...state.favorites, id]; render(); toast(state.favorites.includes(id) ? '已收藏' : '已取消收藏'); break;
       case 'track-menu': openOverlay('menu', id); break;
@@ -575,7 +588,7 @@
       return;
     }
     state.position += 1;
-    updateDesktopLyrics();
+    updateLyrics();
     $$('[data-position]').forEach(element => { element.textContent = time(state.position); });
     $$('[data-progress]').filter(element => element !== document.activeElement).forEach(element => {
       element.value = state.position;
