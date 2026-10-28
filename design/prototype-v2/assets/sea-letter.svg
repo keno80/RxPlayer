@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" viewBox="0 0 720 720">
+  <defs><linearGradient id="s" x2="0" y2="1"><stop stop-color="#a7cdc7"/><stop offset="1" stop-color="#e6e2c8"/></linearGradient><linearGradient id="o" x2="0" y2="1"><stop stop-color="#6aadaf"/><stop offset="1" stop-color="#1b616c"/></linearGradient></defs>
+  <path fill="url(#s)" d="M0 0h720v720H0z"/><circle cx="529" cy="160" r="54" fill="#f7e8b9"/>
+  <path d="M0 273q148-25 361 0t359-2v449H0z" fill="url(#o)"/>
+  <g fill="none" stroke="#bce0d3" stroke-width="5"><path d="M-30 375q160-56 359 0t421-4M-24 435q172-53 372 0t410-8M-50 500q179-50 392 0t430-8"/></g>
+  <path d="M0 513q243 12 378 87t342 62v58H0z" fill="#e2c9a1"/><path d="M0 492q234 13 383 90t337 61" fill="none" stroke="#f6ead6" stroke-width="12"/>
+  <path d="m132 232 12-128h12l10 128m-34 0h34l11 61h-56z" fill="#435d69"/><path d="M129 123h40v-16h-40z" fill="#435d69"/><path d="m148 105 0-21" stroke="#435d69" stroke-width="5"/>
+  <g stroke="#335c68" stroke-width="3" fill="none"><path d="m324 158 13-6 12 6m-57 33 9-4 8 4"/></g>
+  <text x="48" y="65" fill="#315d67" font-family="sans-serif" font-size="15" letter-spacing="5">SLOW RADIO / VOL. 03</text>
+  <text x="44" y="644" fill="#204b58" font-family="sans-serif" font-size="70" font-weight="700" letter-spacing="-2">SEA LETTER</text>
+  <text x="48" y="681" fill="#42666c" font-family="sans-serif" font-size="15" letter-spacing="5">LET THE WORLD SLOW DOWN</text>
+</svg>

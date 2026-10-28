@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" viewBox="0 0 720 720">
+  <defs><linearGradient id="s" x2="0" y2="1"><stop stop-color="#e89b86"/><stop offset="1" stop-color="#f8d9b1"/></linearGradient><linearGradient id="r" x2="0" y2="1"><stop stop-color="#af635f"/><stop offset="1" stop-color="#4e354a"/></linearGradient></defs>
+  <path fill="url(#s)" d="M0 0h720v720H0z"/><circle cx="478" cy="233" r="113" fill="#ffe3a9"/>
+  <path d="M0 365q170-88 365 0t355-15v370H0z" fill="#c78779"/><path d="M0 451q200-83 361-11t359-13v293H0z" fill="url(#r)"/>
+  <g fill="#513e50"><path d="M59 304h72v191H59zm93 50h43v136h-43zm69-68h57v222h-57zm79 57h90v171h-90zm125 40h42v114h-42zm110-53h54v166h-54zm86-30h72v228h-72z"/><path d="M74 282h43v30H74zm163-23h25v30h-25z"/></g>
+  <g fill="#e8b296"><path d="M74 331h13v23H74zm28 0h13v23h-13zm-28 42h13v23H74zm28 0h13v23h-13zm137-55h10v19h-10zm16 0h10v19h-10zm66 44h18v13h-18zm27 0h18v13h-18zm203-14h12v25h-12zm17 0h12v25h-12z"/></g>
+  <path d="M0 553q243-32 720-20v187H0z" fill="#342d44"/><path d="M0 564q243-32 720-20" stroke="#c38b80" stroke-width="4" fill="none"/>
+  <path d="M315 574q9-48 39-42 20 7 18 45l15 77h-26l-9-57-9 57h-29z" fill="#151f31"/><circle cx="352" cy="512" r="18" fill="#151f31"/>
+  <text x="48" y="69" fill="#5c3a49" font-family="sans-serif" font-size="15" letter-spacing="5">LIVE / SUNSET ARCHIVE</text>
+  <text x="44" y="655" fill="#ffe4c4" font-family="sans-serif" font-size="65" font-weight="700" letter-spacing="-2">AFTER HOURS</text>
+  <text x="48" y="687" fill="#dbb5ad" font-family="sans-serif" font-size="14" letter-spacing="5">ONE CITY. A THOUSAND SOUNDS.</text>
+</svg>

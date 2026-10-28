@@ -4,14 +4,14 @@
 
 当前 Compose 工程是 **Material 3 Expressive 双端技术与组件验证样例**，用户尚未确定其为产品原型。在线音源尚未接入。
 
-另已提出 [产品交互原型 01](design/prototype-v1/index.html)，包含 Android / Windows 的页面和状态演示，**待用户审核**。使用方式与设计依据见 [原型说明](design/prototype-v1/README.md)。
+当前审核版本为 [产品交互原型 02](design/prototype-v2/index.html)，根据原型 01 的反馈强化播放页、搜索层级和内容分组，**待用户审核**。使用方式与设计依据见 [原型 02 说明](design/prototype-v2/README.md)；[原型 01](design/prototype-v1/index.html) 保留对照。
 
 ## 产品需求与开发规划
 
 - [当前进度](docs/progress.md)：当前阶段、已完成内容、未验收项和下一步。
 - [总需求](docs/requirements.md)：已确认要求、首版范围建议、三音源能力、Expressive 设计与验收条件。
 - [分阶段开发计划](docs/development-plan.md)：M0 原型至 M5 首版交付的顺序、依赖和退出条件，以及首版后的扩展。
-- [产品原型审核说明](docs/superpowers/specs/2026-10-28-product-prototype-v1.md)：本轮设计提案、审核范围和确认流程。
+- [产品原型 02 修订说明](docs/superpowers/specs/2026-10-28-product-prototype-v2.md)：本轮设计提案、审核范围和确认流程。
 - [技术验证历史记录](docs/superpowers/plans/2026-10-28-expressive-prototype.md)：已有 Compose 样例的实施与验证记录，不代表产品设计获批。
 
 三音源、Windows / Android 和 Material 3 Expressive 是已确认要求；其余首版范围及阶段顺序以文档中标明的规划建议为准。

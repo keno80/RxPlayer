@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" viewBox="0 0 720 720">
+  <defs><linearGradient id="w" x2="1" y2="1"><stop stop-color="#c8b7cf"/><stop offset="1" stop-color="#746a98"/></linearGradient><linearGradient id="g" x2="0" y2="1"><stop stop-color="#394368"/><stop offset="1" stop-color="#cf9b9c"/></linearGradient></defs>
+  <path fill="url(#w)" d="M0 0h720v720H0z"/><rect x="322" y="101" width="290" height="344" rx="145" fill="#dfc4b3"/><path d="M338 257a129 129 0 0 1 258 0v172H338z" fill="url(#g)"/><circle cx="521" cy="229" r="31" fill="#e1bfbc"/>
+  <path d="M338 358q84-73 132-23t126-4v98H338z" fill="#59617a"/><path d="M466 117v312m-128-155h258" stroke="#dfc4b3" stroke-width="9"/>
+  <path d="m0 524 720-54v250H0z" fill="#625571"/><path d="m324 447 289-15 76 225H147z" fill="#ebc7a2" opacity=".22"/>
+  <path d="M109 393h304v132H109z" fill="#343449"/><path d="M124 522h18v102h-18zm260 0h18v102h-18z" fill="#343449"/><path d="m109 393 15-43h280l9 43z" fill="#494256"/><path d="M124 444h275v55H124z" fill="#e2d6d3"/>
+  <g stroke="#494256" stroke-width="2"><path d="M144 444v55m21-55v55m21-55v55m21-55v55m21-55v55m21-55v55m21-55v55m21-55v55m21-55v55m21-55v55m21-55v55m21-55v55"/></g>
+  <path d="M141 444h11v34h-11zm20 0h11v34h-11zm42 0h11v34h-11zm20 0h11v34h-11zm21 0h11v34h-11zm41 0h11v34h-11zm20 0h11v34h-11zm42 0h11v34h-11zm20 0h11v34h-11z" fill="#262c40"/>
+  <text x="48" y="65" fill="#f0e4e5" font-family="sans-serif" font-size="15" letter-spacing="5">MIDNIGHT COLLECTIVE / PIANO</text>
+  <text x="44" y="655" fill="#f1dbca" font-family="sans-serif" font-size="68" font-weight="700" letter-spacing="-2">A QUIET ROOM</text>
+  <text x="48" y="687" fill="#d3becb" font-family="sans-serif" font-size="15" letter-spacing="5">SPACE BETWEEN THE NOTES</text>
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" viewBox="0 0 720 720">
+  <defs>
+    <linearGradient id="sky" x2="0.4" y2="1"><stop stop-color="#10152e"/><stop offset=".55" stop-color="#484273"/><stop offset="1" stop-color="#d48eaa"/></linearGradient>
+    <linearGradient id="lake" x2="0" y2="1"><stop stop-color="#71869a"/><stop offset="1" stop-color="#15283d"/></linearGradient>
+    <linearGradient id="train" x2="0" y2="1"><stop stop-color="#ffedd1"/><stop offset="1" stop-color="#cf8d87"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#f7cbaa" stop-opacity=".5"/><stop offset="1" stop-color="#f7cbaa" stop-opacity="0"/></radialGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h720v720H0z"/>
+  <circle cx="517" cy="178" r="136" fill="url(#glow)"/><circle cx="517" cy="178" r="47" fill="#f3d9b8"/>
+  <g fill="#e6dded" opacity=".8"><circle cx="75" cy="87" r="2"/><circle cx="194" cy="167" r="1.5"/><circle cx="291" cy="77" r="2"/><circle cx="405" cy="113" r="1"/><circle cx="654" cy="85" r="2"/><circle cx="620" cy="272" r="1.5"/><circle cx="120" cy="244" r="1"/></g>
+  <path d="M0 365 110 264l112 89 126-122 175 145 122-69 75 68v150H0z" fill="#5e5c83"/>
+  <path d="M0 418 182 337l180 90 205-117 153 106v160H0z" fill="#303e61"/>
+  <path d="M0 456q170-38 345-5t375-7v276H0z" fill="url(#lake)"/>
+  <g stroke="#b8b0bb" opacity=".3" stroke-width="3"><path d="M403 483h163m-184 22h198m-234 26h251m-315 31h336m-377 35h408"/></g>
+  <path d="M-20 401q350-91 760-4v33q-397-83-760 4z" fill="#202b44"/>
+  <path d="M0 434v180h30V434m102-28v159h30V403m112-21v150h30V380m115 1v150h30V382m122 15v169h30V402m118 26v182h30V434" fill="#202b44"/>
+  <g transform="translate(109 343) rotate(-1)"><rect width="412" height="37" rx="12" fill="url(#train)"/><path d="M14 10h383" stroke="#805d80" stroke-width="3"/><g fill="#ffebaf"><path d="M24 15h24v13H24zm39 0h24v13H63zm39 0h24v13h-24zm39 0h24v13h-24zm39 0h24v13h-24zm39 0h24v13h-24zm39 0h24v13h-24zm39 0h24v13h-24zm39 0h24v13h-24zm39 0h17v13h-17z"/></g><path d="M140 0v37M277 0v37" stroke="#a4727c" stroke-width="3"/></g>
+  <path d="M0 630q145-97 265-24t455-5v119H0z" fill="#17263d"/>
+  <text x="47" y="55" fill="#ddd3e9" font-family="sans-serif" font-size="14" letter-spacing="5">RX / ORIGINAL SESSIONS</text>
+  <text x="44" y="642" fill="#f6e7d7" font-family="sans-serif" font-size="62" font-weight="700" letter-spacing="-2">NIGHT VOYAGE</text>
+  <text x="48" y="679" fill="#c5bdcf" font-family="sans-serif" font-size="15" letter-spacing="6">SOUNDS FROM THE LAST TRAIN</text>
+</svg>
