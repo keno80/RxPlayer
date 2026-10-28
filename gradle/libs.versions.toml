@@ -1,0 +1,21 @@
+[versions]
+kotlin = "2.2.20"
+compose = "1.9.3"
+# Explicit Expressive release: the default stable alias omits these APIs.
+material3 = "1.9.0-alpha04"
+agp = "8.11.2"
+activity = "1.11.0"
+coroutines = "1.10.2"
+
+[libraries]
+material3-expressive = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+android-application = { id = "com.android.application", version.ref = "agp" }
