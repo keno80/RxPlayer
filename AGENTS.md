@@ -43,6 +43,7 @@ These instructions apply to all coding tasks unless a more specific project inst
 - 此前调研的播放器项目仅用于技术实现参考，例如音源接入、鉴权、播放、队列、缓存和系统集成。不得把这些项目的 UI、截图、页面结构、导航、配色、字体、形状或动效作为 RxPlayer 的设计参考或模仿目标。
 - 视觉对照使用 Google 官方设计示例及技能收录的官方参考图。具体 token、尺寸和状态规则必须查证；工程中所用 API 的可用性另按锁定版本核对。
 - 官方未规定的部分应明确标为 RxPlayer 自身的设计决策，并说明如何服务用户任务；不得将其他播放器的做法包装成 Google 规范。技能资料与 Google 官方指导存在差异时，核对官方来源和更新时间后处理，不凭记忆编造规范。
+- 技术 / 组件验证样例不能自动视为产品原型或设计定稿。用户要求先审核原型时，先交付可审核的产品原型并标明演示边界；可以提交推送审核分支，但用户确认前不得将设计标为通过或合并对应原型分支。
 
 ## Implementation workflow
 1. Read the relevant instructions, files, and nearby tests.

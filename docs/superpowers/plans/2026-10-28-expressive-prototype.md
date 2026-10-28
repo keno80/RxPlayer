@@ -1,8 +1,10 @@
-# RxPlayer Expressive 原型实现计划
+# RxPlayer Expressive 技术与组件验证记录
+
+定位修正：本文件记录此前用于启动与组件能力验证的 Compose 样例，历史文件名沿用。用户未确认该样例为产品原型；产品原型设计与审核另见 [原型 01 审核说明](../specs/2026-10-28-product-prototype-v1.md)。
 
 目标：独立实现 Windows、Android 共用的小型 Material 3 Expressive 界面，先验证设计系统和本地音频交互，再开展在线音源接入。
 
-本文保留原型阶段记录。整体范围与后续阶段以 [总需求](../../requirements.md) 和 [分阶段开发计划](../../development-plan.md) 为准。
+本文保留技术验证阶段记录。整体范围与后续阶段以 [总需求](../../requirements.md) 和 [分阶段开发计划](../../development-plan.md) 为准。
 
 采用已在会话中确定的 Kotlin Multiplatform / Compose Multiplatform 路线。沿用仓库 AGENTS.md 的简洁实现原则，不建立在线音源、账号或后台服务框架。
 
