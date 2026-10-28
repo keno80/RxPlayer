@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>RxPlayer · 原型 03 · 待审核</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="colors.css">
+  <link rel="stylesheet" href="prototype.css">
+  <script defer src="prototype.js"></script>
+</head>
+<body>
+  <header class="review-tools">
+    <div class="review-title"><strong>RxPlayer</strong><span>原型 03</span><span class="review-badge">待审核</span></div>
+    <div class="review-controls">
+      <div class="device-picker" role="group" aria-label="预览平台">
+        <button data-device-choice="android" aria-pressed="false">Android</button>
+        <button data-device-choice="desktop" aria-pressed="true">Windows</button>
+      </div>
+      <label class="scene-picker">搜索场景<select id="scene-select"><option value="results">搜索结果</option><option value="idle">起始状态</option><option value="empty">没有结果</option><option value="error">网络错误</option><option value="expired">登录失效</option></select></label>
+      <button id="review-player" class="review-button">查看播放页</button>
+      <button id="review-theme" class="review-button" aria-label="切换深浅主题"><span class="symbol" aria-hidden="true">light_mode</span></button>
+      <button id="review-reset" class="review-button">重置</button>
+    </div>
+  </header>
+  <main class="review-stage">
+    <section id="product" class="product" data-device="desktop" data-theme="dark" aria-label="RxPlayer 产品原型 03">
+      <div class="window-chrome"><span class="symbol" aria-hidden="true">graphic_eq</span><span>RxPlayer</span><span class="window-actions" aria-hidden="true">―　□　×</span></div>
+      <div class="phone-status" aria-hidden="true"><span>9:41</span><span><i class="symbol">signal_cellular_alt</i><i class="symbol">wifi</i><i class="symbol">battery_full</i></span></div>
+      <div class="workspace">
+        <nav id="rail" class="rail" aria-label="主导航"></nav>
+        <section id="main-pane" class="main-pane" aria-label="主内容"></section>
+        <aside id="support-pane" class="support-pane" aria-label="当前播放与队列"></aside>
+      </div>
+      <footer id="transport" class="transport" aria-label="播放控制"></footer>
+      <nav id="bottom-nav" class="bottom-nav" aria-label="主导航"></nav>
+      <div class="phone-gesture" aria-hidden="true"><span></span></div>
+      <div id="overlay" class="overlay" hidden>
+        <button class="scrim" data-action="close-overlay" aria-label="关闭弹层"></button>
+        <section id="dialog" class="sheet" role="dialog" aria-modal="true" aria-labelledby="dialog-title"></section>
+      </div>
+      <div id="snackbar" class="snackbar" role="status" hidden></div>
+    </section>
+  </main>
+  <footer class="review-caption"><span>原型 03 · 搜索 → 播放 → 收藏 / 队列 · 所有数据和播放均为模拟</span><span><a href="../prototype-v2/?view=player">原型 02</a> / <a href="../prototype-v1/">原型 01</a></span></footer>
+</body>
+</html>
