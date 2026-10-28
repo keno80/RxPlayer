@@ -4,6 +4,15 @@
 
 当前是 **Material 3 Expressive 双端界面原型**，不是已接入在线平台的音乐客户端。
 
+## 产品需求与开发规划
+
+- [当前进度](docs/progress.md)：当前阶段、已完成内容、未验收项和下一步。
+- [总需求](docs/requirements.md)：已确认要求、首版范围建议、三音源能力、Expressive 设计与验收条件。
+- [分阶段开发计划](docs/development-plan.md)：M0 原型至 M5 首版交付的顺序、依赖和退出条件，以及首版后的扩展。
+- [原型阶段历史计划](docs/superpowers/plans/2026-10-28-expressive-prototype.md)：当前原型的实施与验收记录。
+
+三音源、Windows / Android 和 Material 3 Expressive 是已确认要求；其余首版范围及阶段顺序以文档中标明的规划建议为准。
+
 ## 当前能力
 
 - Windows 与 Android 共用 Compose Multiplatform 界面。
@@ -51,7 +60,7 @@ APK 输出：`androidApp/build/outputs/apk/debug/androidApp-debug.apk`。
 
 ## 手动验收
 
-这些步骤是待执行的验收清单，不代表已通过运行验证：
+以下是原型交互验收清单。双端已完成构建与启动，清单中的完整交互场景尚未全部验收；后续成品验收以总需求为准：
 
 1. Windows 启动后，将窗口在 1200、900、400dp 附近缩放，检查侧栏、播放面板与底部导航的切换。
 2. Android 在竖屏、横屏、深浅色模式下检查安全区、滚动和底部弹层；放大系统字体检查内容是否可访问。
@@ -78,6 +87,12 @@ scripts/generate_demo_audio.py      可复现的原创音频生成脚本
 
 ## 验证状态
 
-按当前任务约定未运行 Gradle 构建、编译测试、Android 模拟器或 Windows 应用；尚未证明双端可运行。
+截至 2026-10-28：
 
-已完成：TOML / XML 解析、曲目与资源引用核对、三段 WAV 的时长 / PCM 格式 / 波形无削波检查、Gradle Wrapper 官方 SHA256 校验、AGENTS.md 与用户原文件逐字节比对，以及 `git diff --cached --check`。同时核对所锁定 Material3 发布包的 Expressive API 签名。以上均为静态检查，实际设备验收按上方清单执行。
+- 已完成 TOML / XML、资源引用、WAV 格式与无削波检查、Gradle Wrapper 官方 SHA256、AGENTS.md 原文比对及 Git 差异检查；已核对锁定版本的 Expressive API。
+- 在用户明确要求启动后，Android Debug 构建成功，APK 已安装到真机并进入前台，当时未发现启动崩溃。
+- Windows 桌面目标已成功编译并打开 RxPlayer 窗口。
+- 双端已进行部分视觉检查与源码核对，发现导航、播放状态、圆角和桌面空格交互等问题，见 [开发计划的问题追踪](docs/development-plan.md#10-当前问题与需求追踪)。
+- 界面检查因用户按 Esc 停止。手机键盘 / 展开播放器、桌面窄窗口和完整播放交互仍未完成验收。
+
+构建和启动成功不等于全部功能验收通过。本次规划文档更新未重新构建或操作设备；后续继续遵守用户默认不自动构建的约定。
