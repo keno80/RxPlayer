@@ -10,10 +10,11 @@
 
 | 类型 | 内容 |
 |---|---|
-| 用户已确认 | 参考现有开源播放器的实现思路，独立实现 RxPlayer |
+| 用户已确认 | 参考现有开源播放器的技术实现思路，独立实现 RxPlayer；不参考其 UI 设计 |
 | 用户已确认 | 支持网易云音乐、Bilibili、YouTube |
 | 用户已确认 | 首批平台为 Windows 和 Android |
 | 用户已确认 | Material 3 Expressive 是硬性要求 |
+| 用户已确认 | UI 统一依据 Google 官方设计指导和 m3-expressive 技能；示例播放器仅作技术参考 |
 | 会话已采用的技术路线 | Kotlin Multiplatform / Compose Multiplatform，共享主要界面和业务逻辑；播放及系统能力按平台适配 |
 | 本文建议的首版范围 | 本地优先、分平台搜索、统一队列、本地音乐库、必要的本地登录、后台播放与系统媒体控制 |
 | 本文建议的范围边界 | 下载、跨设备同步、平台歌单双向写入、推荐系统不进入首个可用版本 |
@@ -141,7 +142,9 @@ P0 全部交付前，阶段版本使用“原型”或“预览版”描述。�
 | UI-07 | 核心任务优先 | 搜索、曲目和播放操作优先于宣传卡片；播放器正确呈现准备、播放、暂停和错误；空状态包含可执行的下一步 |
 | UI-08 | 双端交互完整 | 桌面有合理 Tab 顺序、可见焦点、适用的悬停提示、空格控制和弹层 Esc 关闭；手机尊重系统返回、安全区和软键盘 |
 
-设计依据：[m3-expressive 技能与参考资料](https://github.com/abhixv/google-m3-expressive-design-skill/tree/main/skills/m3-expressive)。数值、组件行为和平台可用性按相关参考及工程所锁定的实际 API 核对；参考图片用于视觉对照，不作为测量数值的唯一来源。
+设计依据：[Google Material 3 / Material 3 Expressive 官方指导](https://m3.material.io/) 和 [m3-expressive 技能与参考资料](https://github.com/abhixv/google-m3-expressive-design-skill/tree/main/skills/m3-expressive)。数值、组件行为和平台可用性按相关参考及工程所锁定的实际 API 核对；Google 官方示例及技能收录的官方参考图片用于视觉对照，不作为测量数值的唯一来源。
+
+此前调研的播放器只用于音源、鉴权、播放、队列和系统集成等技术参考，不用于界面布局、导航、配色、排版、形状或动效设计。规范未覆盖的部分明确记录为 RxPlayer 自身的设计决策，不沿用示例播放器的 UI 作为依据。
 
 ## 6. 技术与数据边界
 

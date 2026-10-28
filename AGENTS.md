@@ -38,6 +38,12 @@ These instructions apply to all coding tasks unless a more specific project inst
 - Do not modify generated files, lockfiles, or dependency manifests unless the task requires it.
 - Avoid broad search-and-replace when a targeted edit is possible.
 
+## UI 设计依据与技术参考边界
+- UI 设计统一依据 [Google Material 3 / Material 3 Expressive 官方设计指导](https://m3.material.io/) 和 `m3-expressive` 技能。设计、实现或审查 UI 前，读取该技能的 `SKILL.md`，再按任务查阅相关组件、布局、颜色、排版、形状、动效及平台支持参考。
+- 此前调研的播放器项目仅用于技术实现参考，例如音源接入、鉴权、播放、队列、缓存和系统集成。不得把这些项目的 UI、截图、页面结构、导航、配色、字体、形状或动效作为 RxPlayer 的设计参考或模仿目标。
+- 视觉对照使用 Google 官方设计示例及技能收录的官方参考图。具体 token、尺寸和状态规则必须查证；工程中所用 API 的可用性另按锁定版本核对。
+- 官方未规定的部分应明确标为 RxPlayer 自身的设计决策，并说明如何服务用户任务；不得将其他播放器的做法包装成 Google 规范。技能资料与 Google 官方指导存在差异时，核对官方来源和更新时间后处理，不凭记忆编造规范。
+
 ## Implementation workflow
 1. Read the relevant instructions, files, and nearby tests.
 2. State a short plan only for nontrivial tasks; do not produce lengthy design documents for small edits.
