@@ -7,8 +7,8 @@
   <title>RxPlayer · 原型 03 · 待审核</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="colors.css">
-  <link rel="stylesheet" href="prototype.css?revision=lyrics-controls">
-  <script defer src="prototype.js?revision=lyrics-controls"></script>
+  <link rel="stylesheet" href="prototype.css?revision=single-queue">
+  <script defer src="prototype.js?revision=single-queue"></script>
 </head>
 <body>
   <header class="review-tools">
@@ -31,7 +31,6 @@
       <div class="workspace">
         <nav id="rail" class="rail" aria-label="主导航"></nav>
         <section id="main-pane" class="main-pane" aria-label="主内容"></section>
-        <aside id="support-pane" class="support-pane" aria-label="当前播放与队列"></aside>
       </div>
       <footer id="transport" class="transport" aria-label="播放控制"></footer>
       <nav id="bottom-nav" class="bottom-nav" aria-label="主导航"></nav>
@@ -40,6 +39,8 @@
         <button class="scrim" data-action="close-overlay" aria-label="关闭弹层"></button>
         <section id="dialog" class="sheet" role="dialog" aria-modal="true" aria-labelledby="dialog-title"></section>
       </div>
+      <button id="queue-scrim" class="queue-scrim" data-action="close-queue" aria-label="关闭播放队列" hidden></button>
+      <aside id="support-pane" class="support-pane" aria-labelledby="queue-title" hidden></aside>
       <div id="snackbar" class="snackbar" role="status" hidden></div>
     </section>
   </main>

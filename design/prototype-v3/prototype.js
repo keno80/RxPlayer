@@ -4,6 +4,7 @@
   const $ = (selector, parent = document) => parent.querySelector(selector);
   const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
   const product = $('#product');
+  const queueBreakpoint = matchMedia('(min-width:1101px)');
   const sources = ['Bilibili', '网易云', 'YouTube'];
   const titles = ['夜航', '夜航 · 城市现场', '夜航之后', '夜航 / Midnight Session'];
   const authors = ['拾音计划', '落日工作室', '慢速电台', 'Midnight Collective'];
@@ -25,7 +26,7 @@
     theme: 'dark', route: 'search', source: 'Bilibili', scene: 'results',
     queries: Object.fromEntries(sources.map(source => [source, '夜航'])),
     favorites: ['0-0', '1-2'], recent: ['0-0', '2-1'],
-    queue: ['0-0', '1-2', '2-1'], current: '0-0', playing: false, position: 82,
+    queue: ['0-0', '1-2', '2-1'], queueOpen: queueBreakpoint.matches, current: '0-0', playing: false, position: 82,
     libraryTab: 'favorites', playlist: null,
     playlists: [{name: '通勤路上', ids: ['0-0', '1-2', '2-1'], art: 0}, {name: '安静片刻', ids: ['1-0', '2-2'], art: 2}],
     connected: ['Bilibili'], artworkColor: true, repeat: false, shuffle: false, volume: 65,
@@ -35,6 +36,7 @@
   let previousFocus = null;
   let previousFocusData = null;
   let previousFocusRegion = null;
+  let queueFocusOrigin = null;
   let toastTimer;
   const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const trackById = id => tracks.find(track => track.id === id);
@@ -132,19 +134,76 @@
       </div><div class="section-head"><h2>播放</h2></div><div class="settings-group"><div class="settings-row"><span class="setting-icon">${symbol('history')}</span><span class="row-copy"><strong>恢复播放位置</strong><small>打开时保持暂停，由你决定何时继续</small></span>${symbol('check')}</div></div></section><section><div class="section-head"><h2>音源账号</h2><small>原型演示</small></div><div class="settings-group">${sources.map(source => `<div class="settings-row"><span class="setting-icon">${symbol('music_note')}</span><div class="row-copy"><strong>${source}</strong><small>${state.connected.includes(source) ? '<span class="account-tag">已连接</span> · 听风的人' : '未连接'}</small></div><button class="text-button" data-action="connect" data-source="${source}">${state.connected.includes(source) ? '断开' : '连接'}</button></div>`).join('')}</div><p class="hint">账号操作仅作界面演示，未连接任何平台。</p></section></div><p class="settings-signature">Rx.<span>让每一段声音，都有自己的位置。</span></p>`;
   }
 
-  function queueItems(omitCurrent = false) {
-    return state.queue.filter(id => !omitCurrent || id !== state.current).map((id, index) => {
+  function queueItems() {
+    return state.queue.map((id, index) => {
       const track = trackById(id);
-      return `<div class="queue-item"><span class="queue-number">${index + 1}</span><button class="now-track" data-action="play-track" data-id="${id}" aria-label="播放 ${escape(track.title)}">${art(track)}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${track.source} · ${time(track.duration)}</span></span></button>${iconButton('remove-queue', 'close', `移除 ${track.title}`, `data-id="${id}"`)}</div>`;
+      return `<div class="queue-item${id === state.current ? ' is-current' : ''}"><span class="queue-number" aria-hidden="true">${id === state.current ? symbol(state.playing ? 'graphic_eq' : 'music_note') : index + 1}</span><button class="now-track" data-action="play-track" data-id="${id}" aria-label="播放 ${escape(track.title)}" ${id === state.current ? 'aria-current="true"' : ''}>${art(track)}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${track.source} · ${time(track.duration)}</span></span></button>${iconButton('remove-queue', 'close', `移除 ${track.title}`, `data-id="${id}"`)}</div>`;
     }).join('') || '<p class="queue-caption">队列还空着，把想听的内容加入进来。</p>';
   }
 
   function supportPane() {
-    const track = current();
-    return `<div class="support-heading"><h2>播放队列</h2><span class="hint">${state.queue.length} 首</span></div>
-      <div class="support-label">${state.playing ? '正在播放' : '已暂停'}</div><button class="now-track support-current" data-action="open-player" aria-label="展开正在播放">${art(track)}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${escape(track.author)}</span></span>${symbol('open_in_full')}</button>
-      <hr class="support-divider"><p class="eyebrow">队列中的其他曲目</p>${queueItems(true)}
-      <button class="text-button queue-link" data-action="open-queue">查看完整队列 ${symbol('chevron_right')}</button>`;
+    return `<header class="support-heading"><div><h2 id="queue-title">播放队列</h2><span class="queue-count">${state.queue.length} 首</span></div>${iconButton('close-queue','close','收起播放队列')}</header><div class="queue-list">${queueItems()}</div>`;
+  }
+
+  function queueDocked() {
+    return state.device === 'desktop' && queueBreakpoint.matches;
+  }
+
+  function queueModal() {
+    return state.queueOpen && !queueDocked();
+  }
+
+  function syncPanels() {
+    const pane = $('#support-pane');
+    const wasQueueOpen = product.dataset.queueOpen === 'true';
+    const previousMode = product.dataset.queueMode;
+    const modal = state.overlay && state.overlay !== 'player';
+    product.dataset.queueOpen = state.queueOpen;
+    product.dataset.queueDocked = state.queueOpen && queueDocked();
+    product.dataset.queueMode = queueDocked() ? 'docked' : 'sheet';
+    product.dataset.playerOpen = state.overlay === 'player';
+    product.style.setProperty('--transport-height', `${$('#transport').getBoundingClientRect().height}px`);
+    pane.hidden = !state.queueOpen;
+    pane.setAttribute('role',queueDocked() ? 'complementary' : 'dialog');
+    if (queueModal()) pane.setAttribute('aria-modal','true');
+    else pane.removeAttribute('aria-modal');
+    pane.inert = !!modal;
+    $('#queue-scrim').hidden = !queueModal();
+    $('#overlay').hidden = !state.overlay;
+    $('#overlay').inert = queueModal();
+    for (const element of [$('.workspace'),$('#transport'),$('#bottom-nav')]) element.inert = !!state.overlay || queueModal();
+    $('#dialog').setAttribute('role',state.overlay === 'player' ? 'region' : 'dialog');
+    if (modal) $('#dialog').setAttribute('aria-modal','true');
+    else $('#dialog').removeAttribute('aria-modal');
+    $$('[data-action="open-queue"]').forEach(button => {
+      button.setAttribute('aria-expanded',String(state.queueOpen));
+      button.setAttribute('aria-controls','support-pane');
+      button.setAttribute('aria-label',`${state.queueOpen ? '收起' : '展开'}播放队列，${state.queue.length} 首`);
+      if (button.dataset.tip) button.dataset.tip = state.queueOpen ? '收起播放队列' : '展开播放队列';
+    });
+    if (queueModal() && (!wasQueueOpen || previousMode !== 'sheet')) requestAnimationFrame(() => $('[data-action="close-queue"]',pane)?.focus());
+  }
+
+  function closeQueue(restoreFocus = true) {
+    if (!state.queueOpen) return;
+    state.queueOpen = false;
+    syncPanels();
+    if (!restoreFocus) return;
+    const origin = queueFocusOrigin;
+    const scope = origin?.region ? $(`#${origin.region}`) : product;
+    const canFocus = element => element?.isConnected && element.getClientRects().length && !element.closest('[inert]');
+    const replacement = origin?.key ? $$('[data-action]',scope).find(element => Object.entries(origin.key).every(([key,value]) => element.dataset[key] === value) && canFocus(element)) : null;
+    const target = canFocus(origin?.element) ? origin.element : replacement;
+    (target || $$(state.overlay === 'player' ? '#dialog [data-action="open-queue"]' : '#transport [data-action="open-queue"]').find(element => element.getClientRects().length))?.focus({preventScroll:true});
+  }
+
+  function toggleQueue() {
+    if (state.queueOpen) { closeQueue(); return; }
+    const active = document.activeElement;
+    queueFocusOrigin = {element:active,key:active.dataset.action ? focusKey(active) : null,region:active.closest('#dialog,#transport,#main-pane,#rail,#bottom-nav')?.id};
+    state.queueOpen = true;
+    syncPanels();
+    requestAnimationFrame(() => $('[data-action="close-queue"]',$('#support-pane'))?.focus());
   }
 
   function playButton(extra = '') {
@@ -186,6 +245,7 @@
 
   function render() {
     const active = document.activeElement;
+    const queueFocus = $('#support-pane').contains(active) ? focusKey(active) : null;
     const focusedData = product.contains(active) && active.dataset.action && !state.overlay ? focusKey(active) : null;
     product.dataset.device = state.device;
     product.dataset.theme = state.theme;
@@ -203,6 +263,8 @@
     else if (focusedData) {
       $$('[data-action]', product).find(element => Object.entries(focusedData).every(([key,value]) => element.dataset[key] === value) && element.getClientRects().length)?.focus({preventScroll:true});
     }
+    syncPanels();
+    if (queueFocus && state.queueOpen) ($$('[data-action]',$('#support-pane')).find(element => Object.entries(queueFocus).every(([key,value]) => element.dataset[key] === value)) || $('[data-action="close-queue"]',$('#support-pane')))?.focus({preventScroll:true});
   }
 
   function toast(message) {
@@ -214,6 +276,7 @@
   }
 
   function openOverlay(type, trackId) {
+    if (queueModal()) closeQueue(false);
     const entering = !state.overlay;
     previousFocus = document.activeElement;
     previousFocusData = previousFocus.dataset.action ? focusKey(previousFocus) : null;
@@ -221,8 +284,7 @@
     state.overlay = type;
     if (trackId) state.menuTrack = trackId;
     renderOverlay();
-    for (const element of [$('.workspace'), $('#transport'), $('#bottom-nav')]) element.inert = true;
-    $('#overlay').hidden = false;
+    syncPanels();
     if (entering && !matchMedia('(prefers-reduced-motion:reduce)').matches) {
       $('#dialog').animate([{transform:'translateY(32px) scale(.97)'},{transform:'translateY(0) scale(1)'}], {duration:500,easing:'cubic-bezier(.38,1.21,.22,1)'});
       $('#dialog').animate([{opacity:0},{opacity:1}], {duration:200,easing:'cubic-bezier(.34,.8,.34,1)'});
@@ -232,9 +294,9 @@
 
   function closeOverlay() {
     if (!state.overlay) return;
+    if (queueModal()) closeQueue(false);
     state.overlay = null;
-    $('#overlay').hidden = true;
-    for (const element of [$('.workspace'), $('#transport'), $('#bottom-nav')]) element.inert = false;
+    syncPanels();
     const replacement = previousFocusData ? $$('[data-action]', previousFocusRegion ? $(`#${previousFocusRegion}`) : product).find(element => Object.entries(previousFocusData).every(([key,value]) => element.dataset[key] === value) && element.getClientRects().length) : null;
     if (previousFocus?.isConnected && previousFocus.getClientRects().length) previousFocus.focus({preventScroll:true});
     else if (replacement) replacement.focus({preventScroll:true});
@@ -253,9 +315,6 @@
       title = '播放器';
       const lyricIndex = activeLyricIndex();
       body = `<div class="player-layout"><div class="player-art-column"><div class="art-stage">${art(track, 'large')}</div><p class="art-caption">${escape(track.author)} · ORIGINAL SESSIONS</p></div><div class="player-detail"><span class="source-label">${track.source} · ${track.type}</span><div class="player-title-row"><div><h3 class="player-title">${escape(track.title)}</h3><p class="player-sub">${escape(track.author)}</p></div>${favoriteButton(track)}</div><div class="hero-controls">${progress()}<section class="lyrics-preview" aria-label="歌词预览"><div data-lyrics="${lyricIndex}">${lyricLines(lyricIndex)}</div></section><div class="play-controls" role="group" aria-label="播放操作">${modeButton('shuffle','shuffle','随机播放',state.shuffle)}${iconButton('previous','skip_previous','上一首')}${playButton()}${iconButton('next','skip_next','下一首')}${modeButton('repeat','repeat',state.repeat ? '列表循环' : '顺序播放',state.repeat,`当前${state.repeat ? '列表循环' : '顺序播放'}，点击切换`)}</div></div></div></div>`;
-    } else if (state.overlay === 'queue') {
-      title = `播放队列 · ${state.queue.length}`;
-      body = queueItems();
     } else if (state.overlay === 'menu') {
       const track = trackById(state.menuTrack);
       title = track.title;
@@ -304,7 +363,7 @@
 
   document.addEventListener('click', event => {
     const deviceChoice = event.target.closest('[data-device-choice]');
-    if (deviceChoice) { closeOverlay(); state.device = deviceChoice.dataset.deviceChoice; render(); return; }
+    if (deviceChoice) { closeQueue(false); closeOverlay(); state.device = deviceChoice.dataset.deviceChoice; state.queueOpen = queueDocked(); render(); return; }
     const button = event.target.closest('[data-action]');
     if (!button) return;
     const {action, id, source} = button.dataset;
@@ -324,7 +383,8 @@
       case 'favorite': state.favorites = state.favorites.includes(id) ? state.favorites.filter(item => item !== id) : [...state.favorites, id]; render(); toast(state.favorites.includes(id) ? '已收藏' : '已取消收藏'); break;
       case 'track-menu': openOverlay('menu', id); break;
       case 'open-player': openOverlay('player'); break;
-      case 'open-queue': openOverlay('queue'); break;
+      case 'open-queue': toggleQueue(); break;
+      case 'close-queue': closeQueue(); break;
       case 'close-overlay': closeOverlay(); break;
       case 'enqueue': case 'enqueue-next': {
         if (id === state.current && state.queue.includes(id)) { closeOverlay(); toast('当前曲目已在队列中'); break; }
@@ -416,7 +476,7 @@
   });
 
   document.addEventListener('change', event => {
-    if (event.target.id === 'scene-select') { closeOverlay(); state.route = 'search'; state.scene = event.target.value; render(); }
+    if (event.target.id === 'scene-select') { closeQueue(false); closeOverlay(); state.route = 'search'; state.scene = event.target.value; render(); }
     if (event.target.id === 'theme-select') { state.theme = event.target.value; render(); }
     if (event.target.id === 'artwork-switch') { state.artworkColor = event.target.checked; if (state.overlay === 'player') renderOverlay(); toast('播放页配色偏好已更新'); }
   });
@@ -425,7 +485,7 @@
     if (event.target.matches('.volume')) { state.volume = Number(event.target.value); event.target.style.setProperty('--progress', `${state.volume}%`); }
     if (event.target.matches('[data-progress]')) {
       state.position = Number(event.target.value);
-        updateLyrics();
+      updateLyrics();
       $$('[data-position]').forEach(element => { element.textContent = time(state.position); });
       $$('[data-progress]').forEach(element => {
         element.value = state.position;
@@ -437,12 +497,13 @@
 
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
-      if (state.overlay) { event.preventDefault(); closeOverlay(); }
+      if (state.queueOpen && (queueModal() || $('#support-pane').contains(document.activeElement))) { event.preventDefault(); closeQueue(); }
+      else if (state.overlay) { event.preventDefault(); closeOverlay(); }
       else if (document.activeElement?.id === 'search-input') { event.preventDefault(); $('[data-action="exit-search"]').click(); }
       return;
     }
-    if (event.key === 'Tab' && state.overlay) {
-      const controls = $$('button,input,select,a[href]', $('#dialog')).filter(element => !element.disabled);
+    if (event.key === 'Tab' && (queueModal() || state.overlay && state.overlay !== 'player')) {
+      const controls = $$('button,input,select,a[href]', queueModal() ? $('#support-pane') : $('#dialog')).filter(element => !element.disabled && element.getClientRects().length);
       const first = controls[0], last = controls.at(-1);
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
@@ -450,7 +511,7 @@
     }
     const input = document.activeElement?.matches('input,textarea,select,[contenteditable=true]');
     const focusedButton = document.activeElement?.tagName === 'BUTTON';
-    if (event.code === 'Space' && !input && !focusedButton && !state.overlay) { event.preventDefault(); state.playing = !state.playing; render(); }
+    if (event.code === 'Space' && !input && !focusedButton && !state.overlay && !queueModal()) { event.preventDefault(); state.playing = !state.playing; render(); }
     if (['ArrowLeft','ArrowRight'].includes(event.key) && event.target instanceof Element && event.target.closest('.sources')) {
       event.preventDefault();
       state.source = sources[(sources.indexOf(state.source) + (event.key === 'ArrowRight' ? 1 : 2)) % 3];
@@ -460,7 +521,9 @@
 
   $('#review-theme').addEventListener('click', () => { state.theme = state.theme === 'light' ? 'dark' : 'light'; render(); });
   $('#review-player').addEventListener('click', () => openOverlay('player'));
-  $('#review-reset').addEventListener('click', () => { closeOverlay(); state = initial(); render(); toast('已恢复原型初始状态'); });
+  $('#review-reset').addEventListener('click', () => { closeQueue(false); closeOverlay(); queueFocusOrigin = null; state = initial(); render(); toast('已恢复原型初始状态'); });
+  new ResizeObserver(syncPanels).observe(product);
+  queueBreakpoint.addEventListener('change',syncPanels);
   setInterval(() => {
     if (!state.playing) return;
     if (state.position >= current().duration) {
