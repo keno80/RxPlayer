@@ -45,6 +45,12 @@ These instructions apply to all coding tasks unless a more specific project inst
 - 官方未规定的部分应明确标为 RxPlayer 自身的设计决策，并说明如何服务用户任务；不得将其他播放器的做法包装成 Google 规范。技能资料与 Google 官方指导存在差异时，核对官方来源和更新时间后处理，不凭记忆编造规范。
 - 技术 / 组件验证样例不能自动视为产品原型或设计定稿。用户要求先审核原型时，先交付可审核的产品原型并标明演示边界；可以提交推送审核分支，但用户确认前不得将设计标为通过或合并对应原型分支。
 
+## UI 变更必须先更新原型
+- 用户要求新增或变更 UI 时，先在可审核的交互原型中更新对应页面、样式、组件及交互，提供预览并说明版本和变更范围；此时不得先修改 Compose 等正式应用的 UI 实现。
+- 必须等用户明确确认对应原型版本及范围后，才能开始正式 UI 实现。原型已提交、推送或自检通过，都不能代替用户确认；不得以改动较小、技术样例或旧版本曾获确认等理由跳过。
+- 在进度和设计记录中保存确认版本、范围及是否为暂定基线。已确认范围内的等价实现无需重复请求同一确认；开发中需要新增或偏离已确认设计时，先更新原型，再等待用户确认后继续该 UI 变更。
+- 原型确认仅表示对应设计范围可作为实现基线，不代表正式应用已经实现、构建通过或功能验收通过。纯技术验证和不改变 UI 的工作按各自授权执行。
+
 ## Implementation workflow
 1. Read the relevant instructions, files, and nearby tests.
 2. State a short plan only for nontrivial tasks; do not produce lengthy design documents for small edits.
