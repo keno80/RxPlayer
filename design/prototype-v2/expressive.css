@@ -237,3 +237,75 @@ body { background:#e8e6ed; }
 @media(prefers-reduced-motion:reduce) {
   .product * { transition:none!important; animation:none!important; }
 }
+/* Button revision: custom hero silhouettes; M3 standard-group and toggle behavior. */
+.product { --tertiary:#7d5260; --on-tertiary:#fff; --tertiary-container:#ffd8e4; --on-tertiary-container:#31111d; --soft-skip-shape:polygon(100.000% 50.000%,99.417% 52.158%,97.817% 54.183%,95.606% 56.004%,93.332% 57.641%,91.528% 59.206%,90.569% 60.870%,90.567% 62.791%,91.346% 65.049%,92.498% 67.603%,93.503% 70.286%,93.875% 72.840%,93.301% 75.000%,91.718% 76.577%,89.319% 77.532%,86.494% 78.003%,83.706% 78.283%,81.361% 78.737%,79.698% 79.698%,78.737% 81.361%,78.283% 83.706%,78.003% 86.494%,77.532% 89.319%,76.577% 91.718%,75.000% 93.301%,72.840% 93.875%,70.286% 93.503%,67.603% 92.498%,65.049% 91.346%,62.791% 90.567%,60.870% 90.569%,59.206% 91.528%,57.641% 93.332%,56.004% 95.606%,54.183% 97.817%,52.158% 99.417%,50.000% 100.000%,47.842% 99.417%,45.817% 97.817%,43.996% 95.606%,42.359% 93.332%,40.794% 91.528%,39.130% 90.569%,37.209% 90.567%,34.951% 91.346%,32.397% 92.498%,29.714% 93.503%,27.160% 93.875%,25.000% 93.301%,23.423% 91.718%,22.468% 89.319%,21.997% 86.494%,21.717% 83.706%,21.263% 81.361%,20.302% 79.698%,18.639% 78.737%,16.294% 78.283%,13.506% 78.003%,10.681% 77.532%,8.282% 76.577%,6.699% 75.000%,6.125% 72.840%,6.497% 70.286%,7.502% 67.603%,8.654% 65.049%,9.433% 62.791%,9.431% 60.870%,8.472% 59.206%,6.668% 57.641%,4.394% 56.004%,2.183% 54.183%,0.583% 52.158%,0.000% 50.000%,0.583% 47.842%,2.183% 45.817%,4.394% 43.996%,6.668% 42.359%,8.472% 40.794%,9.431% 39.130%,9.433% 37.209%,8.654% 34.951%,7.502% 32.397%,6.497% 29.714%,6.125% 27.160%,6.699% 25.000%,8.282% 23.423%,10.681% 22.468%,13.506% 21.997%,16.294% 21.717%,18.639% 21.263%,20.302% 20.302%,21.263% 18.639%,21.717% 16.294%,21.997% 13.506%,22.468% 10.681%,23.423% 8.282%,25.000% 6.699%,27.160% 6.125%,29.714% 6.497%,32.397% 7.502%,34.951% 8.654%,37.209% 9.433%,39.130% 9.431%,40.794% 8.472%,42.359% 6.668%,43.996% 4.394%,45.817% 2.183%,47.842% 0.583%,50.000% 0.000%,52.158% 0.583%,54.183% 2.183%,56.004% 4.394%,57.641% 6.668%,59.206% 8.472%,60.870% 9.431%,62.791% 9.433%,65.049% 8.654%,67.603% 7.502%,70.286% 6.497%,72.840% 6.125%,75.000% 6.699%,76.577% 8.282%,77.532% 10.681%,78.003% 13.506%,78.283% 16.294%,78.737% 18.639%,79.698% 20.302%,81.361% 21.263%,83.706% 21.717%,86.494% 21.997%,89.319% 22.468%,91.718% 23.423%,93.301% 25.000%,93.875% 27.160%,93.503% 29.714%,92.498% 32.397%,91.346% 34.951%,90.567% 37.209%,90.569% 39.130%,91.528% 40.794%,93.332% 42.359%,95.606% 43.996%,97.817% 45.817%,99.417% 47.842%); --round-skip-shape:polygon(98.000% 50.000%,97.954% 52.094%,97.817% 54.183%,97.589% 56.265%,97.271% 58.335%,96.862% 60.389%,96.364% 62.423%,95.778% 64.434%,95.105% 66.417%,94.346% 68.369%,93.503% 70.286%,92.577% 72.164%,91.569% 74.000%,90.483% 75.790%,89.319% 77.532%,88.081% 79.221%,86.770% 80.854%,85.389% 82.428%,83.941% 83.941%,82.428% 85.389%,80.854% 86.770%,79.221% 88.081%,77.532% 89.319%,75.790% 90.483%,74.000% 91.569%,72.164% 92.577%,70.286% 93.503%,68.369% 94.346%,66.417% 95.105%,64.434% 95.778%,62.423% 96.364%,60.389% 96.862%,58.335% 97.271%,56.265% 97.589%,54.183% 97.817%,52.094% 97.954%,50.000% 98.000%,47.906% 97.954%,45.817% 97.817%,43.735% 97.589%,41.665% 97.271%,39.611% 96.862%,37.577% 96.364%,35.566% 95.778%,33.583% 95.105%,31.631% 94.346%,29.714% 93.503%,27.836% 92.577%,26.000% 91.569%,24.210% 90.483%,22.468% 89.319%,20.779% 88.081%,19.146% 86.770%,17.572% 85.389%,16.059% 83.941%,14.611% 82.428%,13.230% 80.854%,11.919% 79.221%,10.681% 77.532%,9.517% 75.790%,8.431% 74.000%,7.423% 72.164%,6.497% 70.286%,5.654% 68.369%,4.895% 66.417%,4.222% 64.434%,3.636% 62.423%,3.138% 60.389%,2.729% 58.335%,2.411% 56.265%,2.183% 54.183%,2.046% 52.094%,2.000% 50.000%,2.046% 47.906%,2.183% 45.817%,2.411% 43.735%,2.729% 41.665%,3.138% 39.611%,3.636% 37.577%,4.222% 35.566%,4.895% 33.583%,5.654% 31.631%,6.497% 29.714%,7.423% 27.836%,8.431% 26.000%,9.517% 24.210%,10.681% 22.468%,11.919% 20.779%,13.230% 19.146%,14.611% 17.572%,16.059% 16.059%,17.572% 14.611%,19.146% 13.230%,20.779% 11.919%,22.468% 10.681%,24.210% 9.517%,26.000% 8.431%,27.836% 7.423%,29.714% 6.497%,31.631% 5.654%,33.583% 4.895%,35.566% 4.222%,37.577% 3.636%,39.611% 3.138%,41.665% 2.729%,43.735% 2.411%,45.817% 2.183%,47.906% 2.046%,50.000% 2.000%,52.094% 2.046%,54.183% 2.183%,56.265% 2.411%,58.335% 2.729%,60.389% 3.138%,62.423% 3.636%,64.434% 4.222%,66.417% 4.895%,68.369% 5.654%,70.286% 6.497%,72.164% 7.423%,74.000% 8.431%,75.790% 9.517%,77.532% 10.681%,79.221% 11.919%,80.854% 13.230%,82.428% 14.611%,83.941% 16.059%,85.389% 17.572%,86.770% 19.146%,88.081% 20.779%,89.319% 22.468%,90.483% 24.210%,91.569% 26.000%,92.577% 27.836%,93.503% 29.714%,94.346% 31.631%,95.105% 33.583%,95.778% 35.566%,96.364% 37.577%,96.862% 39.611%,97.271% 41.665%,97.589% 43.735%,97.817% 45.817%,97.954% 47.906%); }
+.product[data-theme=dark] { --tertiary:#efb8c8; --on-tertiary:#492532; --tertiary-container:#633b48; --on-tertiary-container:#ffd8e4; }
+.product .hero-controls { background:transparent; padding:0; border-radius:0; }
+.product .full-player .progress-line { margin:0 0 20px; color:var(--on-surface-variant); row-gap:4px; }
+.product .full-player .progress-line>span { padding:4px 12px; border-radius:999px; background:var(--primary-container); color:var(--on-primary-container); }
+.product .full-player .progress-line input::-webkit-slider-runnable-track { background:linear-gradient(to right,var(--primary) var(--progress),var(--surface-highest) var(--progress)); }
+.product .full-player .play-controls { display:flex; align-items:center; gap:8px; }
+.product .full-player .play-controls>.soft-skip { width:96px; height:96px; flex:0 0 96px; background:transparent; color:var(--on-tertiary); border-radius:28px; transition:flex-basis var(--fast-spatial),color var(--effects); }
+.product .full-player .soft-skip:before { content:''; position:absolute; inset:0; background:var(--tertiary); clip-path:var(--soft-skip-shape); transition:clip-path var(--fast-spatial),background var(--effects),transform var(--fast-spatial); }
+.product .full-player .soft-skip>.symbol { position:relative; z-index:1; font-size:32px; font-variation-settings:'FILL' 1,'wght' 600; }
+.product .full-player .soft-skip:hover:before { background:color-mix(in srgb,var(--on-tertiary) 8%,var(--tertiary)); }
+.product .full-player .soft-skip:active:before { clip-path:var(--round-skip-shape); transform:rotate(8deg); }
+.product .full-player .play-button { flex:1; width:auto; min-width:88px; height:96px; padding:0 12px!important; transition:border-radius var(--fast-spatial),background var(--effects); }
+.product .full-player .play-button>.symbol { display:none; }
+.product .full-player .hero-play-label { font-size:32px; line-height:40px; font-weight:500; }
+.product .full-player .play-button.is-playing { border-radius:28px; }
+.product .full-player .play-button:active { border-radius:16px; }
+.product .full-player .play-controls:has(.play-button:active)>.soft-skip { flex-basis:88px; }
+.product .full-player .play-controls>.soft-skip:active { flex-basis:104px; }
+.product .full-player .player-secondary { display:flex; gap:8px; margin-top:20px; }
+.mode-toggle { min-height:56px; flex:1; min-width:0; padding:8px 12px!important; display:flex; align-items:center; justify-content:center; gap:6px; border-radius:999px; background:var(--surface-highest)!important; color:var(--on-surface); font-size:14px; line-height:20px; font-weight:700; transition:border-radius var(--fast-spatial),background var(--effects),color var(--effects); }
+.mode-toggle>.symbol { font-size:24px; }
+.mode-toggle[aria-pressed=true] { background:var(--tertiary-container)!important; color:var(--on-tertiary-container); border-radius:16px; }
+.mode-toggle[aria-pressed=true]>.symbol { font-variation-settings:'FILL' 1,'wght' 600; }
+.mode-toggle:active { border-radius:12px; }
+.mode-mark { font-size:11px; line-height:16px; }
+.mode-mark:empty { display:none; }
+.product .full-player .queue-pill { min-width:0; min-height:56px; flex:1.1; gap:6px; margin:0; padding:8px 12px!important; background:var(--secondary-container)!important; color:var(--on-secondary-container); border-radius:20px; transition:border-radius var(--fast-spatial),background var(--effects); }
+.product .full-player .queue-pill:active { border-radius:12px; }
+.product .full-player .queue-label { color:inherit; font-size:14px; }
+.product .full-player .queue-count { color:inherit; font-size:12px; }
+.product .full-player .favorite-list { width:56px; height:56px; flex-basis:56px; border-radius:16px; }
+.product .full-player .favorite-list[aria-pressed=true] { background:var(--tertiary-container); color:var(--on-tertiary-container); border-radius:999px; }
+.product .full-player .favorite-list>.symbol { font-size:28px; }
+.product .collection-feature { display:grid; grid-template-columns:minmax(0,1fr) 190px; gap:12px 20px; }
+.product .collection-covers { grid-column:2; grid-row:1; justify-self:end; }
+.paired-actions { display:flex; align-items:center; gap:8px; max-width:480px; width:100%; margin:24px 0; }
+.collection-feature .paired-actions { grid-column:1/-1; margin:0; }
+.product .paired-actions>button { min-width:0; height:56px; flex:1; white-space:nowrap; font-size:14px; line-height:20px; padding:8px 12px!important; gap:6px; transition:flex-grow var(--fast-spatial),border-radius var(--fast-spatial),background var(--effects); }
+.product .paired-actions>button:first-child { border-radius:28px 16px 16px 28px; }
+.product .paired-actions>button:last-child { border-radius:16px 28px 28px 16px; }
+.product .paired-actions .tonal-button { background:var(--tertiary-container)!important; color:var(--on-tertiary-container); }
+.product .paired-actions>button:active { flex-grow:1.16; border-radius:12px; }
+.product .paired-actions>button:disabled { opacity:.4; }
+.product .featured-play { border-radius:16px 28px 28px 16px; }
+.product .featured-play:active { border-radius:12px; }
+@media(max-width:900px) {
+  .product[data-device=desktop] .full-player .play-controls>.soft-skip { width:72px; height:72px; flex-basis:72px; }
+  .product[data-device=desktop] .full-player .play-controls:has(.play-button:active)>.soft-skip { flex-basis:64px; }
+  .product[data-device=desktop] .full-player .play-controls>.soft-skip:active { flex-basis:80px; }
+}
+.product[data-device=android] .hero-controls { padding:0; }
+.product[data-device=android] .full-player .play-controls { gap:8px; }
+.product[data-device=android] .full-player .play-controls>.soft-skip { width:72px; height:72px; flex-basis:72px; }
+.product[data-device=android] .full-player .play-controls:has(.play-button:active)>.soft-skip { flex-basis:64px; }
+.product[data-device=android] .full-player .play-controls>.soft-skip:active { flex-basis:80px; }
+.product[data-device=android] .full-player .play-button { padding:0 12px!important; }
+.product[data-device=android] .full-player .hero-play-label { font-size:32px; line-height:40px; }
+.product[data-device=android] .full-player .player-secondary { margin-top:16px; }
+.product[data-device=android] .featured-play { border-radius:16px 24px 24px 16px; }
+.product .source-button:first-child { border-radius:24px 8px 8px 24px; }
+.product .source-button:last-child { border-radius:8px 24px 24px 8px; }
+.product .source-button[aria-checked=true] { border-radius:24px; }
+.product .source-button:active { border-radius:12px; }
+.product[data-device=android] .collection-feature { grid-template-columns:minmax(0,1fr) 112px; gap:12px; }
+@media(max-width:375px) {
+  .product[data-device=android] .mode-toggle,.product[data-device=android] .full-player .queue-pill { padding-inline:8px!important; gap:4px; }
+  .product[data-device=android] .mode-toggle>.symbol { font-size:20px; }
+  .product[data-device=android] .queue-count,.product[data-device=android] .mode-mark { display:none; }
+  .product[data-device=android] .collection-feature { grid-template-columns:minmax(0,1fr) 88px; }
+}

@@ -30,7 +30,7 @@ python -m http.server 8766 --bind 127.0.0.1 --directory design
 
 - 使用大小、形状、颜色角色、强调排版和逻辑分组引导注意；主要视觉重点放在播放页。
 - 字体使用 display medium 45/52、display small 36/44、headline large 32/40、headline medium 28/36、title large 22/28 等角色；标题强调字重为 Medium，列表重要标题和操作标签使用对应 Bold 角色。
-- 播放页主按钮高度参考 Compose `ButtonLarge` 的 96 dp token，圆形 / 方形状态与按压形状依据按钮指导；主按钮文字映射到 headline small 24/32 是本版的自定义决定。本原型以 CSS px 表达 dp 的审核比例，不代表原生实现。
+- 播放页主按钮高度参考 Compose `ButtonLarge` 的 96 dp token，圆形 / 方形状态与按压形状依据按钮指导；本轮将主按钮文字映射到 headline large 32/40，这是本版的自定义决定。本原型以 CSS px 表达 dp 的审核比例，不代表原生实现。
 - 空间变化使用技能提供的 web spatial 曲线回退，透明度使用无过冲 effects 曲线。减少动态效果偏好下关闭动画。
 - 非对称封面画框的尺寸、单角裁切、列宽、分组布局和信息架构属于 RxPlayer 的产品提案，不声称是 Google 标准形状或官方音乐播放器模板。嵌套画框半径按外框减内边距处理。
 - 深浅色角色和本地字体复用原型 01；02 默认深色用于本轮审阅，仍可切换浅色，不代表正式默认主题已定。
@@ -52,3 +52,16 @@ python -m http.server 8766 --bind 127.0.0.1 --directory design
 全部曲目、账号、搜索结果、播放、队列与歌单均为本地演示，未连接在线音源、未播放真实音频、未存储账号或读取剪贴板。刷新 / 重置后恢复状态。本轮不构建原生应用，浏览器检查不代表真机键盘、系统返回、音频或屏幕阅读器已验收。
 
 设计仍待用户审核；不会将本原型分支合并到主分支或标记为设计通过。
+
+## 按钮修订：更大胆的操作层级
+
+用户明确反馈按钮表现不足，并要求大胆设计。本次集中修改按钮，预览工具栏显示“按钮修订”；直接打开 `http://127.0.0.1:8766/prototype-v2/?view=player&revision=buttons` 或刷新现有预览。
+
+- 播放页：大胶囊文字主按钮、柔边切歌按钮、进度两端时间标签，以及具有实体容器的随机 / 循环 / 队列操作。模式选中同时改变颜色、形状和图标字重；主按钮按压时邻居收窄，切歌按压时该按钮扩宽。
+- 音乐库：播放收藏 / 随机播放、歌单播放全部 / 随机播放组成相邻按钮；顺序与随机操作会实际更新本地模拟状态。
+- 规范依据：技能的 standard button group、toggle、大小对比、按压宽度联动及 primary / tertiary 颜色角色。成对播放按钮是 standard group，不把不可切换的动作宣称为 connected toggle group。
+- 自定义决定：12 瓣柔边轮廓由本原型的径向曲线近似生成，不是官方 `MaterialShapes.Cookie12Sided` 的精确导出；它只用于播放页切歌这一重点场景。手机切歌目标 72 CSS px、桌面 96 CSS px、按压时宽度变化量和颜色分工均为本版设计提案。
+- 新增第三色采用 [AndroidX PaletteTokens](https://github.com/androidx/androidx/blob/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/PaletteTokens.kt) 的 Tertiary 色板值；本版浅色主第三色 T40、深色 T80，与对应的 on 色成对使用。不是从用户截图取色。
+- 保留按钮的矩形触控 / 焦点区域，在内部绘制柔边轮廓，避免缩小可点击范围。连接处使用实际有限半径，避免极大半径参与浏览器统一缩放后将内部圆角压平。
+
+本轮验证：14 项针对按钮的交互检查通过；320 / 390 / 900 / 1440 CSS px、各深浅主题下的播放页和音乐库按钮组无水平溢出，播放弹层按钮目标均至少 48 CSS px；新增第三色文字颜色对最低约 6.47:1。检查选中形状、轮廓加载、焦点和 Tab 循环，JavaScript 语法及控制台检查通过。未构建原生应用。

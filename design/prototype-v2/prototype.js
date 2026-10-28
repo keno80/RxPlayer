@@ -102,7 +102,7 @@
   function libraryPage() {
     const playlist = state.playlist === null ? null : state.playlists[state.playlist];
     if (playlist) return `<header class="page-head"><div><p class="eyebrow">本地歌单</p><h1>${escape(playlist.name)}</h1></div>${iconButton('library-back', 'arrow_back', '返回音乐库')}</header>
-      <p class="page-caption">${playlist.ids.length} 首 · 混合音源</p><div class="section-head"><button class="filled-button" data-action="play-playlist">${symbol('play_arrow', true)}播放全部</button></div><div class="track-list">${playlist.ids.map(trackById).map(row).join('')}</div>`;
+      <p class="page-caption">${playlist.ids.length} 首 · 混合音源</p><div class="paired-actions" role="group" aria-label="歌单播放"><button class="filled-button" data-action="play-playlist">${symbol('play_arrow', true)}播放全部</button><button class="tonal-button" data-action="shuffle-playlist">${symbol('shuffle')}随机播放</button></div><div class="track-list">${playlist.ids.map(trackById).map(row).join('')}</div>`;
     const tabs = [['favorites', '收藏'], ['playlists', '歌单'], ['recent', '最近播放']];
     let content;
     if (state.libraryTab === 'playlists') {
@@ -112,7 +112,7 @@
       content = ids.length ? `<div class="section-head"><h2>${state.libraryTab === 'favorites' ? '喜欢的声音' : '最近听过'}</h2><small>${ids.length} 首</small></div><div class="track-list">${ids.map(trackById).map(row).join('')}</div>` : empty('favorite', '把喜欢的声音留在这里', '在曲目旁点击收藏，就可以随时回来再听。', 'go-search', '去搜索');
     }
     return `<header class="page-head"><div><p class="eyebrow">YOUR COLLECTION</p><h1>音乐库<span class="heading-dot">.</span></h1></div>${iconButton('new-playlist', 'add', '新建歌单')}</header>
-      <section class="collection-feature"><div><p class="eyebrow">属于你的声音</p><h2>喜欢的，<br>都在这里。</h2><p>${state.favorites.length} 首收藏 · 随时接着听</p><button class="tonal-button" data-action="play-favorites" ${state.favorites.length ? '' : 'disabled'}>${symbol('play_arrow', true)}播放收藏</button></div><span class="collection-covers" aria-hidden="true">${art({art:2})}${art({art:0})}</span></section>
+      <section class="collection-feature"><div><p class="eyebrow">属于你的声音</p><h2>喜欢的，<br>都在这里。</h2><p>${state.favorites.length} 首收藏 · 随时接着听</p></div><span class="collection-covers" aria-hidden="true">${art({art:2})}${art({art:0})}</span><div class="paired-actions" role="group" aria-label="收藏播放"><button class="filled-button" data-action="play-favorites" ${state.favorites.length ? '' : 'disabled'}>${symbol('play_arrow', true)}播放收藏</button><button class="tonal-button" data-action="shuffle-favorites" ${state.favorites.length ? '' : 'disabled'}>${symbol('shuffle')}随机播放</button></div></section>
       <div class="tabs" role="tablist" aria-label="音乐库分类">${tabs.map(([id, label]) => `<button class="tab" role="tab" aria-selected="${state.libraryTab === id}" data-action="library-tab" data-tab="${id}" id="tab-${id}" aria-controls="library-content">${label}</button>`).join('')}</div><section id="library-content" role="tabpanel" aria-labelledby="tab-${state.libraryTab}">${content}</section>`;
   }
 
@@ -145,6 +145,10 @@
 
   function progress() {
     return `<div class="progress-line"><span data-position>${time(state.position)}</span><input type="range" min="0" max="${current().duration}" value="${state.position}" style="--progress:${state.position / current().duration * 100}%" aria-label="播放进度" aria-valuetext="${time(state.position)} / ${time(current().duration)}" data-progress><span>${time(current().duration)}</span></div>`;
+  }
+
+  function modeButton(action, icon, label, selected) {
+    return `<button class="mode-toggle" data-action="${action}" aria-label="${label}" aria-pressed="${selected}">${symbol(icon)}<span>${label}</span><span class="mode-mark" aria-hidden="true">${selected ? '开' : ''}</span></button>`;
   }
 
   function transport() {
@@ -222,7 +226,7 @@
     if (state.overlay === 'player') {
       const track = current();
       title = state.playing ? '正在播放' : '已暂停';
-      body = `<div class="player-layout"><div class="player-art-column"><div class="art-frame">${art(track, 'large')}</div><p class="art-caption">${escape(track.author)} / ORIGINAL SESSIONS</p></div><div class="player-detail"><span class="source-label">${symbol('music_note')}${track.source} · ${track.type}</span><div class="player-title-row"><div><h3 class="player-title">${escape(track.title)}</h3><p class="player-sub">${escape(track.author)}</p></div>${favoriteButton(track)}</div><div class="hero-controls"><div class="play-controls">${iconButton('previous','skip_previous','上一首')}${playButton()}${iconButton('next','skip_next','下一首')}</div>${progress()}</div><div class="player-secondary">${iconButton('shuffle','shuffle','随机播放',`aria-pressed="${state.shuffle}"`)}${iconButton('repeat','repeat','列表循环',`aria-pressed="${state.repeat}"`)}<button class="queue-pill" data-action="open-queue">${symbol('queue_music')}队列<span>${state.queue.length}</span></button></div></div></div>`;
+      body = `<div class="player-layout"><div class="player-art-column"><div class="art-frame">${art(track, 'large')}</div><p class="art-caption">${escape(track.author)} / ORIGINAL SESSIONS</p></div><div class="player-detail"><span class="source-label">${symbol('music_note')}${track.source} · ${track.type}</span><div class="player-title-row"><div><h3 class="player-title">${escape(track.title)}</h3><p class="player-sub">${escape(track.author)}</p></div>${favoriteButton(track)}</div><div class="hero-controls">${progress()}<div class="play-controls" role="group" aria-label="播放操作"><button class="icon-button soft-skip" data-action="previous" aria-label="上一首" data-tip="上一首">${symbol('skip_previous', true)}</button>${playButton()}<button class="icon-button soft-skip" data-action="next" aria-label="下一首" data-tip="下一首">${symbol('skip_next', true)}</button></div></div><div class="player-secondary">${modeButton('shuffle','shuffle','随机',state.shuffle)}${modeButton('repeat','repeat','循环',state.repeat)}<button class="queue-pill" data-action="open-queue" aria-label="播放队列，${state.queue.length} 首">${symbol('queue_music')}<span class="queue-label">队列</span><span class="queue-count">${state.queue.length}</span></button></div></div></div>`;
     } else if (state.overlay === 'queue') {
       title = `播放队列 · ${state.queue.length}`;
       body = queueItems();
@@ -314,13 +318,25 @@
       case 'library-back': state.playlist = null; render(); break;
       case 'play-playlist': {
         state.queue = [...state.playlists[state.playlist].ids];
+        state.shuffle = false;
         if (state.queue.length) playTrack(state.queue[0]);
         else toast('先向歌单添加一些声音');
         break;
       }
       case 'play-favorites': {
         if (!state.favorites.length) break;
-        state.queue = [...state.favorites]; playTrack(state.queue[0]); break;
+        state.queue = [...state.favorites]; state.shuffle = false; playTrack(state.queue[0]); break;
+      }
+      case 'shuffle-favorites': {
+        if (!state.favorites.length) break;
+        state.queue = [...state.favorites]; state.shuffle = true;
+        playTrack(state.queue[Math.floor(Math.random() * state.queue.length)]); break;
+      }
+      case 'shuffle-playlist': {
+        state.queue = [...state.playlists[state.playlist].ids];
+        if (state.queue.length) { state.shuffle = true; playTrack(state.queue[Math.floor(Math.random() * state.queue.length)]); }
+        else toast('先向歌单添加一些声音');
+        break;
       }
       case 'choose-playlist': state.menuTrack = id; openOverlay('choose-playlist'); break;
       case 'add-to-playlist': {
