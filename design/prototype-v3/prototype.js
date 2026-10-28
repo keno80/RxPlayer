@@ -9,9 +9,16 @@
   const titles = ['夜航', '夜航 · 城市现场', '夜航之后', '夜航 / Midnight Session'];
   const authors = ['拾音计划', '落日工作室', '慢速电台', 'Midnight Collective'];
   const durations = [222, 264, 198, 315];
+  // Original demonstration lyrics, not fetched from an online lyric service.
+  const demoLyrics = [
+    ['风把街灯轻轻点亮','沿着夜色慢慢启航','把喧嚣留在远方','让旋律陪我去流浪','下一站有温柔的光','我们迎着清晨歌唱'],
+    ['人群散去灯还亮着','晚风穿过这座城市','我们把心事唱成歌','让回声停在这一刻','走过长街再看星河','明天依然有你和我'],
+    [],
+    ['夜色落在安静的窗','收起白天匆忙的行囊','让心跳跟着节奏轻晃','听见远方温柔回响','把此刻写进新的乐章','陪你走到天色微亮'],
+  ];
   const tracks = sources.flatMap((source, sourceIndex) => titles.map((title, index) => ({
     id: `${sourceIndex}-${index}`, title, author: authors[index], duration: durations[index],
-    source, art: index, hasLyrics: index % 2 === 1, type: source === '网易云' ? '歌曲' : '视频',
+    source, art: index, hasLyrics: demoLyrics[index].length > 0, type: source === '网易云' ? '歌曲' : '视频',
   })));
   const initial = () => ({
     device: matchMedia('(max-width:700px)').matches ? 'android' : 'desktop',
@@ -37,7 +44,7 @@
   const symbol = (name, filled = false) => `<span class="symbol${filled ? ' filled' : ''}" aria-hidden="true">${name}</span>`;
   const art = (track, extra = '') => `<span class="art art-${track.art} ${extra}" aria-hidden="true"></span>`;
   const iconButton = (action, name, label, extra = '') => `<button type="button" class="icon-button" data-action="${action}" aria-label="${escape(label)}" data-tip="${escape(label)}" ${extra}>${symbol(name)}</button>`;
-  const favoriteButton = (track, showLabel = false) => `<button type="button" class="icon-button favorite-list${showLabel ? ' desktop-save' : ''}" data-action="favorite" data-id="${track.id}" aria-label="收藏 ${escape(track.title)}" aria-pressed="${state.favorites.includes(track.id)}" data-tip="收藏">${symbol('favorite')}${showLabel ? `<span>${state.favorites.includes(track.id) ? '已收藏' : '收藏'}</span>` : ''}</button>`;
+  const favoriteButton = track => `<button type="button" class="icon-button favorite-list" data-action="favorite" data-id="${track.id}" aria-label="收藏 ${escape(track.title)}" aria-pressed="${state.favorites.includes(track.id)}" data-tip="收藏">${symbol('favorite')}</button>`;
   const focusKey = element => Object.fromEntries(['action','id','source','route','tab','index'].filter(key => element.dataset[key] !== undefined).map(key => [key,element.dataset[key]]));
 
   function nav() {
@@ -159,6 +166,8 @@
     pane.setAttribute('role',queueDocked() ? 'complementary' : 'dialog');
     if (queueModal()) pane.setAttribute('aria-modal','true');
     else pane.removeAttribute('aria-modal');
+    const lyrics = $('.desktop-lyrics');
+    if (lyrics) lyrics.hidden = state.queueOpen && queueDocked();
     pane.inert = !!modal;
     $('#queue-scrim').hidden = !queueModal();
     $('#overlay').hidden = !state.overlay;
@@ -217,9 +226,10 @@
     return `<button class="icon-button seek-button" data-action="seek-${forward ? 'forward' : 'back'}" aria-label="${label}" data-tip="${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><g ${forward ? 'transform="translate(24 0) scale(-1 1)"' : ''}><path d="M6 6.5a8 8 0 1 1-1.7 10M6 2.5v4.8h4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><text x="12" y="15.5" text-anchor="middle" fill="currentColor" font-size="8" font-weight="700">10</text></svg></button>`;
   }
 
-  function playerControls() {
-    const modes = `<div class="player-secondary" role="group" aria-label="播放模式">${modeButton('shuffle','shuffle','随机播放',state.shuffle)}${modeButton('repeat','repeat',state.repeat ? '列表循环' : '顺序播放',state.repeat,`当前${state.repeat ? '列表循环' : '顺序播放'}，点击切换`)}</div>`;
-    if (hasLyrics()) return `<div class="hero-controls controls-with-lyrics">${progress()}<div class="play-controls" role="group" aria-label="播放操作">${iconButton('previous','skip_previous','上一首')}${seekButton(false)}${playButton()}${seekButton(true)}${iconButton('next','skip_next','下一首')}</div>${modes}</div>`;
+  function playerControls(desktop = false) {
+    const volume = desktop ? `<label class="player-volume">${symbol('volume_up')}<input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="音量"></label>` : '';
+    const modes = `<div class="player-secondary" role="group" aria-label="${desktop ? '播放模式与音量' : '播放模式'}">${modeButton('shuffle','shuffle','随机播放',state.shuffle)}${modeButton('repeat','repeat',state.repeat ? '列表循环' : '顺序播放',state.repeat,`当前${state.repeat ? '列表循环' : '顺序播放'}，点击切换`)}${volume}</div>`;
+    if (!desktop && hasLyrics()) return `<div class="hero-controls controls-with-lyrics">${progress()}<div class="play-controls" role="group" aria-label="播放操作">${iconButton('previous','skip_previous','上一首')}${seekButton(false)}${playButton()}${seekButton(true)}${iconButton('next','skip_next','下一首')}</div>${modes}</div>`;
     return `<div class="hero-controls controls-no-lyrics"><div class="split-controls" role="group" aria-label="播放操作">${playButton()}${iconButton('next','skip_next','下一首')}${iconButton('previous','skip_previous','上一首')}${progress()}</div>${modes}</div>`;
   }
 
@@ -231,10 +241,32 @@
       element.style.setProperty('--progress', `${state.position / current().duration * 100}%`);
       element.setAttribute('aria-valuetext', `${time(state.position)} / ${time(current().duration)}`);
     });
+    updateDesktopLyrics();
   }
 
-  function desktopControls() {
-    return `<section class="desktop-controls" aria-label="播放器控制区">${progress()}<div class="desktop-control-row"><div class="desktop-modes" role="group" aria-label="播放模式">${modeButton('shuffle','shuffle','随机播放',state.shuffle)}${modeButton('repeat','repeat',state.repeat ? '列表循环' : '顺序播放',state.repeat,`当前${state.repeat ? '列表循环' : '顺序播放'}，点击切换`)}</div><div class="desktop-play-controls" role="group" aria-label="播放操作">${iconButton('previous','skip_previous','上一首')}${hasLyrics() ? seekButton(false) : ''}${playButton()}${hasLyrics() ? seekButton(true) : ''}${iconButton('next','skip_next','下一首')}</div><label class="desktop-volume">${symbol('volume_up')}<input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="音量"></label></div></section>`;
+  function lyricLines() {
+    // The review toolbar can force the available state for a song without demo lyrics.
+    const lines = demoLyrics[current().art].length ? demoLyrics[current().art] : demoLyrics[0];
+    return lines.map((text,index) => ({text,at:Math.floor(index * current().duration / lines.length)}));
+  }
+
+  function activeLyricIndex() {
+    return lyricLines().findLastIndex(line => state.position >= line.at);
+  }
+
+  function desktopLyrics() {
+    const active = activeLyricIndex();
+    return `<section class="desktop-lyrics" aria-labelledby="lyrics-title"><h3 id="lyrics-title">歌词</h3>${hasLyrics() ? `<div class="lyrics-lines">${lyricLines().map((line,index) => `<button class="lyric-line${index === active ? ' is-active' : ''}" data-action="seek-lyric" data-index="${index}" aria-label="跳转至 ${time(line.at)}，${escape(line.text)}" ${index === active ? 'aria-current="true"' : ''}>${escape(line.text)}</button>`).join('')}</div>` : `<div class="lyrics-empty">${symbol('music_note')}<h4>暂无歌词</h4><p>这首歌暂未提供歌词</p></div>`}</section>`;
+  }
+
+  function updateDesktopLyrics() {
+    const active = activeLyricIndex();
+    $$('.desktop-lyrics .lyric-line').forEach(line => {
+      const selected = Number(line.dataset.index) === active;
+      line.classList.toggle('is-active',selected);
+      if (selected) line.setAttribute('aria-current','true');
+      else line.removeAttribute('aria-current');
+    });
   }
 
   function transport() {
@@ -284,6 +316,7 @@
 
   function openOverlay(type, trackId) {
     if (queueModal()) closeQueue(false);
+    if (type === 'player') state.queueOpen = false;
     const entering = !state.overlay;
     previousFocus = document.activeElement;
     previousFocusData = previousFocus.dataset.action ? focusKey(previousFocus) : null;
@@ -321,7 +354,9 @@
       const track = current();
       title = '播放器';
       const desktop = state.device === 'desktop';
-      body = `<div class="player-layout"><div class="player-art-column"><div class="art-stage">${art(track, 'large')}</div>${desktop ? '' : `<p class="art-caption">${escape(track.author)} · ORIGINAL SESSIONS</p>`}</div><div class="player-detail"><span class="source-label">${desktop ? symbol('music_note') : ''}${track.source} · ${track.type}</span><div class="player-title-row"><div><h3 class="player-title">${escape(track.title)}</h3><p class="player-sub">${escape(track.author)}</p></div>${favoriteButton(track,desktop)}</div>${desktop ? '' : playerControls()}</div></div>${desktop ? desktopControls() : ''}`;
+      const artwork = `<div class="player-art-column"><div class="art-stage">${art(track, 'large')}</div></div>`;
+      const detail = `<div class="player-detail"><span class="source-label">${track.source} · ${track.type}</span><div class="player-title-row"><div><h3 class="player-title">${escape(track.title)}</h3><p class="player-sub">${escape(track.author)}</p></div>${favoriteButton(track)}</div>${playerControls(desktop)}</div>`;
+      body = desktop ? `<div class="desktop-listening-layout"><section class="desktop-player-column" aria-label="当前播放控制">${artwork}${detail}</section>${desktopLyrics()}</div>` : `<div class="player-layout">${artwork}${detail}</div>`;
     } else if (state.overlay === 'menu') {
       const track = trackById(state.menuTrack);
       title = track.title;
@@ -389,6 +424,7 @@
       case 'previous': step(-1); break;
       case 'seek-back': seekTo(state.position - 10); break;
       case 'seek-forward': seekTo(state.position + 10); break;
+      case 'seek-lyric': seekTo(lyricLines()[Number(button.dataset.index)].at); break;
       case 'favorite': state.favorites = state.favorites.includes(id) ? state.favorites.filter(item => item !== id) : [...state.favorites, id]; render(); toast(state.favorites.includes(id) ? '已收藏' : '已取消收藏'); break;
       case 'track-menu': openOverlay('menu', id); break;
       case 'open-player': openOverlay('player'); break;
@@ -539,6 +575,7 @@
       return;
     }
     state.position += 1;
+    updateDesktopLyrics();
     $$('[data-position]').forEach(element => { element.textContent = time(state.position); });
     $$('[data-progress]').filter(element => element !== document.activeElement).forEach(element => {
       element.value = state.position;

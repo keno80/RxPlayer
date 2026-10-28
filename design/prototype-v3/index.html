@@ -7,9 +7,9 @@
   <title>RxPlayer · 原型 03 · 待审核</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="colors.css">
-  <link rel="stylesheet" href="prototype.css?revision=desktop-stage">
+  <link rel="stylesheet" href="prototype.css?revision=lyrics-pane">
   <script defer src="cover-palettes.js"></script>
-  <script defer src="prototype.js?revision=desktop-stage"></script>
+  <script defer src="prototype.js?revision=lyrics-pane"></script>
 </head>
 <body>
   <header class="review-tools">
@@ -20,7 +20,7 @@
         <button data-device-choice="desktop" aria-pressed="true">Windows</button>
       </div>
       <label class="scene-picker">搜索场景<select id="scene-select"><option value="results">搜索结果</option><option value="idle">起始状态</option><option value="empty">没有结果</option><option value="error">网络错误</option><option value="expired">登录失效</option></select></label>
-      <label class="scene-picker">歌词状态<select id="lyrics-layout-select" aria-label="预览歌词状态"><option value="auto">跟随曲目</option><option value="none">无歌词布局</option><option value="available">有歌词布局</option></select></label>
+      <label class="scene-picker">歌词状态<select id="lyrics-layout-select" aria-label="预览歌词状态"><option value="auto">跟随曲目</option><option value="none">无歌词</option><option value="available">有歌词</option></select></label>
       <button id="review-player" class="review-button">查看播放页</button>
       <button id="review-theme" class="review-button" aria-label="切换深浅主题"><span class="symbol" aria-hidden="true">light_mode</span></button>
       <button id="review-reset" class="review-button">重置</button>
