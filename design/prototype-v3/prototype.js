@@ -370,7 +370,7 @@
       const artwork = `<div class="player-art-column"><div class="art-stage">${art(track, 'large')}</div></div>`;
       const detail = `<div class="player-detail"><span class="source-label">${track.source} · ${track.type}</span><div class="player-title-row"><div><h3 class="player-title">${escape(track.title)}</h3><p class="player-sub">${escape(track.author)}</p></div>${favoriteButton(track)}</div>${playerControls(desktop)}</div>`;
       if (desktop) body = `<div class="desktop-listening-layout"><section class="desktop-player-column" aria-label="当前播放控制">${artwork}${detail}</section>${desktopLyrics()}</div>`;
-      else if (hasLyrics()) body = `<div class="mobile-lyrics-player"><section class="mobile-lyrics-stage" aria-labelledby="mobile-lyrics-title">${art(track,'lyrics-background')}<h3 id="mobile-lyrics-title" class="sr-only">歌词</h3><div class="mobile-lyric-lines" data-active="${activeLyricIndex()}">${lyricButtons(true)}</div></section><div class="mobile-player-meta"><div><h3 class="mobile-track-title">${escape(track.title)}</h3><p>${escape(track.author)} · ${track.source}</p></div>${favoriteButton(track)}</div>${playerControls()}</div>`;
+      else if (hasLyrics()) body = `<div class="mobile-lyrics-player"><section class="mobile-lyrics-stage" aria-labelledby="mobile-lyrics-title"><div class="lyrics-backdrop" aria-hidden="true">${art(track,'lyrics-background')}</div><h3 id="mobile-lyrics-title" class="sr-only">歌词</h3><div class="mobile-lyric-lines" data-active="${activeLyricIndex()}">${lyricButtons(true)}</div></section><div class="mobile-player-meta"><div><h3 class="mobile-track-title">${escape(track.title)}</h3><p>${escape(track.author)} · ${track.source}</p></div><div class="mobile-track-actions">${iconButton('open-queue','queue_music',`播放队列，${state.queue.length} 首`)}${favoriteButton(track)}</div></div>${playerControls()}</div>`;
       else body = `<div class="player-layout">${artwork}${detail}</div>`;
     } else if (state.overlay === 'menu') {
       const track = trackById(state.menuTrack);
@@ -391,7 +391,7 @@
       body = state.playlists.map((playlist, index) => `<button class="menu-action" data-action="add-to-playlist" data-index="${index}">${symbol('album')}${escape(playlist.name)}</button>`).join('');
     }
     const heading = state.overlay === 'player'
-      ? `<header class="sheet-head player-head">${iconButton('close-overlay','arrow_back','返回')}<h2 id="dialog-title" class="sr-only">播放器</h2><button class="queue-pill" data-action="open-queue" aria-label="播放队列，${state.queue.length} 首">${symbol('queue_music')}<span>队列 · ${state.queue.length}</span></button></header>`
+      ? `<header class="sheet-head player-head">${iconButton('close-overlay','arrow_back','返回')}<h2 id="dialog-title" class="sr-only">播放器</h2>${state.device === 'android' && hasLyrics() ? '' : `<button class="queue-pill" data-action="open-queue" aria-label="播放队列，${state.queue.length} 首">${symbol('queue_music')}<span>队列 · ${state.queue.length}</span></button>`}</header>`
       : `<header class="sheet-head"><h2 id="dialog-title">${escape(title)}</h2>${iconButton('close-overlay','close','关闭')}</header>`;
     dialog.innerHTML = `${heading}${body}`;
     if (wasInDialog) requestAnimationFrame(() => {

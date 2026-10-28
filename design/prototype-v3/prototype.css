@@ -196,7 +196,12 @@ button{color:inherit}a{color:#365e54;text-underline-offset:3px}
 .product[data-device=android][data-player-open=true][data-lyrics-mode=available] .phone-status{position:relative;z-index:40;color:#dde4e2;pointer-events:none}
 .product[data-device=android] .full-player.immersive-player{--immersive-bleed-top:120px;padding-top:52px}
 .product[data-device=android] .immersive-player .player-head{position:relative;z-index:3;--on-surface:#dde4e2;--on-surface-variant:#bec9c6;--surface-container:#1a2120;--primary:var(--lyrics-primary)}
-.immersive-player .mobile-lyrics-stage{overflow:visible;border-radius:0;background:transparent}
-.immersive-player .mobile-lyrics-stage:after{inset:calc(-1 * var(--immersive-bleed-top)) calc(-1 * var(--immersive-side-inset)) 0}
-.product .immersive-player .mobile-lyrics-stage .lyrics-background{top:calc(-1 * var(--immersive-bleed-top));left:calc(-1 * var(--immersive-side-inset));width:calc(100% + 2 * var(--immersive-side-inset));height:calc(100% + var(--immersive-bleed-top));transform:none}
+.immersive-player .mobile-lyrics-stage{overflow:visible;border-radius:0;background:transparent;min-height:424px;padding-bottom:96px}
+.immersive-player .mobile-lyrics-stage:after{content:none}
+.lyrics-backdrop{position:absolute;inset:calc(-1 * var(--immersive-bleed-top)) calc(-1 * var(--immersive-side-inset)) 0;z-index:0;pointer-events:none;mask-image:linear-gradient(to bottom,#000 calc(100% - 96px),transparent 100%)}
+.lyrics-backdrop:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.72),rgba(0,0,0,.86))}
+.product .immersive-player .mobile-lyrics-stage .lyrics-background{top:0;left:0;width:100%;height:100%;transform:none}
+.mobile-player-meta>.mobile-track-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.product[data-device=android] .mobile-track-actions .favorite-list{margin:0}
+.mobile-track-actions>[data-action=open-queue]{border-radius:16px;background:var(--surface-container);color:var(--on-surface-variant)}
 @media(max-width:375px){.product[data-device=android]{--immersive-side-inset:12px}}
