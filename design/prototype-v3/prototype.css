@@ -189,3 +189,14 @@ button{color:inherit}a{color:#365e54;text-underline-offset:3px}
 .product[data-device=android] .immersive-player .favorite-list{display:flex!important}
 .product[data-device=android] .immersive-player .hero-controls{margin:0 auto;flex-shrink:0}
 .product[data-device=android] .immersive-player .progress-line{margin-bottom:20px}
+
+/* Artwork bleeds under the status bar; interactive content stays inside the safe area. */
+.product[data-device=android]{--immersive-side-inset:24px}
+.product[data-device=android][data-player-open=true][data-lyrics-mode=available] .overlay{top:0}
+.product[data-device=android][data-player-open=true][data-lyrics-mode=available] .phone-status{position:relative;z-index:40;color:#dde4e2;pointer-events:none}
+.product[data-device=android] .full-player.immersive-player{--immersive-bleed-top:120px;padding-top:52px}
+.product[data-device=android] .immersive-player .player-head{position:relative;z-index:3;--on-surface:#dde4e2;--on-surface-variant:#bec9c6;--surface-container:#1a2120;--primary:var(--lyrics-primary)}
+.immersive-player .mobile-lyrics-stage{overflow:visible;border-radius:0;background:transparent}
+.immersive-player .mobile-lyrics-stage:after{inset:calc(-1 * var(--immersive-bleed-top)) calc(-1 * var(--immersive-side-inset)) 0}
+.product .immersive-player .mobile-lyrics-stage .lyrics-background{top:calc(-1 * var(--immersive-bleed-top));left:calc(-1 * var(--immersive-side-inset));width:calc(100% + 2 * var(--immersive-side-inset));height:calc(100% + var(--immersive-bleed-top));transform:none}
+@media(max-width:375px){.product[data-device=android]{--immersive-side-inset:12px}}
