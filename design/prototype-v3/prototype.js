@@ -37,7 +37,7 @@
   const symbol = (name, filled = false) => `<span class="symbol${filled ? ' filled' : ''}" aria-hidden="true">${name}</span>`;
   const art = (track, extra = '') => `<span class="art art-${track.art} ${extra}" aria-hidden="true"></span>`;
   const iconButton = (action, name, label, extra = '') => `<button type="button" class="icon-button" data-action="${action}" aria-label="${escape(label)}" data-tip="${escape(label)}" ${extra}>${symbol(name)}</button>`;
-  const favoriteButton = track => `<button type="button" class="icon-button favorite-list" data-action="favorite" data-id="${track.id}" aria-label="收藏 ${escape(track.title)}" aria-pressed="${state.favorites.includes(track.id)}" data-tip="收藏">${symbol('favorite')}</button>`;
+  const favoriteButton = (track, showLabel = false) => `<button type="button" class="icon-button favorite-list${showLabel ? ' desktop-save' : ''}" data-action="favorite" data-id="${track.id}" aria-label="收藏 ${escape(track.title)}" aria-pressed="${state.favorites.includes(track.id)}" data-tip="收藏">${symbol('favorite')}${showLabel ? `<span>${state.favorites.includes(track.id) ? '已收藏' : '收藏'}</span>` : ''}</button>`;
   const focusKey = element => Object.fromEntries(['action','id','source','route','tab','index'].filter(key => element.dataset[key] !== undefined).map(key => [key,element.dataset[key]]));
 
   function nav() {
@@ -233,6 +233,10 @@
     });
   }
 
+  function desktopControls() {
+    return `<section class="desktop-controls" aria-label="播放器控制区">${progress()}<div class="desktop-control-row"><div class="desktop-modes" role="group" aria-label="播放模式">${modeButton('shuffle','shuffle','随机播放',state.shuffle)}${modeButton('repeat','repeat',state.repeat ? '列表循环' : '顺序播放',state.repeat,`当前${state.repeat ? '列表循环' : '顺序播放'}，点击切换`)}</div><div class="desktop-play-controls" role="group" aria-label="播放操作">${iconButton('previous','skip_previous','上一首')}${hasLyrics() ? seekButton(false) : ''}${playButton()}${hasLyrics() ? seekButton(true) : ''}${iconButton('next','skip_next','下一首')}</div><label class="desktop-volume">${symbol('volume_up')}<input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="音量"></label></div></section>`;
+  }
+
   function transport() {
     const track = current();
     return `<button class="now-track" data-action="open-player" aria-label="展开 ${escape(track.title)} 的播放器">${art(track, 'mini')}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${state.playing ? '正在播放' : '已暂停'} · ${track.source}</span></span></button>
@@ -310,13 +314,14 @@
     const dialog = $('#dialog');
     const wasInDialog = dialog.contains(document.activeElement);
     const focusedAction = wasInDialog ? document.activeElement.dataset.action : null;
-    dialog.className = `sheet ${state.overlay === 'player' ? `full-player${state.artworkColor ? ' artwork-tone' : ''}` : ''}`;
+    dialog.className = `sheet ${state.overlay === 'player' ? `full-player${state.device === 'desktop' ? ' desktop-player' : ''}${state.artworkColor ? ' artwork-tone' : ''}` : ''}`;
     let title = '';
     let body = '';
     if (state.overlay === 'player') {
       const track = current();
       title = '播放器';
-      body = `<div class="player-layout"><div class="player-art-column"><div class="art-stage">${art(track, 'large')}</div><p class="art-caption">${escape(track.author)} · ORIGINAL SESSIONS</p></div><div class="player-detail"><span class="source-label">${track.source} · ${track.type}</span><div class="player-title-row"><div><h3 class="player-title">${escape(track.title)}</h3><p class="player-sub">${escape(track.author)}</p></div>${favoriteButton(track)}</div>${playerControls()}</div></div>`;
+      const desktop = state.device === 'desktop';
+      body = `<div class="player-layout"><div class="player-art-column"><div class="art-stage">${art(track, 'large')}</div>${desktop ? '' : `<p class="art-caption">${escape(track.author)} · ORIGINAL SESSIONS</p>`}</div><div class="player-detail"><span class="source-label">${desktop ? symbol('music_note') : ''}${track.source} · ${track.type}</span><div class="player-title-row"><div><h3 class="player-title">${escape(track.title)}</h3><p class="player-sub">${escape(track.author)}</p></div>${favoriteButton(track,desktop)}</div>${desktop ? '' : playerControls()}</div></div>${desktop ? desktopControls() : ''}`;
     } else if (state.overlay === 'menu') {
       const track = trackById(state.menuTrack);
       title = track.title;
@@ -487,7 +492,10 @@
   });
 
   document.addEventListener('input', event => {
-    if (event.target.matches('.volume')) { state.volume = Number(event.target.value); event.target.style.setProperty('--progress', `${state.volume}%`); }
+    if (event.target.matches('.volume')) {
+      state.volume = Number(event.target.value);
+      $$('.volume').forEach(input => { input.value = state.volume; input.style.setProperty('--progress', `${state.volume}%`); });
+    }
     if (event.target.matches('[data-progress]')) {
       seekTo(Number(event.target.value));
     }

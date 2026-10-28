@@ -139,3 +139,40 @@ button{color:inherit}a{color:#365e54;text-underline-offset:3px}
 .seek-button svg{width:24px;height:24px;overflow:visible}
 .product[data-device=android] .full-player .hero-controls{margin-top:24px}
 @media(max-width:375px){.product[data-device=android] .full-player .split-controls{grid-template-columns:56px minmax(0,1fr) 56px;grid-template-rows:56px 64px;padding:12px;gap:12px;border-radius:28px}.product[data-device=android] .full-player .split-controls>.play-button,.product[data-device=android] .full-player .split-controls>.icon-button{height:56px}.product[data-device=android] .full-player .split-controls>.icon-button{width:56px}}
+
+/* Desktop composition: a bounded listening stage and one full-width control deck. */
+.product[data-device=desktop] .full-player.desktop-player{display:flex;flex-direction:column;padding:24px 32px;gap:0}
+.product[data-device=desktop] .desktop-player .player-head{width:100%;margin:0;flex-shrink:0}
+.product[data-device=desktop] .desktop-player .player-layout{display:grid;grid-template-columns:minmax(0,360px) minmax(0,max-content);gap:48px;align-items:center;flex:1;min-height:400px;max-width:100%;width:fit-content;margin:0 auto;padding:32px 0}
+.product[data-device=desktop] .desktop-player .player-art-column{width:100%;margin:0}
+.product[data-device=desktop] .desktop-player .player-detail{max-width:440px}
+.product[data-device=desktop] .desktop-player .art-stage{padding:16px;border-radius:48px;box-shadow:0 16px 40px #0002}
+.product[data-device=desktop] .desktop-player .art.large{border-radius:32px;box-shadow:none}
+.product[data-device=desktop] .desktop-player .player-detail>.source-label{width:fit-content;gap:6px;padding:8px 12px;border-radius:999px;background:var(--primary-container);color:var(--on-primary-container)}
+.product[data-device=desktop] .desktop-player .player-title-row{display:block;margin-top:20px}
+.product[data-device=desktop] .desktop-player .player-title{font-size:57px;line-height:64px;font-weight:600;letter-spacing:-1px;text-wrap:balance}
+.product[data-device=desktop] .desktop-player .player-sub{font-size:22px;line-height:28px;margin:12px 0 0}
+.product[data-device=desktop] .desktop-player .desktop-save{display:inline-flex!important;width:auto;min-width:104px;gap:8px;margin:24px 0 0;padding:0 16px!important;border-radius:16px;background:var(--surface-high);color:var(--on-surface);font-size:14px;font-weight:600}
+.product[data-device=desktop] .desktop-player .desktop-save[aria-pressed=true]{background:var(--secondary-container);color:var(--on-secondary-container)}
+.product[data-device=desktop] .desktop-player .desktop-save:active{border-radius:12px}
+.desktop-controls{width:100%;max-width:1040px;margin:0 auto;flex-shrink:0;padding:12px 24px 20px;border-radius:32px;background:var(--surface-container)}
+.product .desktop-player .desktop-controls>.progress-line{display:grid;grid-template-columns:40px minmax(0,1fr) 40px;gap:16px;align-items:center;margin:0 0 12px}
+.product .desktop-player .desktop-controls>.progress-line input{order:0}
+.desktop-controls>.progress-line>span:last-child{text-align:right}
+.desktop-control-row{display:grid;grid-template-columns:minmax(104px,1fr) auto minmax(120px,1fr);align-items:center;gap:16px}
+.desktop-modes,.desktop-play-controls{display:flex;align-items:center;gap:8px}
+.desktop-play-controls{justify-content:center;gap:12px}
+.product .desktop-player .desktop-play-controls>.icon-button{width:56px;height:56px;flex-basis:56px;background:var(--secondary-container);color:var(--on-secondary-container)}
+.product .desktop-player .desktop-play-controls>.seek-button{width:48px;height:48px;flex-basis:48px}
+.product .desktop-player .desktop-play-controls>.play-button{min-width:96px;width:96px;height:64px;border-radius:20px}
+.product .desktop-player .desktop-play-controls>.play-button.is-playing{border-radius:32px}
+.product .desktop-player .desktop-play-controls>.play-button:active{border-radius:16px}
+.desktop-volume{display:flex;align-items:center;justify-self:end;gap:8px;width:120px;color:var(--on-surface-variant)}
+.desktop-volume .volume{width:88px}
+.product .desktop-player .desktop-volume input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:4px}
+.product .desktop-player .desktop-volume input[type=range]::-webkit-slider-thumb{height:24px;margin-top:-8px;box-shadow:0 0 0 3px var(--surface-container)}
+.product .desktop-player .desktop-volume input[type=range]::-moz-range-track,.product .desktop-player .desktop-volume input[type=range]::-moz-range-progress{height:8px}
+.product .desktop-player .desktop-volume input[type=range]::-moz-range-thumb{height:24px}
+@media(max-width:1000px){.product[data-device=desktop] .desktop-player .player-layout{grid-template-columns:minmax(0,300px) minmax(0,max-content);gap:32px}.product[data-device=desktop] .desktop-player .player-title{font-size:45px;line-height:52px}}
+@media(max-width:760px){.product[data-device=desktop] .full-player.desktop-player{padding:16px}.product[data-device=desktop] .desktop-player .player-layout{grid-template-columns:minmax(0,1fr);justify-items:center;gap:16px;padding:20px 0;min-height:0;flex:none}.product[data-device=desktop] .desktop-player .player-art-column{width:200px}.product[data-device=desktop] .desktop-player .player-detail{text-align:center;width:100%}.product[data-device=desktop] .desktop-player .player-detail>.source-label{margin-inline:auto}.product[data-device=desktop] .desktop-player .player-title-row{margin-top:12px}.product[data-device=desktop] .desktop-player .player-title{font-size:32px;line-height:40px;letter-spacing:0}.product[data-device=desktop] .desktop-player .player-sub{font-size:16px;line-height:24px;margin-top:8px}.product[data-device=desktop] .desktop-player .desktop-save{margin-top:12px}.desktop-controls{padding:12px 16px 16px;border-radius:28px}.desktop-control-row{grid-template-columns:104px minmax(0,1fr);gap:16px}.desktop-modes{grid-row:1;grid-column:1}.desktop-play-controls{grid-column:2;grid-row:1}.desktop-volume{grid-row:2;grid-column:1/-1}}
+@media(max-width:600px){.product[data-device=desktop] .desktop-control-row{grid-template-columns:minmax(0,1fr)}.product[data-device=desktop] .desktop-modes{grid-row:1;grid-column:1;justify-self:center}.product[data-device=desktop] .desktop-play-controls{grid-row:2;grid-column:1;justify-self:center;gap:8px}.product[data-device=desktop] .desktop-volume{grid-row:3;grid-column:1;justify-self:center}}
