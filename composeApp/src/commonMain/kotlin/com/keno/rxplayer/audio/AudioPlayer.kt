@@ -7,10 +7,15 @@ interface AudioPlayer {
     val durationMs: Int
     val positionMs: Int
     val isPlaying: Boolean
+    val isBuffering: Boolean get() = false
+    val failure: PlaybackFailure? get() = null
+    val isEnded: Boolean get() = durationMs > 0 && positionMs >= durationMs
+    val supportsVolume: Boolean get() = true
     suspend fun load(bytes: ByteArray)
     fun play()
     fun pause()
     fun seekTo(positionMs: Int)
+    fun setVolume(volume: Float)
     fun release()
 }
 

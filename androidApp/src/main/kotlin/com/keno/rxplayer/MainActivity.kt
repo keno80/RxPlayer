@@ -16,10 +16,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            App(isForeground = isForeground) { dark ->
+            App(isForeground = isForeground) { darkStatusBar, darkNavigationBar ->
                 WindowCompat.getInsetsController(window, window.decorView).apply {
-                    isAppearanceLightStatusBars = !dark
-                    isAppearanceLightNavigationBars = !dark
+                    isAppearanceLightStatusBars = !darkStatusBar
+                    isAppearanceLightNavigationBars = !darkNavigationBar
                 }
             }
         }
