@@ -1,0 +1,84 @@
+{
+  "checked_at": "2026-10-29T05:39:22.796375+00:00",
+  "artifact": "org.jetbrains.compose.material3:material3:1.9.0-alpha04",
+  "source_url": "https://repo.maven.apache.org/maven2/org/jetbrains/compose/material3/material3/1.9.0-alpha04/material3-1.9.0-alpha04-sources.jar",
+  "sha256": "279ba973971c69c78015a262345841325a2fc3e386bc8cf470e4f3d52dafef71",
+  "checks": [
+    {
+      "file": "commonMain/androidx/compose/material3/MaterialTheme.kt",
+      "symbol": "fun MaterialExpressiveTheme(",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/MotionScheme.kt",
+      "symbol": "fun expressive()",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/MotionScheme.kt",
+      "symbol": "defaultSpatialSpec",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/MotionScheme.kt",
+      "symbol": "fastSpatialSpec",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/MotionScheme.kt",
+      "symbol": "defaultEffectsSpec",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/MotionScheme.kt",
+      "symbol": "fastEffectsSpec",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/Button.kt",
+      "symbol": "fun shapes(",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/Button.kt",
+      "symbol": "fun shapesFor(",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/IconButton.kt",
+      "symbol": "fun FilledIconButton(",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/IconButton.kt",
+      "symbol": "fun FilledIconToggleButton(",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/ButtonGroup.kt",
+      "symbol": "fun ButtonGroup(",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/Slider.kt",
+      "symbol": "fun Slider(",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/Typography.kt",
+      "symbol": "val headlineLargeEmphasized",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/Typography.kt",
+      "symbol": "val titleLargeEmphasized",
+      "present": true
+    },
+    {
+      "file": "commonMain/androidx/compose/material3/LoadingIndicator.kt",
+      "symbol": "fun LoadingIndicator(",
+      "present": true
+    }
+  ],
+  "boundary": "source declarations only; no Gradle build, linking, or platform runtime check"
+}

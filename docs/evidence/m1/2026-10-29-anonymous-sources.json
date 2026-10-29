@@ -1,0 +1,220 @@
+{
+  "checked_at": "2026-10-29T05:34:14.576470+00:00",
+  "auth": "anonymous",
+  "media_byte_limit": 65536,
+  "sources": {
+    "bilibili": {
+      "anonymous_session": {
+        "http_status": 200
+      },
+      "search": {
+        "http_status": 200,
+        "code": 0,
+        "query": "Blender",
+        "count": 20,
+        "sample_ids": [
+          "BV14u41147YH",
+          "BV1kX4y1m7G5",
+          "BV1DFuE6tEqU"
+        ]
+      },
+      "metadata": {
+        "http_status": 200,
+        "code": 0,
+        "bvid": "BV1xx411c7mD",
+        "duration_seconds": 2055,
+        "parts": 1,
+        "cid": 62131
+      },
+      "resolve": {
+        "http_status": 200,
+        "code": 0,
+        "audio": [
+          {
+            "id": 30216,
+            "mime": "audio/mp4",
+            "codecs": "mp4a.40.2"
+          },
+          {
+            "id": 30232,
+            "mime": "audio/mp4",
+            "codecs": "mp4a.40.2"
+          }
+        ],
+        "deadline_epoch": "1793259253"
+      },
+      "media_range": {
+        "http_status": 206,
+        "bytes_read": 65536,
+        "content_type": "application/octet-stream",
+        "range_supported": true,
+        "https": true,
+        "host": "xy39x184x180x147xy.mcdn.bilivideo.cn",
+        "signature": "mp4/ftyp"
+      },
+      "probe": {
+        "completed": true
+      }
+    },
+    "netease": {
+      "search": {
+        "http_status": 200,
+        "code": 200,
+        "query": "纯音乐",
+        "count": 3,
+        "sample_ids": [
+          139774,
+          2038191895,
+          509720124
+        ]
+      },
+      "resolve": {
+        "http_status": 200,
+        "code": 200,
+        "song_id": 139774,
+        "audio": [
+          {
+            "code": 200,
+            "type": "mp3",
+            "bitrate": 128000,
+            "size": 3576621,
+            "expi_seconds": 1200,
+            "url_present": true,
+            "fee": 8,
+            "trial_present": false
+          }
+        ]
+      },
+      "media_range": {
+        "http_status": 206,
+        "bytes_read": 65536,
+        "content_type": "audio/mpeg",
+        "range_supported": true,
+        "https": false,
+        "host": "m701.music.126.net",
+        "signature": "mp3/id3"
+      },
+      "probe": {
+        "completed": true
+      }
+    },
+    "youtube": {
+      "search": {
+        "http_status": 200,
+        "query": "Blender Big Buck Bunny",
+        "count": 20,
+        "sample_ids": [
+          "aqz-KE-bpKQ",
+          "YE7VzlLtp-4",
+          "brLbwajyGNI"
+        ]
+      },
+      "resolve": {
+        "http_status": 200,
+        "video_id": "aqz-KE-bpKQ",
+        "status": "OK",
+        "audio": [
+          {
+            "itag": 140,
+            "mime": "audio/mp4; codecs=\"mp4a.40.2\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 140,
+            "mime": "audio/mp4; codecs=\"mp4a.40.2\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 140,
+            "mime": "audio/mp4; codecs=\"mp4a.40.2\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 249,
+            "mime": "audio/webm; codecs=\"opus\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 249,
+            "mime": "audio/webm; codecs=\"opus\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 249,
+            "mime": "audio/webm; codecs=\"opus\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 250,
+            "mime": "audio/webm; codecs=\"opus\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 250,
+            "mime": "audio/webm; codecs=\"opus\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 250,
+            "mime": "audio/webm; codecs=\"opus\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 251,
+            "mime": "audio/webm; codecs=\"opus\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 251,
+            "mime": "audio/webm; codecs=\"opus\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 251,
+            "mime": "audio/webm; codecs=\"opus\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 256,
+            "mime": "audio/mp4; codecs=\"mp4a.40.5\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 258,
+            "mime": "audio/mp4; codecs=\"mp4a.40.2\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 328,
+            "mime": "audio/mp4; codecs=\"ec-3\"",
+            "direct_url": false,
+            "cipher": false
+          },
+          {
+            "itag": 380,
+            "mime": "audio/mp4; codecs=\"ac-3\"",
+            "direct_url": false,
+            "cipher": false
+          }
+        ]
+      },
+      "probe": {
+        "completed": true
+      }
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "checked_at": "2026-10-29T05:36:39.109528+00:00",
+  "auth": "anonymous",
+  "media_byte_limit": 65536,
+  "sources": {
+    "netease": {
+      "search": {
+        "http_status": 200,
+        "code": 200,
+        "query": "纯音乐",
+        "count": 3,
+        "sample_ids": [
+          139774,
+          2038191895,
+          509720124
+        ]
+      },
+      "resolve": {
+        "http_status": 200,
+        "code": 200,
+        "song_id": 139774,
+        "audio": [
+          {
+            "code": 200,
+            "type": "mp3",
+            "bitrate": 128000,
+            "size": 3576621,
+            "expi_seconds": 1200,
+            "url_present": true,
+            "fee": 8,
+            "trial_present": false
+          }
+        ]
+      },
+      "media_range": {
+        "http_status": 206,
+        "bytes_read": 65536,
+        "content_type": "audio/mpeg",
+        "range_supported": true,
+        "https": false,
+        "host": "m801.music.126.net",
+        "signature": "mp3/id3"
+      },
+      "media_range_https": {
+        "http_status": 206,
+        "bytes_read": 65536,
+        "content_type": "audio/mpeg",
+        "range_supported": true,
+        "https": true,
+        "host": "m801.music.126.net",
+        "signature": "mp3/id3"
+      },
+      "probe": {
+        "completed": true
+      }
+    }
+  }
+}
