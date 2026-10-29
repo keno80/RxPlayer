@@ -28,8 +28,8 @@
 
 ## 当前任务与交付
 
-- 当前任务：记录用户对 `608ddb2`（`revision=track-feedback`）的确认，同步原生规格，并交付已确认的原型与状态契约；本轮不修改正式 UI、不构建应用。
-- 当前交付分支：`codex/approved-player-states`，从最新 `main` 提取已确认原型。源审核分支 `codex/prototype-playback-states` 仍保留，未带入其 M1 技术验证改动。
+- 当前任务已完成：记录用户对 `608ddb2`（`revision=track-feedback`）的确认，同步原生规格；交付提交 `cc2f3d9` 已推送，通过 `177cb7f` 合并并推送到 `main`。本轮未修改正式 UI、未构建应用，下一步为已确认范围的原生实现。
+- 交付分支：`codex/approved-player-states`，从 `main` 提取已确认原型后完成合并，当前工作区回到 `main`。源审核分支 `codex/prototype-playback-states` 仍保留，未带入其 M1 技术验证改动。
 - 新增确认范围：准备 / 缓冲 / 地址更新只在原进度条显示缓冲效果，其他播放异常使用 toast，顺序播放到队列末尾直接停止；包括对应取消、重试和恢复上下文。确认原话为“ok，这版没问题”，日期 2026-10-29。搜索、音乐库、设置不因此获得完整审核。
 - 原型交付分支 `codex/prototype-review` 已合并并推送至 `main`，合并基点为 `47c862c`；后续完整功能从最新主分支新建对应功能分支。
 - 暂定确认版本：`774a6d6`（原型 03，`revision=queue-fade`），范围为已讨论的 Android 有 / 无歌词播放页、PC 左播放器 / 右歌词及队列交互；不将搜索、音乐库、设置和异常状态视作本次已完整审核。
