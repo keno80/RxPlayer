@@ -1,0 +1,117 @@
+{
+  "checked_at": "2026-10-29T06:31:44.684637+00:00",
+  "auth": "anonymous",
+  "status": "completed",
+  "netease_baseline": {
+    "id": 139774,
+    "http_status": 200,
+    "code": 200,
+    "resource_code": 200,
+    "fee": 8,
+    "url_present": true,
+    "trial": null,
+    "expi_seconds": 1200,
+    "size": 3576621
+  },
+  "netease_ttl": {
+    "started_at": "2026-10-29T06:31:44.921663+00:00",
+    "advertised_seconds": 1200,
+    "status": "observed",
+    "before": {
+      "http_status": 206,
+      "bytes_read": 65536,
+      "content_type": "audio/mpeg",
+      "range_supported": true,
+      "https": true,
+      "host": "m801.music.126.net",
+      "signature": "mp3/id3"
+    },
+    "recheck_not_before_epoch": 1793256734,
+    "rechecked_at": "2026-10-29T06:52:14.921790+00:00",
+    "original_after": {
+      "http_status": 206,
+      "bytes_read": 65536,
+      "content_type": "audio/mpeg",
+      "range_supported": true,
+      "https": true,
+      "host": "m801.music.126.net",
+      "signature": "mp3/id3"
+    },
+    "refreshed_metadata": {
+      "id": 139774,
+      "http_status": 200,
+      "code": 200,
+      "resource_code": 200,
+      "fee": 8,
+      "url_present": true,
+      "trial": null,
+      "expi_seconds": 1200,
+      "size": 3576621
+    },
+    "same_url_returned": false,
+    "refreshed_media": {
+      "http_status": 206,
+      "bytes_read": 65536,
+      "content_type": "audio/mpeg",
+      "range_supported": true,
+      "https": true,
+      "host": "m701.music.126.net",
+      "signature": "mp3/id3"
+    },
+    "observed_hard_expiry": false
+  },
+  "netease_permissions": [
+    {
+      "id": 509781655,
+      "http_status": 200,
+      "code": 200,
+      "resource_code": -110,
+      "fee": 1,
+      "url_present": false,
+      "trial": null,
+      "expi_seconds": 1200,
+      "size": 0,
+      "search_fee": 1
+    },
+    {
+      "id": 5257138,
+      "http_status": 200,
+      "code": 200,
+      "resource_code": 200,
+      "fee": 8,
+      "url_present": true,
+      "trial": null,
+      "expi_seconds": 1200,
+      "size": 5105833,
+      "search_fee": 8
+    },
+    {
+      "id": 210049,
+      "http_status": 200,
+      "code": 200,
+      "resource_code": -110,
+      "fee": 1,
+      "url_present": false,
+      "trial": null,
+      "expi_seconds": 1200,
+      "size": 0,
+      "search_fee": 1
+    }
+  ],
+  "netease_unavailable": {
+    "id": 0,
+    "http_status": 200,
+    "code": 200,
+    "resource_code": 404,
+    "fee": 0,
+    "url_present": false,
+    "trial": null,
+    "expi_seconds": 1200,
+    "size": 0
+  },
+  "bilibili_permissions": {
+    "anonymous_nav_code": -101,
+    "sample_aid": 1,
+    "unavailable_code": 62002
+  }
+}

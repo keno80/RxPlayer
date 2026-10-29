@@ -1,0 +1,20 @@
+{
+  "extractor_version": "v0.26.5",
+  "java_version": "17.0.17",
+  "video_id": "aaaaaaaaaaa",
+  "success": false,
+  "error_types": [
+    "ParsingException"
+  ],
+  "error_markers": [],
+  "requests": [
+    {
+      "host": "youtubei.googleapis.com",
+      "status": 200
+    },
+    {
+      "host": "youtubei.googleapis.com",
+      "status": 200
+    }
+  ]
+}

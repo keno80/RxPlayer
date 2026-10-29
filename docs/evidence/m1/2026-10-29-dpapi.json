@@ -1,0 +1,9 @@
+{
+  "tamper_rejected": true,
+  "ciphertext_differs": true,
+  "temporary_file_removed": true,
+  "persisted_round_trip": true,
+  "checked_at": "2026-10-29T06:38:16.4699992Z",
+  "scope": "CurrentUser",
+  "synthetic_data_only": true
+}

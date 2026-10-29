@@ -1,0 +1,7 @@
+{
+  "http_status": 200,
+  "video_id": "aaaaaaaaaaa",
+  "playability_status": "ERROR",
+  "reason": "This video is unavailable",
+  "streaming_data_present": false
+}
