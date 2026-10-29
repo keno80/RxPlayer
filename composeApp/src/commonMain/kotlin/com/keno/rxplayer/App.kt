@@ -6,7 +6,7 @@
 package com.keno.rxplayer
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,23 +20,22 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.keno.rxplayer.audio.PlaybackState
 import com.keno.rxplayer.audio.rememberAudioPlayer
-import com.keno.rxplayer.ui.Artwork
-import com.keno.rxplayer.ui.MiniPlayer
-import com.keno.rxplayer.ui.PlayerPanel
-import com.keno.rxplayer.ui.RxTheme
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
+import com.keno.rxplayer.ui.*
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 @Composable
-fun App(isForeground: Boolean = true, onThemeChanged: (Boolean) -> Unit = {}) {
+fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged: (Boolean, Boolean) -> Unit = { _, _ -> }) {
     val systemDark = isSystemInDarkTheme()
     var dark by remember { mutableStateOf(systemDark) }
     var followArtwork by remember { mutableStateOf(true) }
@@ -45,30 +44,33 @@ fun App(isForeground: Boolean = true, onThemeChanged: (Boolean) -> Unit = {}) {
     var query by remember { mutableStateOf("") }
     var favorites by remember { mutableStateOf(setOf<String>()) }
     var expandedPlayer by remember { mutableStateOf(false) }
-    var selectionJob by remember { mutableStateOf<Job?>(null) }
+    var queueOpen by remember { mutableStateOf(false) }
+    var queryFocused by remember { mutableStateOf(false) }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val snackbar = remember { SnackbarHostState() }
+    val miniExpandFocus = remember { FocusRequester() }
+    val miniQueueFocus = remember { FocusRequester() }
+    var wasExpanded by remember { mutableStateOf(false) }
+    var wasQueueOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val player = rememberAudioPlayer()
     val playback = remember(player) { PlaybackState(player) }
+    val foreground by rememberUpdatedState(isForeground)
     val currentTrack = playback.track ?: demoTracks.first()
 
-    SideEffect { onThemeChanged(dark) }
+    SideEffect { onThemeChanged(dark || expandedPlayer && !isDesktop && currentTrack.lyrics.isNotEmpty(), dark) }
 
     fun select(track: DemoTrack) {
-        selectionJob?.cancel()
-        selectionJob = scope.launch { playback.select(track) }
+        scope.launch { playback.select(track, autoPlay = foreground) }
     }
 
     fun toggle() {
-        if (playback.track == null || playback.durationMs == 0 || playback.error != null) {
-            select(currentTrack)
-        } else {
-            playback.toggle()
-        }
+        if (playback.track == null) select(currentTrack)
+        else scope.launch { if (foreground) playback.activate() }
     }
 
     fun step(offset: Int) {
-        val index = demoTracks.indexOf(currentTrack)
-        select(demoTracks[(index + offset + demoTracks.size) % demoTracks.size])
+        scope.launch { if (foreground) playback.step(offset) }
     }
 
     fun toggleFavorite(track: DemoTrack) {
@@ -77,23 +79,54 @@ fun App(isForeground: Boolean = true, onThemeChanged: (Boolean) -> Unit = {}) {
 
     LaunchedEffect(player) {
         while (isActive) {
-            playback.sync()
+            playback.sync()?.let { next -> if (foreground) select(next) }
             delay(100)
         }
     }
     LaunchedEffect(isForeground) {
         if (!isForeground) {
-            selectionJob?.cancelAndJoin()
             playback.pause()
         }
     }
 
-    RxTheme(dark, if (followArtwork) currentTrack.artwork else 0) {
+    LaunchedEffect(playback.message?.id) {
+        val message = playback.message ?: return@LaunchedEffect
+        coroutineScope {
+            val showing = launch { snackbar.showSnackbar(message.text, duration = SnackbarDuration.Indefinite) }
+            delay(3_000)
+            snackbar.currentSnackbarData?.dismiss()
+            showing.join()
+        }
+    }
+    fun closePlayerOrQueue() {
+        if (queueOpen) queueOpen = false else expandedPlayer = false
+    }
+    fun closePlayer() {
+        wasQueueOpen = false
+        queueOpen = false
+        expandedPlayer = false
+    }
+    PlayerBackHandler(expandedPlayer || queueOpen, ::closePlayerOrQueue)
+    LaunchedEffect(expandedPlayer) {
+        if (!expandedPlayer && wasExpanded) miniExpandFocus.requestFocus()
+        wasExpanded = expandedPlayer
+    }
+    LaunchedEffect(queueOpen) {
+        if (!queueOpen && wasQueueOpen && !expandedPlayer) miniQueueFocus.requestFocus()
+        wasQueueOpen = queueOpen
+    }
+
+    RxTheme(dark) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-            BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+            BoxWithConstraints(Modifier.fillMaxSize().onKeyEvent { event ->
+                when {
+                    event.type == KeyEventType.KeyDown && event.key == Key.Escape && (queueOpen || expandedPlayer) -> { closePlayerOrQueue(); true }
+                    event.type == KeyEventType.KeyUp && event.key == Key.Spacebar && !queryFocused && !queueOpen && !event.isCtrlPressed && !event.isAltPressed -> { toggle(); true }
+                    else -> false
+                }
+            }.focusable()) {
                 val desktop = maxWidth >= 720.dp
-                val showPanel = maxWidth >= 1100.dp
-                Row(Modifier.fillMaxSize()) {
+                if (!expandedPlayer) Row(Modifier.fillMaxSize().safeDrawingPadding()) {
                     if (desktop) {
                         NavigationRail(
                             modifier = Modifier.fillMaxHeight().width(100.dp),
@@ -127,6 +160,7 @@ fun App(isForeground: Boolean = true, onThemeChanged: (Boolean) -> Unit = {}) {
                         }
                         LazyColumn(
                             modifier = Modifier.weight(1f).fillMaxWidth(),
+                            state = listState,
                             contentPadding = PaddingValues(horizontal = if (desktop) 28.dp else 20.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
@@ -136,7 +170,7 @@ fun App(isForeground: Boolean = true, onThemeChanged: (Boolean) -> Unit = {}) {
                             item {
                                 OutlinedTextField(
                                     value = query, onValueChange = { query = it },
-                                    modifier = Modifier.fillMaxWidth(), singleLine = true,
+                                    modifier = Modifier.fillMaxWidth().onFocusChanged { queryFocused = it.isFocused }, singleLine = true,
                                     label = { Text("搜索演示曲目") },
                                     leadingIcon = { Icon(Icons.Rounded.Search, null) },
                                     trailingIcon = {
@@ -194,15 +228,10 @@ fun App(isForeground: Boolean = true, onThemeChanged: (Boolean) -> Unit = {}) {
                                 )
                             }
                         }
-                        AnimatedVisibility(playback.error != null) {
-                            Text(
-                                playback.error.orEmpty(), color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                            )
-                        }
-                        if (!showPanel) {
-                            MiniPlayer(playback, currentTrack, ::toggle, { step(1) }, { expandedPlayer = true })
+                        if (playback.track != null) {
+                            PlayerTheme(dark, currentTrack.artwork.takeIf { followArtwork }) {
+                                MiniPlayer(playback, currentTrack, ::toggle, { step(1) }, { queryFocused = false; expandedPlayer = true }, { queueOpen = true }, miniExpandFocus, miniQueueFocus)
+                            }
                         }
                         if (!desktop) {
                             NavigationBar(containerColor = MaterialTheme.colorScheme.surface, windowInsets = WindowInsets(0, 0, 0, 0)) {
@@ -217,34 +246,20 @@ fun App(isForeground: Boolean = true, onThemeChanged: (Boolean) -> Unit = {}) {
                             }
                         }
                     }
-                    if (showPanel) {
-                        Surface(
-                            modifier = Modifier.width(336.dp).fillMaxHeight().padding(16.dp, 12.dp, 16.dp, 16.dp),
-                            shape = RoundedCornerShape(32.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        ) {
-                            PlayerPanel(
-                                playback, currentTrack, currentTrack.id in favorites,
-                                { toggleFavorite(currentTrack) }, ::toggle, { step(-1) }, { step(1) },
-                                modifier = Modifier.verticalScroll(rememberScrollState()),
-                            )
-                        }
-                    }
                 }
-                if (expandedPlayer && !showPanel) {
-                    ModalBottomSheet(
-                        onDismissRequest = { expandedPlayer = false },
-                        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                        containerColor = MaterialTheme.colorScheme.surface,
-                    ) {
-                        PlayerPanel(
-                            playback, currentTrack, currentTrack.id in favorites,
+                PlayerTheme(dark, currentTrack.artwork.takeIf { followArtwork }) {
+                    if (expandedPlayer) {
+                        PlayerScreen(
+                            playback, currentTrack, currentTrack.id in favorites, isDesktop, dark,
+                            queueOpen, { queueOpen = !queueOpen }, { queueOpen = false }, ::closePlayer,
                             { toggleFavorite(currentTrack) }, ::toggle, { step(-1) }, { step(1) },
-                            onClose = { expandedPlayer = false },
-                            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                            ::select, playback::removeFromQueue,
                         )
+                    } else if (queueOpen) {
+                        QueueModal(playback, isDesktop, { queueOpen = false }, ::select, playback::removeFromQueue)
                     }
                 }
+                SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)).padding(start = 16.dp, end = 16.dp, bottom = if (expandedPlayer) 128.dp else 96.dp).widthIn(max = 560.dp))
             }
         }
     }

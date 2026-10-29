@@ -13,6 +13,6 @@ fun main() = application {
         state = rememberWindowState(width = 1200.dp, height = 820.dp),
     ) {
         window.minimumSize = Dimension(360, 600)
-        App()
+        App(isDesktop = true)
     }
 }

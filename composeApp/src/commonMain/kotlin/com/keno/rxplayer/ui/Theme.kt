@@ -2,53 +2,54 @@
 
 package com.keno.rxplayer.ui
 
-import androidx.compose.material3.MaterialExpressiveTheme
-import androidx.compose.material3.MotionScheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 
+// Brand roles match the approved prototype's MCU-generated colors.css.
+internal fun brandColors(dark: Boolean): ColorScheme = if (dark) darkColorScheme(
+    primary = Color(0xFF81D5CB), onPrimary = Color(0xFF003733),
+    primaryContainer = Color(0xFF00504A), onPrimaryContainer = Color(0xFF9DF2E7),
+    secondary = Color(0xFFB1CCC7), onSecondary = Color(0xFF1C3532),
+    secondaryContainer = Color(0xFF324B48), onSecondaryContainer = Color(0xFFCCE8E3),
+    tertiary = Color(0xFFFFB874), onTertiary = Color(0xFF4B2800),
+    tertiaryContainer = Color(0xFF6A3B00), onTertiaryContainer = Color(0xFFFFDCBF),
+    surface = Color(0xFF0E1514), onSurface = Color(0xFFDDE4E2),
+    surfaceContainerLowest = Color(0xFF090F0E), surfaceContainerLow = Color(0xFF161D1C),
+    surfaceContainer = Color(0xFF1A2120), surfaceContainerHigh = Color(0xFF252B2A),
+    surfaceContainerHighest = Color(0xFF303635), onSurfaceVariant = Color(0xFFBEC9C6),
+    outline = Color(0xFF899391), outlineVariant = Color(0xFF3F4947),
+    error = Color(0xFFFFB4AB), onError = Color(0xFF690005),
+    inverseSurface = Color(0xFFDDE4E2), inverseOnSurface = Color(0xFF2B3230), inversePrimary = Color(0xFF006A62),
+) else lightColorScheme(
+    primary = Color(0xFF006A62), onPrimary = Color.White,
+    primaryContainer = Color(0xFF9DF2E7), onPrimaryContainer = Color(0xFF00504A),
+    secondary = Color(0xFF4A6360), onSecondary = Color.White,
+    secondaryContainer = Color(0xFFCCE8E3), onSecondaryContainer = Color(0xFF324B48),
+    tertiary = Color(0xFF8C5000), onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFFFDCBF), onTertiaryContainer = Color(0xFF6A3B00),
+    surface = Color(0xFFF4FBF8), onSurface = Color(0xFF161D1C),
+    surfaceContainerLowest = Color.White, surfaceContainerLow = Color(0xFFEFF5F3),
+    surfaceContainer = Color(0xFFE9EFED), surfaceContainerHigh = Color(0xFFE3EAE7),
+    surfaceContainerHighest = Color(0xFFDDE4E2), onSurfaceVariant = Color(0xFF3F4947),
+    outline = Color(0xFF6F7977), outlineVariant = Color(0xFFBEC9C6),
+    error = Color(0xFFBA1A1A), onError = Color.White,
+    inverseSurface = Color(0xFF2B3230), inverseOnSurface = Color(0xFFEFF5F3), inversePrimary = Color(0xFF81D5CB),
+)
+
 @Composable
-fun RxTheme(dark: Boolean, artwork: Int, content: @Composable () -> Unit) {
-    val accent = when (artwork) {
-        1 -> Color(0xFFFFD6A0)
-        2 -> Color(0xFFD9C7FF)
-        else -> Color(0xFFD5ED9B)
+fun RxTheme(dark: Boolean, content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalPlayerReducedMotion provides rememberPlayerReducedMotion()) {
+        MaterialExpressiveTheme(colorScheme = brandColors(dark), motionScheme = MotionScheme.expressive(), content = content)
     }
-    val ink = when (artwork) {
-        1 -> Color(0xFF78562C)
-        2 -> Color(0xFF68548D)
-        else -> Color(0xFF4A622B)
-    }
-    val colors = if (dark) {
-        darkColorScheme(
-            primary = accent, onPrimary = Color(0xFF20251A),
-            primaryContainer = ink, onPrimaryContainer = accent,
-            secondaryContainer = Color(0xFF34392F), onSecondaryContainer = Color(0xFFE3E8DB),
-            surface = Color(0xFF151713), onSurface = Color(0xFFE7E9DF),
-            surfaceContainer = Color(0xFF20231D),
-            surfaceContainerLow = Color(0xFF1B1E18),
-            surfaceContainerHigh = Color(0xFF2B2F25),
-            surfaceVariant = Color(0xFF34392F), onSurfaceVariant = Color(0xFFBCC3B2),
-            outline = Color(0xFF8B9380), outlineVariant = Color(0xFF41483B),
-        )
-    } else {
-        lightColorScheme(
-            primary = ink, onPrimary = Color.White,
-            primaryContainer = accent, onPrimaryContainer = Color(0xFF29331E),
-            secondaryContainer = Color(0xFFE6EBD9), onSecondaryContainer = Color(0xFF3D4734),
-            surface = Color(0xFFF8F9F2), onSurface = Color(0xFF20251D),
-            surfaceContainer = Color(0xFFEEF0E6),
-            surfaceContainerLow = Color(0xFFF2F4EC),
-            surfaceContainerHigh = Color(0xFFE6E9DD),
-            surfaceVariant = Color(0xFFE1E6D7), onSurfaceVariant = Color(0xFF626A58),
-            outline = Color(0xFF747D68), outlineVariant = Color(0xFFD3D9C8),
-        )
-    }
+}
+
+@Composable
+fun PlayerTheme(dark: Boolean, artwork: Int?, content: @Composable () -> Unit) {
+    val base = brandColors(dark)
     MaterialExpressiveTheme(
-        colorScheme = colors,
-        motionScheme = MotionScheme.expressive(),
-        content = content,
+        colorScheme = artwork?.let { coverColors(base, dark, it) } ?: base,
+        motionScheme = MotionScheme.expressive(), content = content,
     )
 }

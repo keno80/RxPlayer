@@ -1,0 +1,61 @@
+{
+  "checked_at": "2026-10-29T08:43:46.427222+00:00",
+  "kind": "static_only",
+  "kotlin_parser": "tree-sitter-kotlin 1.1.0",
+  "parsed_files": [
+    "androidApp/src/main/kotlin/com/keno/rxplayer/MainActivity.kt",
+    "composeApp/build.gradle.kts",
+    "composeApp/src/androidMain/kotlin/com/keno/rxplayer/audio/AndroidAudioPlayer.kt",
+    "composeApp/src/androidMain/kotlin/com/keno/rxplayer/ui/PlayerBackHandler.kt",
+    "composeApp/src/commonMain/kotlin/com/keno/rxplayer/App.kt",
+    "composeApp/src/commonMain/kotlin/com/keno/rxplayer/DemoTrack.kt",
+    "composeApp/src/commonMain/kotlin/com/keno/rxplayer/audio/AudioPlayer.kt",
+    "composeApp/src/commonMain/kotlin/com/keno/rxplayer/audio/PlaybackState.kt",
+    "composeApp/src/commonMain/kotlin/com/keno/rxplayer/ui/Artwork.kt",
+    "composeApp/src/commonMain/kotlin/com/keno/rxplayer/ui/CoverColors.kt",
+    "composeApp/src/commonMain/kotlin/com/keno/rxplayer/ui/Player.kt",
+    "composeApp/src/commonMain/kotlin/com/keno/rxplayer/ui/PlayerBackHandler.kt",
+    "composeApp/src/commonMain/kotlin/com/keno/rxplayer/ui/PlayerQueue.kt",
+    "composeApp/src/commonMain/kotlin/com/keno/rxplayer/ui/Theme.kt",
+    "composeApp/src/commonTest/kotlin/com/keno/rxplayer/audio/PlaybackStateTest.kt",
+    "composeApp/src/desktopMain/kotlin/com/keno/rxplayer/Main.kt",
+    "composeApp/src/desktopMain/kotlin/com/keno/rxplayer/audio/DesktopAudioPlayer.kt",
+    "composeApp/src/desktopMain/kotlin/com/keno/rxplayer/ui/PlayerBackHandler.kt"
+  ],
+  "syntax_errors": [],
+  "images": [
+    {
+      "file": "composeApp/src/commonMain/composeResources/drawable/night_voyage.png",
+      "width": 720,
+      "height": 720,
+      "sha256": "051fa56536b2d0f9cf5323d44ac298f1ec06c435f61344b7621995afe80646da"
+    },
+    {
+      "file": "composeApp/src/commonMain/composeResources/drawable/sea_letter.png",
+      "width": 720,
+      "height": 720,
+      "sha256": "a35163f804abea82b2bb47d6e4d1b65be11219122aa50b774184549153ce9421"
+    },
+    {
+      "file": "composeApp/src/commonMain/composeResources/drawable/sunset_session.png",
+      "width": 720,
+      "height": 720,
+      "sha256": "15cdffb9b55eb6ac953d0cff8199fc847caa29ab5b892a1623c15e95511c2d10"
+    }
+  ],
+  "cover_role_pairs": 24,
+  "minimum_cover_role_contrast": 6.4517,
+  "local_links": 47,
+  "missing_links": [],
+  "material3_source_sha256": "279ba973971c69c78015a262345841325a2fc3e386bc8cf470e4f3d52dafef71",
+  "api_declarations": {
+    "slider-state-track": true,
+    "tooltip-position": true,
+    "filled-toggle-colors": true,
+    "indeterminate-linear": true
+  },
+  "state_tests_written": 9,
+  "gradle_executed": false,
+  "tests_executed": false,
+  "native_launch_executed": false
+}
