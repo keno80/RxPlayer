@@ -101,6 +101,11 @@ fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged
     fun closePlayerOrQueue() {
         if (queueOpen) queueOpen = false else expandedPlayer = false
     }
+    fun closePlayer() {
+        wasQueueOpen = false
+        queueOpen = false
+        expandedPlayer = false
+    }
     PlayerBackHandler(expandedPlayer || queueOpen, ::closePlayerOrQueue)
     LaunchedEffect(expandedPlayer) {
         if (!expandedPlayer && wasExpanded) miniExpandFocus.requestFocus()
@@ -246,7 +251,7 @@ fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged
                     if (expandedPlayer) {
                         PlayerScreen(
                             playback, currentTrack, currentTrack.id in favorites, isDesktop, dark,
-                            queueOpen, { queueOpen = !queueOpen }, { queueOpen = false }, { expandedPlayer = false },
+                            queueOpen, { queueOpen = !queueOpen }, { queueOpen = false }, ::closePlayer,
                             { toggleFavorite(currentTrack) }, ::toggle, { step(-1) }, { step(1) },
                             ::select, playback::removeFromQueue,
                         )
