@@ -45,10 +45,12 @@ class PlaybackStateTest {
         val engine = MemoryAudioPlayer()
         val state = PlaybackState(engine) { byteArrayOf(1) }
         state.select(demoTracks.last())
-        engine.positionMs = engine.durationMs
+        engine.positionMs = engine.durationMs - 1
+        engine.completed = true
         engine.isPlaying = false
         assertNull(state.sync())
         assertEquals(PlaybackPhase.Ended, state.phase)
+        assertEquals(state.durationMs, state.positionMs)
         assertNull(state.message)
         assertNull(state.sync())
         state.activate()
@@ -158,8 +160,10 @@ private class MemoryAudioPlayer : AudioPlayer {
     override var isPlaying = false
     override var isBuffering = false
     override var failure: PlaybackFailure? = null
+    var completed = false
+    override val isEnded get() = completed || positionMs >= durationMs
     var playCount = 0
-    override suspend fun load(bytes: ByteArray) { positionMs = 0; failure = null }
+    override suspend fun load(bytes: ByteArray) { positionMs = 0; failure = null; completed = false }
     override fun play() { playCount++; isPlaying = true }
     override fun pause() { isPlaying = false }
     override fun seekTo(positionMs: Int) { this.positionMs = positionMs }

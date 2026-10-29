@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-29",
+  "branch": "codex/native-player",
+  "build": {
+    "exitCode": 0,
+    "command": ":composeApp:desktopTest :androidApp:assembleDebug :composeApp:desktopJar"
+  },
+  "tests": {
+    "timestampUtc": "2026-10-29T09:32:34.163Z",
+    "tests": 9,
+    "skipped": 0,
+    "errors": 0,
+    "failures": 0
+  },
+  "androidApk": {
+    "sha256": "DAB8089766BB0AC5AFFCB15D0A82DE474B1B2BCFFB30E696A4A7249E8950C87E"
+  },
+  "acceptance": {
+    "androidLargeFontAndRotation": "pending USB reconnection",
+    "desktopBottomControls": "source fixed and build passed; visual retest pending desktop unlock",
+    "networkStreaming": "not covered by local WAV validation",
+    "androidCore": "16 checks passed before final desktop-only layout change"
+  }
+}
