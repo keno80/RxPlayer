@@ -1,0 +1,45 @@
+{
+  "checked_at": "2026-10-29T06:19:36.665520+00:00",
+  "requests": [
+    {
+      "headers_match": false,
+      "range_present": false,
+      "status": 403
+    },
+    {
+      "headers_match": true,
+      "range_present": true,
+      "status": 206
+    }
+  ],
+  "missing_headers_status": 403,
+  "playback": {
+    "source": "loopback_header_guard",
+    "id": "generated-tone",
+    "mime": "audio/mpeg",
+    "https": false,
+    "loaded": true,
+    "duration_seconds": 45.0,
+    "audio_codec": "MP3 (MPEG audio layer 3)",
+    "audio_params": {
+      "samplerate": 44100,
+      "channel-count": 1,
+      "channels": "mono",
+      "hr-channels": "mono",
+      "format": "floatp"
+    },
+    "audio_output": "wasapi",
+    "seekable": true,
+    "pause_drift_seconds": 0.0,
+    "seek_position_seconds": 29.999991,
+    "resume_position_seconds": 30.740516,
+    "stopped": true,
+    "passed": true
+  },
+  "passed": true,
+  "shutdown": {
+    "exit_code": 0,
+    "forced": false,
+    "pipe_removed": true
+  }
+}

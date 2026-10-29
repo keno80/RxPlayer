@@ -1,13 +1,13 @@
 # M1 技术可行性记录
 
 - 更新日期：2026-10-29
-- 状态：首轮证据已取得；M1 进行中，尚未满足退出条件。
+- 状态：Windows 引擎与 YouTube 普通视频解析的样本运行已通过；M1 仍有平台、权限及有效期验证未完成。
 - 设计规格：[播放页原生规格](../superpowers/specs/2026-10-29-m1-player-native-spec.md)
 - 本轮步骤与后续验证：[M1 验证计划](../superpowers/plans/2026-10-29-m1-validation.md)
 
 ## 1. 当前结论
 
-Bilibili 和网易云在当前电脑网络、匿名会话下取得了搜索结果及音频字节；YouTube 普通视频搜索成立，但当前页面音轨没有直接 URL，解析路径尚未打通。Windows 现有 Java Sound / WAV 演示不能承担成品流媒体能力，暂将 mpv JSON IPC 列为优先验证候选，尚未最终选定。
+Bilibili、网易云及 YouTube 普通视频的匿名音频输入已在当前 Windows 主机上由 mpv 实际解码，暂停 / 继续、拖动、快速替换及进程退出重开通过。YouTube 采用 NewPipeExtractor 解析，分别验证了 AAC 与 Opus；Windows 播放方向选用 mpv JSON IPC。正式分发包与 Android / JDK 17 集成仍需验证，见 [本次运行报告](2026-10-29-streaming-validation.md)。
 
 本轮没有改动 Compose 源码或 Gradle 依赖，没有构建 / 启动 Android 或 Windows 正式应用，也没有宣称三来源已接入产品。
 
@@ -24,7 +24,9 @@ python scripts/m1/probe_sources.py --source netease --output docs/evidence/m1/20
 
 环境为当前 Windows 主机及其当时网络；未在 Android 网络上复测，未建立不同地区或长期稳定性结论。以下网页内部接口没有获得公共开放 API 的稳定性保证。
 
-## 3. 三来源能力矩阵
+## 3. 首轮网页探测快照
+
+本节保留首批直接读取网页 / 接口的结果，尤其是 YouTube 当时没有可用 URL 的事实。后续 NewPipe 解析与四条格式的实际播放已取得新证据，当前结论以上述运行报告为准，不能把两批不同层级的验证混为一项。
 
 原始记录：[匿名三来源](../evidence/m1/2026-10-29-anonymous-sources.json)、[网易云 HTTPS 补测](../evidence/m1/2026-10-29-netease-https.json)。记录内 `checked_at` 为 UTC 时间，用户侧工作日期为北京时间 2026-10-29。
 
@@ -57,7 +59,7 @@ python scripts/m1/probe_sources.py --source netease --output docs/evidence/m1/20
 
 普通视频搜索和播放分开记录。本次直接读取搜索页 `ytInitialData` 与视频页 `ytInitialPlayerResponse`；只取得元数据 / 音轨描述。页面播放状态 OK 不代表已获得供原生引擎使用的音频输入。
 
-优先验证 [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor) 的实际 JVM / Android 依赖及样本解析，再判断是否适合两端共用；[yt-dlp](https://github.com/yt-dlp/yt-dlp) 可作独立诊断对照，不能因桌面命令可用就宣称 Android 原生接入成立。正式引入前核对固定版本、依赖和许可证，保持自己实现的业务与第三方解析依赖边界清楚。
+后续已验证 [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor) `v0.26.5` 在独立 JVM 上可解析样本的 5 个音轨，并让 mpv 播放其中 AAC / Opus 两种格式。Android 和工程 JVM 17 尚未运行，不把桌面验证扩展为两端通过。[yt-dlp](https://github.com/yt-dlp/yt-dlp) 本轮未运行；正式引入依赖前落实版本和许可证约束。
 
 [YouTube Data API 的 search.list](https://developers.google.com/youtube/data/reference/rest/v3/search/list) 属于搜索元数据接口，不是此处音频资源解析成功的证据。本轮未配置 API Key。YouTube Music 未验证，不能用普通视频搜索结果代替 Music 能力结论，也不能反向代替普通视频需求。
 
@@ -66,13 +68,13 @@ python scripts/m1/probe_sources.py --source netease --output docs/evidence/m1/20
 | 方案 | 已核对的能力 / 现状 | 当前判断 |
 |---|---|---|
 | 现有 `DesktopAudioPlayer` | `AudioPlayer.load(ByteArray)`，`AudioSystem.getClip()` 完整载入 WAV | 仅保留演示回归，不作网络流媒体成品方案 |
-| mpv 子进程 + JSON IPC | 官方文档提供 Windows 命名管道、属性 / 命令及自定义 HTTP headers | 优先验证候选；尚无本机实际播放、拖动或释放证据 |
+| mpv 子进程 + JSON IPC | 四条真实格式的 WASAPI 播放 / 暂停 / 拖动、headers / Range、退出及异常终止重开均有证据 | 选择此技术方向；正式适配与固定分发包尚未交付 |
 | vlcj / libVLC | 项目提供 Java 封装，支持 Windows，需要配套原生运行库 | 备选；尚未引入，也未验证打包与媒体请求 |
 | Android Media3 | 官方提供 ExoPlayer、HTTP 数据源与独立 MediaSessionService 生命周期 | Android 优先技术方向；未添加依赖、未运行服务 |
 
 依据：[mpv 控制与网络文档](https://mpv.io/manual/stable/)、[mpv Windows 分发来源说明](https://mpv.io/installation/)、[vlcj 项目说明](https://github.com/caprica/vlcj)、[Media3 后台服务](https://developer.android.com/media/media3/session/background-playback)、[HTTP 数据源工厂](https://developer.android.com/reference/androidx/media3/datasource/DefaultHttpDataSource.Factory)、[Media3 格式支持](https://developer.android.com/media/media3/exoplayer/supported-formats)。
 
-本机 PATH 未发现 mpv / VLC；已检查的标准安装路径也没有对应运行库。ffmpeg / ffprobe 可用，但它们不是应用所需的持续播放控制验证。本轮没有额外安装引擎。
+首轮检查时 PATH / 标准安装路径未发现 mpv / VLC。后续将官方 mpv CI 包放到临时目录独立运行，未系统安装、未加入正式应用。ffmpeg 用于生成原创测试音频；真实播放证据来自 mpv WASAPI，而非 ffprobe。
 
 mpv 试验要求通过本地 IPC 发送命令并接收结构化事件，不解析终端文字，不把凭据放进命令行或日志；限定 IPC 访问和子进程生命周期。引擎试验至少应覆盖：
 
@@ -99,9 +101,10 @@ Media3 后台播放应将 Player / MediaSession 生命周期放到 Service；Act
 
 ## 6. M1 仍缺的退出证据
 
-- [ ] 三来源实际音频输入均成立，当前 YouTube 解析缺口已明确但尚未解决。
-- [ ] Windows 候选引擎实际解码播放、HTTPS / headers、暂停 / 拖动 / 释放验证通过并形成选型。
+- [x] 三来源各至少一个匿名样本取得实际音频输入，YouTube AAC / Opus 的地址及播放路径成立；不等于所有内容权限均通过。
+- [x] Windows 引擎的样本解码播放、HTTPS、headers / Range、暂停 / 拖动 / 退出与异常终止重开通过，选用 mpv JSON IPC 技术方向。
+- [ ] 固定可分发引擎包及干净环境运行、工程 JDK 17 / Android 解析与网络适配验证。
 - [ ] 音源权限 / 试听 / 过期及多分 P 等边界样本，必要登录方式和凭据生命周期可复查。
 - [ ] 新增准备 / 错误视觉状态及未确认页面按原型流程完成审核。
 
-本轮已有成功样本可以支持下一批技术试验，不能据此关闭 M1 或跳到 M2 的产品验收。
+已有运行证据支持接入方向，但 M1 尚未关闭，不能跳到 M2 的产品验收。

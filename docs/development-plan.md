@@ -95,13 +95,13 @@ UI 规格、实现和审查统一依据 Google 官方设计指导与 m3-expressi
 
 ### 4.2 验证三个音源与 Windows 引擎
 
-首轮实测与候选方案见 [M1 技术可行性记录](technical/m1-feasibility.md)，执行步骤见 [验证计划](superpowers/plans/2026-10-29-m1-validation.md)。已核对锁定 Material3 版本的 15 项 API 源码声明，并取得 Bilibili / 网易云匿名音频字节；YouTube 页面音轨缺少直接 URL，Windows 引擎实际播放尚未验证，因此以下完整验收仍保持未完成。
+当前证据见 [M1 技术可行性记录](technical/m1-feasibility.md) 与 [Windows / YouTube 运行报告](technical/2026-10-29-streaming-validation.md)，执行步骤见 [验证计划](superpowers/plans/2026-10-29-m1-validation.md)。已核对 15 项 Material3 API 声明；mpv 真实播放 Bilibili AAC、网易云 MP3、NewPipe 解析的 YouTube AAC / Opus，控制、headers / Range 及正常 / 异常退出重开通过。工程 JDK 17、Android、正式分发包及完整来源边界仍未验收。
 
 - [ ] 对每个音源分别验证关键词搜索、内容标识、音频解析、格式、请求头、链接有效期、匿名 / 登录边界。
 - [ ] 对 YouTube 单独记录普通视频和 YouTube Music 能力；不能只记录后者后宣称完成前者。
 - [ ] 确定必要的登录方式和本地凭据保存方式，记录过期 / 退出流程。
 - [ ] 选择 Windows 可分发的流媒体引擎，验证真实返回格式、HTTPS 请求、鉴权请求头、暂停继续、拖动与资源释放。
-- [ ] 输出音源能力矩阵、流媒体引擎选型记录和可重复的样本；记录不可用能力及原因。
+- [x] 输出音源能力矩阵、流媒体引擎选型记录和可重复的匿名样本，保留首次失败与网络修正证据；未验证的权限、有效期和平台范围单独列出。
 
 退出条件：三来源的 P0 路径均有可行证据，或阻断条件已经明确反馈并形成需求调整。若某个来源不成立，不静默删掉该来源，也不先构建依赖它的大量页面。
 

@@ -1,0 +1,114 @@
+{
+  "checked_at": "2026-10-29T06:06:11.450776+00:00",
+  "youtube": {
+    "extractor_version": "v0.26.5",
+    "java_version": "23.0.1",
+    "video_id": "aqz-KE-bpKQ",
+    "duration_seconds": 635,
+    "success": true,
+    "requests": [
+      {
+        "host": "youtubei.googleapis.com",
+        "status": 200
+      },
+      {
+        "host": "youtubei.googleapis.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      },
+      {
+        "host": "youtubei.googleapis.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      }
+    ],
+    "audio": [
+      {
+        "is_url": true,
+        "bitrate_kbps": 48,
+        "mime": "audio/mp4",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      },
+      {
+        "is_url": true,
+        "bitrate_kbps": 128,
+        "mime": "audio/mp4",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      },
+      {
+        "is_url": true,
+        "bitrate_kbps": 50,
+        "mime": "audio/webm",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      },
+      {
+        "is_url": true,
+        "bitrate_kbps": 70,
+        "mime": "audio/webm",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      },
+      {
+        "is_url": true,
+        "bitrate_kbps": 160,
+        "mime": "audio/webm",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      }
+    ]
+  },
+  "media": [
+    {
+      "mime": "audio/mp4",
+      "client": "VISIONOS",
+      "n_present": false,
+      "signature_present": true,
+      "expire_epoch": "1793275575",
+      "range": {
+        "http_status": 206,
+        "bytes_read": 65536,
+        "content_type": "audio/mp4",
+        "range_supported": true,
+        "https": true,
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com",
+        "signature": "mp4/ftyp"
+      }
+    },
+    {
+      "mime": "audio/webm",
+      "client": "VISIONOS",
+      "n_present": false,
+      "signature_present": true,
+      "expire_epoch": "1793275575",
+      "range": {
+        "http_status": 206,
+        "bytes_read": 65536,
+        "content_type": "audio/webm",
+        "range_supported": true,
+        "https": true,
+        "host": "rr2---sn-o097znsl.googlevideo.com",
+        "signature": "webm"
+      }
+    }
+  ],
+  "system_proxy_schemes": [
+    "http",
+    "https"
+  ]
+}

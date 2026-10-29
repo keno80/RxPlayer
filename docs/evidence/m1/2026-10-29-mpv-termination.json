@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-10-29T06:11:59.852419+00:00",
+  "muted": true,
+  "before_termination_output": "wasapi",
+  "terminated_process": {
+    "exit_code": 1,
+    "forced": false,
+    "pipe_removed": true
+  },
+  "reopened_output": "wasapi",
+  "passed": true,
+  "shutdown": {
+    "exit_code": 0,
+    "forced": false,
+    "pipe_removed": true
+  }
+}

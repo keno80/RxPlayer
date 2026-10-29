@@ -1,0 +1,75 @@
+{
+  "checked_at": "2026-10-29T06:12:02.790671+00:00",
+  "mpv_archive": {
+    "url": "https://github.com/mpv-player/mpv/releases/download/git-release/mpv-v0.41.0-dev-gdc4b285c9-40753318951-x86_64-w64-mingw32-full.zip",
+    "sha256": "8d960b51c2e52081b6cae21555eed71c0a2e30c2e1948e49c96f0074bd903f30",
+    "size": 65574054
+  },
+  "mpv_executable_sha256": "ecf988cdf821d08807cb45e7fd9864f3697383c730e39edb484265f3d6c4c765",
+  "newpipe_runtime": [
+    {
+      "name": "NewPipeExtractor-v0.26.5.jar",
+      "url": "https://jitpack.io/com/github/TeamNewPipe/NewPipeExtractor/v0.26.5/NewPipeExtractor-v0.26.5.jar",
+      "sha256": "923bf0a60938d570ad176ed7b08fa9fec7d0772d7a386ca89a2dd3b9212979c7",
+      "bytes": 802094,
+      "base_classfile_major_versions": [
+        55
+      ]
+    },
+    {
+      "name": "nanojson-e9d656ddb49a412a5a0a5d5ef20ca7ef09549996.jar",
+      "url": "https://jitpack.io/com/github/TeamNewPipe/nanojson/e9d656ddb49a412a5a0a5d5ef20ca7ef09549996/nanojson-e9d656ddb49a412a5a0a5d5ef20ca7ef09549996.jar",
+      "sha256": "d495881a322b3c72e5d43284afd7d7021520028ca8b7c6ba861e3fd8d90614d5",
+      "bytes": 31210,
+      "base_classfile_major_versions": [
+        52
+      ]
+    },
+    {
+      "name": "jsoup-1.22.2.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jsoup/jsoup/1.22.2/jsoup-1.22.2.jar",
+      "sha256": "596785996d3c6df16f544c232d10a9a1d88783b2a4740cf5251cb616f2be704d",
+      "bytes": 512826,
+      "base_classfile_major_versions": [
+        52
+      ]
+    },
+    {
+      "name": "jsr305-3.0.2.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar",
+      "sha256": "766ad2a0783f2687962c8ad74ceecc38a28b9f72a2d085ee438b7813e928d0c7",
+      "bytes": 19936,
+      "base_classfile_major_versions": [
+        49
+      ]
+    },
+    {
+      "name": "protobuf-javalite-4.35.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/protobuf/protobuf-javalite/4.35.1/protobuf-javalite-4.35.1.jar",
+      "sha256": "45d3769189888e491ab7d58125f2014c2a86fb8104c7aa3878c723943fce7a14",
+      "bytes": 1044075,
+      "base_classfile_major_versions": [
+        52
+      ]
+    },
+    {
+      "name": "rhino-1.8.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/mozilla/rhino/1.8.1/rhino-1.8.1.jar",
+      "sha256": "98a06d42bdd69da15bf9c2a7812b4cfe648ca9e64fe8baaeb502a32b0ed2c8ac",
+      "bytes": 1271206,
+      "base_classfile_major_versions": [
+        55
+      ]
+    },
+    {
+      "name": "rhino-engine-1.8.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/mozilla/rhino-engine/1.8.1/rhino-engine-1.8.1.jar",
+      "sha256": "ff38ad60aa32a23942f60242a433a2583a5407841745510754a43e0e61dd95cf",
+      "bytes": 14256,
+      "base_classfile_major_versions": [
+        55
+      ]
+    }
+  ],
+  "jar_digest_boundary": "Recorded downloaded content hashes; JAR publisher signatures not checked."
+}
