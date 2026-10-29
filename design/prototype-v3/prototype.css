@@ -219,12 +219,18 @@ button{color:inherit}a{color:#365e54;text-underline-offset:3px}
 .state-progress>span{display:block;width:40%;height:100%;border-radius:inherit;background:var(--primary);animation:task-progress 1.6s linear infinite}
 @keyframes task-progress{from{transform:translateX(-100%)}to{transform:translateX(350%)}}
 .search-wait{margin-top:24px;padding:24px;max-width:720px}.search-wait .state-progress{margin-top:24px}
-.player-notice{margin:0 0 16px;text-align:left}.player-notice.needs-action .state-card-content>.symbol{color:var(--error)}
 .product[data-playback-phase=failed] .play-button,.product[data-playback-phase=expired] .play-button{background:var(--surface-highest)!important;color:var(--on-surface-variant)}
 .product input[data-progress]:disabled{cursor:default;opacity:.45}
 .product .lyric-line:disabled{opacity:1;cursor:default}
-.product[data-device=android] .mobile-lyrics-player:has(.player-notice) .mobile-lyrics-stage{min-height:280px}
-.mobile-lyrics-player:has(.player-notice) .mobile-lyric-lines>:first-child,.mobile-lyrics-player:has(.player-notice) .mobile-lyric-lines>:last-child{display:none}
-.product[data-device=android] .immersive-player .hero-controls:has(.player-notice){width:100%}
-@media(max-width:375px){.player-notice{padding:12px}.state-card-content{gap:8px}.search-wait{padding:16px}}
+@media(max-width:375px){.state-card-content{gap:8px}.search-wait{padding:16px}}
 @media(prefers-reduced-motion:reduce){.state-progress>span{animation:none;transform:translateX(75%)}}
+
+/* Product choice: waiting occupies the existing seek track, never a separate card. */
+.progress-line>.seek-track{position:relative;display:block;flex:1;min-width:0;height:48px}
+.full-player .progress-line>.seek-track{order:-1;flex:0 0 100%}
+.seek-track input{display:block;width:100%}
+.buffer-track{position:absolute;left:0;right:0;top:16px;height:16px;border-radius:8px;overflow:hidden;background:var(--surface-highest);pointer-events:none}
+.buffer-track>span{display:block;width:40%;height:100%;border-radius:inherit;background:var(--primary);animation:task-progress 1.6s linear infinite}
+.product .seek-track.is-buffering input[data-progress]{opacity:0}
+.product .full-player .split-controls .buffer-track{top:20px;height:8px;border-radius:4px}
+@media(prefers-reduced-motion:reduce){.buffer-track>span{animation:none;transform:translateX(75%)}}

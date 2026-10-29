@@ -57,7 +57,15 @@
 
   function cancelSearch() { clearTimeout(searchTimer); searchTicket += 1; }
   function cancelPlayback() { clearTimeout(playbackTimer); playbackTicket += 1; }
-  function setPhase(phase) { state.phase = phase; state.playing = phase === 'playing'; }
+  const playbackMessages = {failed:'播放失败，点击播放按钮重试',unavailable:'当前内容不可播放，可切换曲目或查看音源账号',expired:'播放地址已失效，点击播放按钮重新获取'};
+  function setPhase(phase) {
+    const changed = state.phase !== phase;
+    state.phase = phase; state.playing = phase === 'playing';
+    if (changed) {
+      clearTimeout(toastTimer); $('#snackbar').hidden = true;
+      if (playbackMessages[phase]) toast(playbackMessages[phase]);
+    }
+  }
   function rememberPlayed() {
     if (!state.queue.includes(state.current)) state.queue.push(state.current);
     state.recent = [state.current,...state.recent.filter(id => id !== state.current)];
@@ -97,7 +105,6 @@
     playbackTimer = setTimeout(() => {
       if (ticket !== playbackTicket || state.current !== id || state.phase !== phase) return;
       finishPlayback();
-      if (phase === 'refreshing') toast('播放地址已更新');
     }, 1100);
   }
 
@@ -110,7 +117,7 @@
 
   function togglePlayback() {
     if (waitingPhases.includes(state.phase)) { stopWaiting(); return; }
-    if (state.phase === 'unavailable') return;
+    if (state.phase === 'unavailable') { toast(playbackMessages.unavailable); return; }
     if (state.phase === 'expired') { preparePlayback('refreshing'); return; }
     if (state.phase === 'failed') { preparePlayback('preparing',true); return; }
     if (state.phase === 'ended') { state.position = 0; state.prepared = false; }
@@ -129,21 +136,6 @@
     if (phase === 'buffering') { state.prepared = true; state.wantPlay = true; }
     if (phase === 'ended') { state.prepared = true; state.position = current().duration; state.wantPlay = false; }
     setPhase(phase);
-  }
-
-  function playbackNotice() {
-    let notice;
-    if (state.phase === 'preparing') notice = ['hourglass_top','正在准备音频',`正在从 ${current().source} 获取音频。可以取消准备，或选择其他曲目。`];
-    if (state.phase === 'buffering') notice = ['graphic_eq','正在缓冲',`已听到 ${time(state.position)}。暂停可停止自动继续，队列和位置会保留。`];
-    if (state.phase === 'refreshing') notice = ['sync','正在更新播放地址','保留当前曲目、队列和位置，获取成功后按之前的播放状态继续。'];
-    if (state.phase === 'failed') notice = ['wifi_off','播放没能继续','音频暂时无法读取。可以重试当前曲目，或先听下一首。','retry-play','重试播放'];
-    if (state.phase === 'unavailable') notice = ['lock','这首内容暂时无法播放','当前来源没有提供可播放资源。可以查看账号状态或换一首，登录不保证解除限制。','player-account','查看音源账号'];
-    if (state.phase === 'expired') notice = ['link_off','播放地址已失效','重新获取这首内容的地址，队列和当前位置会保留。','refresh-address','重新获取'];
-    if (state.phase === 'ended') notice = ['check_circle','这首已播放完','点击重新播放，或选择队列中的下一首。'];
-    if (state.phase === 'paused' && !state.prepared) notice = ['music_note','还没开始播放','点击播放，重新准备这首内容。'];
-    if (!notice) return '';
-    const [icon,title,copy,action,label] = notice, busy = waitingPhases.includes(state.phase);
-    return `<section class="player-notice state-card${busy ? ' is-pending' : ''}${['failed','unavailable','expired'].includes(state.phase) ? ' needs-action' : ''}" aria-labelledby="playback-message"><div class="state-card-content">${symbol(icon)}<div><h4 id="playback-message">${title}</h4><p>${escape(copy)}</p></div></div>${busy ? pendingBar(title) : ''}${action ? `<div class="state-actions"><button class="filled-button" data-action="${action}">${label}</button><button class="text-button" data-action="next">下一首</button></div>` : ''}</section>`;
   }
 
   function nav() {
@@ -309,15 +301,16 @@
   }
 
   function playButton(extra = '') {
-    const icons = {preparing:'close',buffering:'pause',refreshing:'close',failed:'refresh',expired:'refresh',ended:'replay'};
-    const labels = {preparing:'取消准备',buffering:'暂停等待',refreshing:'取消获取地址',failed:'重试播放',expired:'重新获取播放地址',unavailable:'当前内容不可播放',ended:'重新播放'};
+    const icons = {preparing:'close',buffering:'pause',refreshing:'close',failed:'refresh',expired:'refresh'};
+    const labels = {preparing:'取消准备',buffering:'暂停等待',refreshing:'取消获取地址',failed:'重试播放',expired:'重新获取播放地址',unavailable:'当前内容不可播放，查看提示'};
     const label = labels[state.phase] || (state.playing ? '暂停' : '播放');
-    return `<button class="play-button ${state.playing ? 'is-playing' : ''} ${extra}" data-action="toggle-play" aria-label="${label}" data-tip="${label}" ${state.phase === 'unavailable' ? 'disabled' : ''}>${symbol(icons[state.phase] || (state.playing ? 'pause' : 'play_arrow'), true)}</button>`;
+    return `<button class="play-button ${state.playing ? 'is-playing' : ''} ${extra}" data-action="toggle-play" aria-label="${label}" data-tip="${label}">${symbol(icons[state.phase] || (state.playing ? 'pause' : 'play_arrow'), true)}</button>`;
   }
 
   function progress() {
     const known = state.prepared, position = known ? time(state.position) : '—:—', duration = known ? time(current().duration) : '—:—';
-    return `<div class="progress-line"><span data-position>${position}</span><input type="range" min="0" max="${known ? current().duration : 1}" value="${known ? state.position : 0}" style="--progress:${known ? state.position / current().duration * 100 : 0}%" aria-label="播放进度" aria-valuetext="${known ? `${position} / ${duration}` : '音频尚未就绪，总时长未知'}" data-progress ${canSeek() ? '' : 'disabled'}><span>${duration}</span></div>`;
+    const busy = waitingPhases.includes(state.phase);
+    return `<div class="progress-line"><span data-position>${position}</span><span class="seek-track${busy ? ' is-buffering' : ''}"><input type="range" min="0" max="${known ? current().duration : 1}" value="${known ? state.position : 0}" style="--progress:${known ? state.position / current().duration * 100 : 0}%" aria-label="播放进度" aria-valuetext="${known ? `${position} / ${duration}` : '音频尚未就绪，总时长未知'}" data-progress ${canSeek() ? '' : 'disabled'}>${busy ? `<span class="buffer-track" role="progressbar" aria-label="${phaseLabels[state.phase]}"><span></span></span>` : ''}</span><span>${duration}</span></div>`;
   }
 
   function modeButton(action, icon, label, selected, tip = `${label}${selected ? '：已开启' : '：已关闭'}`) {
@@ -329,10 +322,10 @@
   function playerControls(desktop = false) {
     const shuffle = modeButton('shuffle','shuffle','随机播放',state.shuffle);
     const repeat = modeButton('repeat','repeat',state.repeat ? '列表循环' : '顺序播放',state.repeat,`当前${state.repeat ? '列表循环' : '顺序播放'}，点击切换`);
-    if (!desktop && hasLyrics()) return `<div class="hero-controls controls-with-lyrics">${playbackNotice()}${progress()}<div class="play-controls" role="group" aria-label="播放操作">${iconButton('previous','skip_previous','上一首')}${shuffle}${playButton()}${repeat}${iconButton('next','skip_next','下一首')}</div></div>`;
+    if (!desktop && hasLyrics()) return `<div class="hero-controls controls-with-lyrics">${progress()}<div class="play-controls" role="group" aria-label="播放操作">${iconButton('previous','skip_previous','上一首')}${shuffle}${playButton()}${repeat}${iconButton('next','skip_next','下一首')}</div></div>`;
     const volume = desktop ? `<label class="player-volume">${symbol('volume_up')}<input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="音量"></label>` : '';
     const modes = `<div class="player-secondary" role="group" aria-label="${desktop ? '播放模式与音量' : '播放模式'}">${shuffle}${repeat}${volume}</div>`;
-    return `<div class="hero-controls controls-no-lyrics">${playbackNotice()}<div class="split-controls" role="group" aria-label="播放操作">${playButton()}${iconButton('next','skip_next','下一首')}${iconButton('previous','skip_previous','上一首')}${progress()}</div>${modes}</div>`;
+    return `<div class="hero-controls controls-no-lyrics"><div class="split-controls" role="group" aria-label="播放操作">${playButton()}${iconButton('next','skip_next','下一首')}${iconButton('previous','skip_previous','上一首')}${progress()}</div>${modes}</div>`;
   }
 
   function seekTo(position) {
@@ -552,9 +545,6 @@
       case 'retry': runSearch(); break;
       case 'play-track': playTrack(id); break;
       case 'toggle-play': togglePlayback(); break;
-      case 'retry-play': preparePlayback('preparing',true); break;
-      case 'refresh-address': preparePlayback('refreshing'); break;
-      case 'player-account': closeOverlay(); state.route = 'settings'; render(); announce('音源账号页为演示，连接不代表取得播放权限'); break;
       case 'next': step(1); break;
       case 'previous': step(-1); break;
       case 'seek-lyric': seekTo(lyricLines()[Number(button.dataset.index)].at); break;
