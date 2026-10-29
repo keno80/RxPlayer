@@ -26,6 +26,7 @@
     queries: Object.fromEntries(sources.map(source => [source, '夜航'])),
     favorites: ['0-0', '1-2'], recent: ['0-0', '2-1'],
     queue: ['0-0', '1-2', '2-1'], queueOpen: queueBreakpoint.matches, current: '0-0', playing: false, position: 82,
+    phase: 'paused', prepared: true, wantPlay: false,
     libraryTab: 'favorites', playlist: null,
     playlists: [{name: '通勤路上', ids: ['0-0', '1-2', '2-1'], art: 0}, {name: '安静片刻', ids: ['1-0', '2-2'], art: 2}],
     connected: ['Bilibili'], artworkColor: true, lyricsLayout: 'auto', repeat: false, shuffle: false, volume: 65,
@@ -37,15 +38,105 @@
   let previousFocusRegion = null;
   let queueFocusOrigin = null;
   let toastTimer;
+  let searchTimer, playbackTimer, searchTicket = 0, playbackTicket = 0;
   const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const trackById = id => tracks.find(track => track.id === id);
   const current = () => trackById(state.current);
   const time = value => `${Math.floor(value / 60)}:${String(Math.floor(value % 60)).padStart(2, '0')}`;
-  const symbol = (name, filled = false) => `<span class="symbol${filled ? ' filled' : ''}" aria-hidden="true">${name}</span>`;
+  const stateIcons = new Set(['check_circle','hourglass_top','link_off','lock','refresh','replay','sync','wifi_off']);
+  const symbol = (name, filled = false) => `<span class="symbol${stateIcons.has(name) ? ' state-symbol' : ''}${filled ? ' filled' : ''}" aria-hidden="true">${name}</span>`;
   const art = (track, extra = '') => `<span class="art art-${track.art} ${extra}" aria-hidden="true"></span>`;
   const iconButton = (action, name, label, extra = '') => `<button type="button" class="icon-button" data-action="${action}" aria-label="${escape(label)}" data-tip="${escape(label)}" ${extra}>${symbol(name)}</button>`;
   const favoriteButton = track => `<button type="button" class="icon-button favorite-list" data-action="favorite" data-id="${track.id}" aria-label="收藏 ${escape(track.title)}" aria-pressed="${state.favorites.includes(track.id)}" data-tip="收藏">${symbol('favorite')}</button>`;
   const focusKey = element => Object.fromEntries(['action','id','source','route','tab','index'].filter(key => element.dataset[key] !== undefined).map(key => [key,element.dataset[key]]));
+  const waitingPhases = ['preparing','buffering','refreshing'];
+  const phaseLabels = {paused:'已暂停',playing:'正在播放',preparing:'正在准备音频',buffering:'正在缓冲',failed:'播放失败',unavailable:'内容不可用',expired:'播放地址已失效',refreshing:'正在重新获取地址',ended:'已播放完'};
+  const canSeek = () => state.prepared && ['paused','playing'].includes(state.phase);
+  const announce = message => { $('#live-feedback').textContent = message; };
+  const pendingBar = label => `<div class="state-progress" role="progressbar" aria-label="${escape(label)}"><span></span></div>`;
+
+  function cancelSearch() { clearTimeout(searchTimer); searchTicket += 1; }
+  function cancelPlayback() { clearTimeout(playbackTimer); playbackTicket += 1; }
+  const playbackMessages = {failed:'播放失败，点击播放按钮重试',unavailable:'当前内容不可播放，可切换曲目或查看音源账号',expired:'播放地址已失效，点击播放按钮重新获取'};
+  function setPhase(phase) {
+    const changed = state.phase !== phase;
+    state.phase = phase; state.playing = phase === 'playing';
+    if (changed) {
+      clearTimeout(toastTimer); $('#snackbar').hidden = true;
+      if (playbackMessages[phase]) toast(playbackMessages[phase]);
+    }
+  }
+  function rememberPlayed() {
+    if (!state.queue.includes(state.current)) state.queue.push(state.current);
+    state.recent = [state.current,...state.recent.filter(id => id !== state.current)];
+  }
+
+  function runSearch() {
+    const fromControl = product.contains(document.activeElement) && document.activeElement.id !== 'search-input';
+    cancelSearch();
+    state.scene = 'loading';
+    const ticket = searchTicket, source = state.source;
+    render(); announce(`正在搜索 ${source}`);
+    if (fromControl) $('[data-action="cancel-search"]')?.focus({preventScroll:true});
+    searchTimer = setTimeout(() => {
+      if (ticket !== searchTicket || source !== state.source || state.scene !== 'loading') return;
+      finishSearch();
+    }, 900);
+  }
+
+  function finishSearch() {
+    const fromCancel = document.activeElement.dataset.action === 'cancel-search';
+    cancelSearch(); state.scene = 'results'; render();
+    if (fromCancel) $('#search-input')?.focus({preventScroll:true});
+    announce(`${state.source} 搜索已完成`);
+  }
+
+  function finishPlayback() {
+    cancelPlayback(); state.prepared = true;
+    setPhase(state.wantPlay ? 'playing' : 'paused');
+    if (state.playing) rememberPlayed();
+    render(); announce(state.playing ? '音频已就绪，继续播放' : '音频已就绪，保持暂停');
+  }
+
+  function preparePlayback(phase, wantPlay = state.wantPlay) {
+    cancelPlayback(); state.wantPlay = wantPlay; setPhase(phase);
+    const ticket = playbackTicket, id = state.current;
+    render(); announce(phaseLabels[phase]);
+    playbackTimer = setTimeout(() => {
+      if (ticket !== playbackTicket || state.current !== id || state.phase !== phase) return;
+      finishPlayback();
+    }, 1100);
+  }
+
+  function stopWaiting() {
+    const phase = state.phase;
+    cancelPlayback(); state.wantPlay = false;
+    setPhase(phase === 'refreshing' ? 'expired' : 'paused');
+    render(); announce(phase === 'refreshing' ? '已取消重新获取地址' : '已暂停，保持当前曲目');
+  }
+
+  function togglePlayback() {
+    if (waitingPhases.includes(state.phase)) { stopWaiting(); return; }
+    if (state.phase === 'unavailable') { toast(playbackMessages.unavailable); return; }
+    if (state.phase === 'expired') { preparePlayback('refreshing'); return; }
+    if (state.phase === 'failed') { preparePlayback('preparing',true); return; }
+    if (state.phase === 'ended') { state.position = 0; state.prepared = false; }
+    if (!state.prepared) { preparePlayback('preparing',true); return; }
+    state.wantPlay = !state.playing;
+    setPhase(state.wantPlay ? 'playing' : 'paused');
+    if (state.playing) rememberPlayed();
+    render();
+  }
+
+  function previewPhase(phase) {
+    cancelPlayback();
+    if (phase === 'playing') { state.prepared = true; state.wantPlay = true; }
+    if (phase === 'paused') { state.prepared = true; state.wantPlay = false; }
+    if (phase === 'preparing') { state.prepared = false; state.position = 0; state.wantPlay = true; }
+    if (phase === 'buffering') { state.prepared = true; state.wantPlay = true; }
+    if (phase === 'ended') { state.prepared = true; state.position = current().duration; state.wantPlay = false; }
+    setPhase(phase);
+  }
 
   function nav() {
     const items = [ ['search', 'search', '搜索'], ['library', 'library_music', '音乐库'], ['settings', 'settings', '设置'] ];
@@ -87,13 +178,15 @@
       content = `<div class="section-head"><h2>最近搜索</h2><button class="text-button" data-action="clear-history">清空</button></div>
         <div class="chips">${state.history.map(term => `<button class="history-chip" data-action="history" data-query="${escape(term)}">${symbol('history')}${escape(term)}</button>`).join('') || '<p class="hint">搜过的内容会出现在这里。</p>'}</div>
         <div class="section-head"><h2>接着听</h2></div><div class="track-list">${state.recent.map(trackById).map(row).join('')}</div>`;
+    } else if (state.scene === 'loading') {
+      content = `<section class="search-wait state-card" aria-busy="true" aria-label="搜索结果"><div class="state-card-content">${symbol('search')}<div><h2>正在搜索 ${state.source}</h2><p>正在查找「${escape(query)}」。当前播放不受影响。</p></div></div>${pendingBar(`正在搜索 ${state.source}`)}<div class="state-actions"><button class="tonal-button" data-action="cancel-search">取消搜索</button></div></section>`;
     } else if (state.scene === 'error') {
       content = empty('wifi', '暂时连接不上', '当前音源没有响应。你可以重试，或切换其他音源；已在播放的内容不会因此停止。', 'retry', '重新连接');
     } else if (state.scene === 'empty') {
       content = empty('search', '还没找到这段声音', '试试更短的关键词，或换一个音源。你也可以直接粘贴视频或歌曲链接。', 'clear-search', '重新搜索');
     } else {
       const results = tracks.filter(track => track.source === state.source && (!query.trim() || `${track.title} ${track.author}`.toLowerCase().includes(query.trim().toLowerCase())));
-      const expired = state.scene === 'expired' ? `<div class="inline-banner">${symbol('login')}<div class="banner-copy">登录已过期<small>重新连接 ${state.source}，继续访问账号内的内容。</small></div><button class="text-button" data-action="account-settings">去登录</button></div>` : '';
+      const expired = state.scene === 'expired' ? `<div class="inline-banner">${symbol('login')}<div class="banner-copy">账号连接已过期<small>匿名可用的内容仍可搜索；账号内内容需要重新连接。</small></div><button class="text-button" data-action="account-settings">查看账号</button></div>` : '';
       content = `${expired}<div class="section-head results-heading"><h2>搜索结果</h2><small role="status">${results.length} 个${state.source === '网易云' ? '歌曲' : '视频'}</small></div>${results.length ? featured(results[0]) : ''}${results.length > 1 ? `<div class="section-head"><h2>更多匹配</h2></div><div class="track-list">${results.slice(1).map(row).join('')}</div>` : ''}
         <p class="hint">来自 ${state.source} · 保留原始标题与版本信息</p>`;
       if (!results.length) content = empty('search', '没有匹配的结果', '换个关键词，再发现一些好声音。', 'clear-search', '重新搜索');
@@ -102,7 +195,7 @@
       <form class="search-form" id="search-form" role="search">
         <span id="search-leading" class="symbol" aria-hidden="true">search</span>
         <button type="button" id="search-back" class="icon-button" data-action="exit-search" aria-label="退出搜索输入" hidden>${symbol('arrow_back')}</button>
-        <input id="search-input" aria-label="搜索歌曲、视频或内容链接" placeholder="歌曲、视频，或粘贴链接" value="${escape(state.scene === 'idle' ? '' : query)}" enterkeyhint="search" autocomplete="off">
+        <input id="search-input" aria-label="搜索歌曲、视频或内容链接" placeholder="歌曲、视频，或粘贴链接" value="${escape(query)}" enterkeyhint="search" autocomplete="off">
         ${iconButton('clear-search', 'close', '清空搜索')}
         <button class="icon-button" type="submit" aria-label="执行搜索" data-tip="搜索">${symbol('search')}</button>
       </form>${sourceSelector()}${content}`;
@@ -208,11 +301,16 @@
   }
 
   function playButton(extra = '') {
-    return `<button class="play-button ${state.playing ? 'is-playing' : ''} ${extra}" data-action="toggle-play" aria-label="${state.playing ? '暂停' : '播放'}" data-tip="${state.playing ? '暂停' : '播放'}">${symbol(state.playing ? 'pause' : 'play_arrow', true)}</button>`;
+    const icons = {preparing:'close',buffering:'pause',refreshing:'close',failed:'refresh',expired:'refresh'};
+    const labels = {preparing:'取消准备',buffering:'暂停等待',refreshing:'取消获取地址',failed:'重试播放',expired:'重新获取播放地址',unavailable:'当前内容不可播放，查看提示'};
+    const label = labels[state.phase] || (state.playing ? '暂停' : '播放');
+    return `<button class="play-button ${state.playing ? 'is-playing' : ''} ${extra}" data-action="toggle-play" aria-label="${label}" data-tip="${label}">${symbol(icons[state.phase] || (state.playing ? 'pause' : 'play_arrow'), true)}</button>`;
   }
 
   function progress() {
-    return `<div class="progress-line"><span data-position>${time(state.position)}</span><input type="range" min="0" max="${current().duration}" value="${state.position}" style="--progress:${state.position / current().duration * 100}%" aria-label="播放进度" aria-valuetext="${time(state.position)} / ${time(current().duration)}" data-progress><span>${time(current().duration)}</span></div>`;
+    const known = state.prepared, position = known ? time(state.position) : '—:—', duration = known ? time(current().duration) : '—:—';
+    const busy = waitingPhases.includes(state.phase);
+    return `<div class="progress-line"><span data-position>${position}</span><span class="seek-track${busy ? ' is-buffering' : ''}"><input type="range" min="0" max="${known ? current().duration : 1}" value="${known ? state.position : 0}" style="--progress:${known ? state.position / current().duration * 100 : 0}%" aria-label="播放进度" aria-valuetext="${known ? `${position} / ${duration}` : '音频尚未就绪，总时长未知'}" data-progress ${canSeek() ? '' : 'disabled'}>${busy ? `<span class="buffer-track" role="progressbar" aria-label="${phaseLabels[state.phase]}"><span></span></span>` : ''}</span><span>${duration}</span></div>`;
   }
 
   function modeButton(action, icon, label, selected, tip = `${label}${selected ? '：已开启' : '：已关闭'}`) {
@@ -231,6 +329,7 @@
   }
 
   function seekTo(position) {
+    if (!canSeek()) return;
     state.position = Math.max(0,Math.min(current().duration,position));
     $$('[data-position]').forEach(element => { element.textContent = time(state.position); });
     $$('[data-progress]').forEach(element => {
@@ -248,15 +347,16 @@
   }
 
   function activeLyricIndex() {
+    if (!state.prepared) return -1;
     return lyricLines().findLastIndex(line => state.position >= line.at);
   }
 
   function lyricButtons(windowed = false) {
     const lines = lyricLines(), active = activeLyricIndex();
-    const indices = windowed ? Array.from({length:5},(_,index) => active + index - 2) : lines.map((_,index) => index);
+    const indices = windowed ? Array.from({length:5},(_,index) => Math.max(0,active) + index - 2) : lines.map((_,index) => index);
     return indices.map(index => {
       const line = lines[index];
-      return line ? `<button class="lyric-line${index === active ? ' is-active' : ''}" data-action="seek-lyric" data-index="${index}" aria-label="跳转至 ${time(line.at)}，${escape(line.text)}" ${index === active ? 'aria-current="true"' : ''}>${escape(line.text)}</button>` : '<span class="lyric-spacer" aria-hidden="true"></span>';
+      return line ? `<button class="lyric-line${index === active ? ' is-active' : ''}" data-action="seek-lyric" data-index="${index}" aria-label="跳转至 ${time(line.at)}，${escape(line.text)}" ${canSeek() ? '' : 'disabled'} ${index === active ? 'aria-current="true"' : ''}>${escape(line.text)}</button>` : '<span class="lyric-spacer" aria-hidden="true"></span>';
     }).join('');
   }
 
@@ -283,7 +383,7 @@
 
   function transport() {
     const track = current();
-    return `<button class="now-track" data-action="open-player" aria-label="展开 ${escape(track.title)} 的播放器">${art(track, 'mini')}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${state.playing ? '正在播放' : '已暂停'} · ${track.source}</span></span></button>
+    return `<button class="now-track" data-action="open-player" aria-label="展开 ${escape(track.title)} 的播放器">${art(track, 'mini')}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${!state.prepared && state.phase === 'paused' ? '尚未播放' : phaseLabels[state.phase]} · ${track.source}</span></span></button>
       <div class="transport-center"><div class="play-controls">${iconButton('shuffle','shuffle','随机播放',`aria-pressed="${state.shuffle}"`)}${iconButton('previous','skip_previous','上一首')}${playButton()}${iconButton('next','skip_next','下一首')}${iconButton('repeat','repeat','列表循环',`aria-pressed="${state.repeat}"`)}</div>${progress()}</div>
       <div class="transport-right"><span class="symbol volume-icon" aria-hidden="true">volume_up</span><input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="音量">${iconButton('open-queue','queue_music','播放队列')}</div>
       ${playButton('mini-play')}<button class="icon-button mini-queue" data-action="open-queue" aria-label="播放队列">${symbol('queue_music')}</button>`;
@@ -291,11 +391,14 @@
 
   function render() {
     const active = document.activeElement;
+    const searchFocus = active.id === 'search-input' ? {start:active.selectionStart,end:active.selectionEnd} : null;
     const queueFocus = $('#support-pane').contains(active) ? focusKey(active) : null;
     const focusedData = product.contains(active) && active.dataset.action && !state.overlay ? focusKey(active) : null;
     product.dataset.device = state.device;
     product.dataset.theme = state.theme;
     product.dataset.playing = state.playing;
+    product.dataset.playbackPhase = state.phase;
+    product.dataset.prepared = state.prepared;
     product.dataset.lyricsMode = hasLyrics() ? 'available' : 'none';
     const palette = globalThis.rxCoverPalettes.covers[current().art];
     product.dataset.coverArt = palette.art;
@@ -309,6 +412,8 @@
     $('#transport').innerHTML = transport();
     $('#scene-select').value = state.scene;
     $('#lyrics-layout-select').value = state.lyricsLayout;
+    $('#playback-select').value = state.phase;
+    $('#review-complete').hidden = !waitingPhases.includes(state.phase) && state.scene !== 'loading';
     $$('.device-picker button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.deviceChoice === state.device)));
     $('#review-theme').innerHTML = symbol(state.theme === 'light' ? 'dark_mode' : 'light_mode');
     if (state.overlay) renderOverlay();
@@ -316,6 +421,10 @@
       $$('[data-action]', product).find(element => Object.entries(focusedData).every(([key,value]) => element.dataset[key] === value) && element.getClientRects().length)?.focus({preventScroll:true});
     }
     syncPanels();
+    if (searchFocus && !state.overlay && !queueModal()) {
+      $('#search-input')?.focus({preventScroll:true});
+      $('#search-input')?.setSelectionRange(searchFocus.start,searchFocus.end);
+    }
     if (queueFocus && state.queueOpen) ($$('[data-action]',$('#support-pane')).find(element => Object.entries(queueFocus).every(([key,value]) => element.dataset[key] === value)) || $('[data-action="close-queue"]',$('#support-pane')))?.focus({preventScroll:true});
   }
 
@@ -395,18 +504,18 @@
       : `<header class="sheet-head"><h2 id="dialog-title">${escape(title)}</h2>${iconButton('close-overlay','close','关闭')}</header>`;
     dialog.innerHTML = `${heading}${body}`;
     if (wasInDialog) requestAnimationFrame(() => {
-      const target = focusedData ? $$('[data-action]',dialog).find(element => Object.entries(focusedData).every(([key,value]) => element.dataset[key] === value)) : null;
-      (target || $('button,input,select', dialog))?.focus();
+      const target = focusedData ? $$('[data-action]',dialog).find(element => !element.disabled && Object.entries(focusedData).every(([key,value]) => element.dataset[key] === value)) : null;
+      (target || $('[data-action="toggle-play"]:not(:disabled)',dialog) || $('button:not(:disabled),input:not(:disabled),select', dialog))?.focus({preventScroll:true});
     });
   }
 
   function playTrack(id) {
+    cancelPlayback();
     state.current = id;
     state.position = 0;
-    state.playing = true;
+    state.prepared = false;
     if (!state.queue.includes(id)) state.queue.push(id);
-    state.recent = [id, ...state.recent.filter(item => item !== id)];
-    render();
+    preparePlayback('preparing',true);
   }
 
   function step(offset) {
@@ -426,15 +535,16 @@
     const {action, id, source} = button.dataset;
     switch (action) {
       case 'navigate': closeOverlay(); state.route = button.dataset.route; state.playlist = null; render(); break;
-      case 'source': state.queries[state.source] = $('#search-input').value; state.source = source; render(); break;
+      case 'source': cancelSearch(); state.queries[state.source] = $('#search-input').value; state.source = source; state.scene = 'results'; render(); break;
       case 'go-search': state.route = 'search'; render(); break;
-      case 'history': state.queries[state.source] = button.dataset.query; state.scene = 'results'; render(); break;
+      case 'history': state.queries[state.source] = button.dataset.query; runSearch(); break;
       case 'clear-history': state.history = []; render(); break;
-      case 'clear-search': state.queries[state.source] = ''; state.scene = 'idle'; render(); $('#search-input')?.focus(); break;
+      case 'clear-search': cancelSearch(); state.queries[state.source] = ''; state.scene = 'idle'; render(); $('#search-input')?.focus(); break;
+      case 'cancel-search': cancelSearch(); state.scene = 'idle'; render(); $('#search-input')?.focus(); announce('已取消搜索，当前播放未改变'); break;
       case 'exit-search': product.classList.remove('is-searching'); $('#search-back').hidden = true; $('#search-leading').hidden = false; $('#search-input').blur(); break;
-      case 'retry': state.scene = 'results'; render(); break;
+      case 'retry': runSearch(); break;
       case 'play-track': playTrack(id); break;
-      case 'toggle-play': state.playing = !state.playing; if (state.position >= current().duration) state.position = 0; render(); break;
+      case 'toggle-play': togglePlayback(); break;
       case 'next': step(1); break;
       case 'previous': step(-1); break;
       case 'seek-lyric': seekTo(lyricLines()[Number(button.dataset.index)].at); break;
@@ -453,8 +563,10 @@
       }
       case 'remove-queue': {
         state.queue = state.queue.filter(item => item !== id);
-        if (id === state.current && state.queue.length) { state.current = state.queue[0]; state.position = 0; }
-        else if (!state.queue.length) state.playing = false;
+        if (id === state.current) {
+          cancelPlayback(); state.wantPlay = false; state.prepared = false; setPhase('paused');
+          if (state.queue.length) { state.current = state.queue[0]; state.position = 0; }
+        }
         render(); break;
       }
       case 'shuffle': state.shuffle = !state.shuffle; render(); toast(state.shuffle ? '已开启随机播放' : '已关闭随机播放'); break;
@@ -510,9 +622,9 @@
           : matches('music.163.com') ? '网易云' : null;
         openOverlay('link');
       } else {
-        state.scene = query ? 'results' : 'idle';
         if (query) state.history = [query, ...state.history.filter(item => item !== query)].slice(0, 6);
-        render();
+        if (query) runSearch();
+        else { cancelSearch(); state.scene = 'idle'; render(); }
       }
     }
     if (event.target.id === 'playlist-form') {
@@ -534,13 +646,22 @@
   });
 
   document.addEventListener('change', event => {
-    if (event.target.id === 'scene-select') { closeQueue(false); closeOverlay(); state.route = 'search'; state.scene = event.target.value; render(); }
+    if (event.target.id === 'scene-select') { cancelSearch(); closeQueue(false); closeOverlay(); state.route = 'search'; state.scene = event.target.value; render(); announce(state.scene === 'loading' ? '正在搜索，审核场景保持等待' : '搜索场景已切换，当前播放不变'); }
+    if (event.target.id === 'playback-select') {
+      previewPhase(event.target.value); render();
+      if (state.overlay !== 'player') openOverlay('player');
+      announce(phaseLabels[state.phase]);
+    }
     if (event.target.id === 'theme-select') { state.theme = event.target.value; render(); }
     if (event.target.id === 'lyrics-layout-select') { state.lyricsLayout = event.target.value; render(); }
     if (event.target.id === 'artwork-switch') { state.artworkColor = event.target.checked; if (state.overlay === 'player') renderOverlay(); toast('播放页配色偏好已更新'); }
   });
 
   document.addEventListener('input', event => {
+    if (event.target.id === 'search-input') {
+      state.queries[state.source] = event.target.value;
+      if (state.scene === 'loading') { cancelSearch(); state.scene = 'idle'; render(); }
+    }
     if (event.target.matches('.volume')) {
       state.volume = Number(event.target.value);
       $$('.volume').forEach(input => { input.value = state.volume; input.style.setProperty('--progress', `${state.volume}%`); });
@@ -566,9 +687,10 @@
     }
     const input = document.activeElement?.matches('input,textarea,select,[contenteditable=true]');
     const focusedButton = document.activeElement?.tagName === 'BUTTON';
-    if (event.code === 'Space' && !input && !focusedButton && !state.overlay && !queueModal()) { event.preventDefault(); state.playing = !state.playing; render(); }
+    if (event.code === 'Space' && !input && !focusedButton && (!state.overlay || state.overlay === 'player') && !queueModal()) { event.preventDefault(); togglePlayback(); }
     if (['ArrowLeft','ArrowRight'].includes(event.key) && event.target instanceof Element && event.target.closest('.sources')) {
       event.preventDefault();
+      cancelSearch(); state.scene = 'results';
       state.source = sources[(sources.indexOf(state.source) + (event.key === 'ArrowRight' ? 1 : 2)) % 3];
       render(); $(`.source-button[data-source="${state.source}"]`).focus();
     }
@@ -576,7 +698,13 @@
 
   $('#review-theme').addEventListener('click', () => { state.theme = state.theme === 'light' ? 'dark' : 'light'; render(); });
   $('#review-player').addEventListener('click', () => openOverlay('player'));
-  $('#review-reset').addEventListener('click', () => { closeQueue(false); closeOverlay(); queueFocusOrigin = null; state = initial(); render(); toast('已恢复原型初始状态'); });
+  $('#review-complete').addEventListener('click', () => {
+    if (state.overlay === 'player' && waitingPhases.includes(state.phase)) finishPlayback();
+    else if (state.scene === 'loading') finishSearch();
+    else if (waitingPhases.includes(state.phase)) finishPlayback();
+    requestAnimationFrame(() => (state.overlay === 'player' ? $('#dialog [data-action="toggle-play"]:not(:disabled)') : $('#search-input'))?.focus({preventScroll:true}));
+  });
+  $('#review-reset').addEventListener('click', () => { cancelSearch(); cancelPlayback(); closeQueue(false); closeOverlay(); queueFocusOrigin = null; state = initial(); render(); toast('已恢复原型初始状态'); });
   new ResizeObserver(syncPanels).observe(product);
   queueBreakpoint.addEventListener('change',syncPanels);
   setInterval(() => {
@@ -584,7 +712,7 @@
     if (state.position >= current().duration) {
       const index = state.queue.indexOf(state.current);
       if (state.repeat || index < state.queue.length - 1) step(1);
-      else { state.playing = false; render(); }
+      else { state.wantPlay = false; setPhase('ended'); render(); announce('当前队列已播放完'); }
       return;
     }
     state.position += 1;
@@ -596,6 +724,11 @@
       element.setAttribute('aria-valuetext', `${time(state.position)} / ${time(current().duration)}`);
     });
   }, 1000);
+  const review = new URLSearchParams(location.search);
+  if (['android','desktop'].includes(review.get('device'))) state.device = review.get('device');
+  if (['dark','light'].includes(review.get('theme'))) state.theme = review.get('theme');
+  if (['results','idle','loading','empty','error','expired'].includes(review.get('scene'))) state.scene = review.get('scene');
+  if (Object.hasOwn(phaseLabels,review.get('playback'))) previewPhase(review.get('playback'));
   render();
-  if (new URLSearchParams(location.search).get('view') === 'player') openOverlay('player');
+  if (review.get('view') === 'player') openOverlay('player');
 })();
