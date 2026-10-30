@@ -1,6 +1,6 @@
 # RxPlayer 原型 03
 
-状态：正常播放页暂定基线为 `774a6d6`（`revision=queue-fade`），覆盖 Android 有 / 无歌词、PC 左播放器 / 右歌词及队列。用户于 2026-10-29 以“ok，这版没问题”确认 `608ddb2`（`revision=track-feedback`）的播放状态修订：进度条缓冲、异常 toast、队列末尾停止及对应操作。正式 UI 尚未实现；搜索、音乐库、设置仍待完整审核。01 / 02 保留对照，下方历次“待审核”为当时状态。
+状态：正常播放页暂定基线为 `774a6d6`（`revision=queue-fade`），覆盖 Android 有 / 无歌词、PC 左播放器 / 右歌词及队列。用户于 2026-10-29 确认 `608ddb2` 的播放状态，并于 2026-10-30 确认 `cf8e74b` 的 Windows 第三种浮岛底栏；现仅保留该底栏。播放页与新底栏已分别迁移源码，新底栏本轮未构建 / 运行。搜索、音乐库、设置仍待完整审核。01 / 02 保留对照，下方历次“待审核”为当时状态。
 
 ## 预览
 
@@ -11,6 +11,7 @@ python -m http.server 8766 --bind 127.0.0.1 --directory design
 ```
 
 - 完整原型：`http://127.0.0.1:8766/prototype-v3/`
+- 已确认的 Windows 浮岛底栏：`http://127.0.0.1:8766/prototype-v3/transport-review.html`（旧比较页地址兼容，其他方案已移除）。
 - 从播放页开始：`http://127.0.0.1:8766/prototype-v3/?view=player`
 - 新增状态审核：`http://127.0.0.1:8766/prototype-v3/?view=player&device=android&playback=buffering&revision=track-feedback`
 - 工具栏支持 Android / Windows、深浅主题、搜索场景、播放场景和歌词状态切换。歌词状态默认跟随模拟曲目，也可强制对照两套按钮布局。返回播放页之前的页面可用左上角返回按钮或 Esc。

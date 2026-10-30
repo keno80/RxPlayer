@@ -1,0 +1,148 @@
+{
+  "platform": "Android API 37",
+  "kind": "native_ui",
+  "checks": [
+    {
+      "name": "lyrics_five_controls_visible",
+      "passed": true,
+      "detail": {
+        "上一首": [
+          103,
+          2444,
+          258,
+          2599
+        ],
+        "随机播放": [
+          271,
+          2444,
+          426,
+          2599
+        ],
+        "播放": [
+          439,
+          2444,
+          797,
+          2599
+        ],
+        "顺序播放": [
+          810,
+          2444,
+          965,
+          2599
+        ],
+        "下一首": [
+          978,
+          2444,
+          1133,
+          2599
+        ]
+      }
+    },
+    {
+      "name": "lyrics_controls_one_row",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "touch_targets_48dp",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "play_pause_progress",
+      "passed": true,
+      "detail": [
+        "0:07",
+        "0:16"
+      ]
+    },
+    {
+      "name": "seek_while_paused",
+      "passed": true,
+      "detail": [
+        "0:09",
+        "0:16"
+      ]
+    },
+    {
+      "name": "pause_position_stable",
+      "passed": true,
+      "detail": [
+        "0:09",
+        "0:16"
+      ]
+    },
+    {
+      "name": "single_queue_visible",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rapid_selection_last_wins",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "no_lyrics_next_visible",
+      "passed": true,
+      "detail": {
+        "上一首": [
+          129,
+          2134,
+          335,
+          2340
+        ],
+        "播放": [
+          129,
+          1875,
+          849,
+          2081
+        ],
+        "下一首": [
+          901,
+          1875,
+          1107,
+          2081
+        ]
+      }
+    },
+    {
+      "name": "no_lyrics_split_layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "queue_end_stops_at_duration",
+      "passed": true,
+      "detail": [
+        "0:16",
+        "0:16"
+      ]
+    },
+    {
+      "name": "queue_end_silent",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "queue_remove_updates_count",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "back_closes_queue_keeps_player",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "back_returns_to_previous_page",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "lyrics_restored_after_queue_and_theme",
+      "passed": true,
+      "detail": null
+    }
+  ]
+}

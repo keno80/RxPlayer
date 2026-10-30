@@ -230,7 +230,12 @@ fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged
                         }
                         if (playback.track != null) {
                             PlayerTheme(dark, currentTrack.artwork.takeIf { followArtwork }) {
-                                MiniPlayer(playback, currentTrack, ::toggle, { step(1) }, { queryFocused = false; expandedPlayer = true }, { queueOpen = true }, miniExpandFocus, miniQueueFocus)
+                                if (isDesktop) {
+                                    DesktopMiniPlayer(playback, currentTrack, queueOpen, ::toggle, { step(-1) }, { step(1) },
+                                        { queryFocused = false; expandedPlayer = true }, { queueOpen = !queueOpen }, miniExpandFocus, miniQueueFocus)
+                                } else {
+                                    MiniPlayer(playback, currentTrack, ::toggle, { step(1) }, { queryFocused = false; expandedPlayer = true }, { queueOpen = true }, miniExpandFocus, miniQueueFocus)
+                                }
                             }
                         }
                         if (!desktop) {

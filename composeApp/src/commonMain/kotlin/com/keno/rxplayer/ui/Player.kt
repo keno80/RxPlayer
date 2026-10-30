@@ -78,20 +78,26 @@ fun PlayerScreen(
     }
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val dockQueue = isDesktop && maxWidth > 1100.dp
+            val availableWidth = maxWidth
+            val dockQueue = isDesktop && availableWidth > 1100.dp
             if (isDesktop) {
-                Column(Modifier.fillMaxSize().safeDrawingPadding().padding(if (maxWidth < 1000.dp) 24.dp else 32.dp)) {
+                Column(Modifier.fillMaxSize().safeDrawingPadding().padding(if (availableWidth < 1000.dp) 24.dp else 32.dp)) {
                     PlayerHeader(onClose, { QueueButton(state.queue.size, queueOpen, onQueue, Modifier.focusRequester(queueFocus)) }, Modifier.focusRequester(backFocus))
                     Spacer(Modifier.height(24.dp))
-                    if (maxWidth > 760.dp) {
-                        Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (maxWidth < 1000.dp) 32.dp else 48.dp)) {
-                            Column(Modifier.width(if (maxWidth < 1000.dp) 300.dp else 352.dp).fillMaxHeight().verticalScroll(rememberScrollState())) {
-                                CoverCard(track, Modifier.widthIn(max = 280.dp).fillMaxWidth().align(Alignment.CenterHorizontally))
-                                Spacer(Modifier.height(20.dp))
-                                TrackInformation(track, favorite, onFavorite)
-                                Spacer(Modifier.height(24.dp))
-                                SplitControls(state, onToggle, onPrevious, onNext)
-                                PlaybackModes(state, desktop = true)
+                    if (availableWidth > 760.dp) {
+                        Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (availableWidth < 1000.dp) 32.dp else 48.dp)) {
+                            BoxWithConstraints(Modifier.width(if (availableWidth < 1000.dp) 300.dp else 352.dp).fillMaxHeight()) {
+                                val coverSize = (maxHeight - 392.dp).coerceIn(120.dp, 280.dp)
+                                Column(Modifier.fillMaxSize()) {
+                                    Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+                                        CoverCard(track, Modifier.width(coverSize).align(Alignment.CenterHorizontally))
+                                        Spacer(Modifier.height(20.dp))
+                                        TrackInformation(track, favorite, onFavorite)
+                                    }
+                                    Spacer(Modifier.height(16.dp))
+                                    SplitControls(state, onToggle, onPrevious, onNext)
+                                    PlaybackModes(state, desktop = true)
+                                }
                             }
                             Surface(Modifier.weight(1f).fillMaxHeight(), shape = RoundedCornerShape(32.dp), color = MaterialTheme.colorScheme.surfaceContainerLow) {
                                 if (dockQueue && queueOpen) QueuePane(state, onCloseQueue, onSelect, onRemove)
@@ -233,31 +239,35 @@ private fun PlaybackModes(state: PlaybackState, desktop: Boolean) {
         if (desktop) {
             Spacer(Modifier.weight(1f))
             Icon(Icons.Rounded.VolumeUp, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            Slider(value = state.volume, onValueChange = state::setVolume, enabled = state.canChangeVolume, modifier = Modifier.width(88.dp).onPreviewKeyEvent { it.key == Key.Spacebar }.semantics { contentDescription = "音量" })
+            Slider(value = state.volume, onValueChange = state::changeVolume, enabled = state.canChangeVolume, modifier = Modifier.width(88.dp).onPreviewKeyEvent { it.key == Key.Spacebar }.semantics { contentDescription = "音量" })
         }
     }
 }
 
 @Composable
-private fun ModeButton(selected: Boolean, image: ImageVector, label: String, onClick: () -> Unit) {
-    TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState(), modifier = Modifier.size(48.dp)) {
-        FilledIconToggleButton(checked = selected, onCheckedChange = { onClick() }, modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(if (selected) 16.dp else 48.dp), colors = IconButtonDefaults.filledIconToggleButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onSurfaceVariant, checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer, checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer)) {
-            Icon(image, label)
+internal fun ModeButton(selected: Boolean, image: ImageVector, label: String, onClick: () -> Unit, container: Color = MaterialTheme.colorScheme.surfaceContainer) {
+    Box(Modifier.size(48.dp)) {
+        TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState(), modifier = Modifier.fillMaxSize()) {
+            FilledIconToggleButton(checked = selected, onCheckedChange = { onClick() }, modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(if (selected) 16.dp else 48.dp), colors = IconButtonDefaults.filledIconToggleButtonColors(containerColor = container, contentColor = MaterialTheme.colorScheme.onSurfaceVariant, checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer, checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer)) {
+                Icon(image, label)
+            }
         }
     }
 }
 
 @Composable
-internal fun PlayerIcon(image: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier.size(48.dp), container: Color = MaterialTheme.colorScheme.surfaceContainer) {
-    TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState(), modifier = modifier) {
-        FilledIconButton(onClick, Modifier.fillMaxSize(), shape = RoundedCornerShape(48.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = container, contentColor = contentColorFor(container))) {
-            Icon(image, label)
+internal fun PlayerIcon(image: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier.size(48.dp), container: Color = MaterialTheme.colorScheme.surfaceContainer, contentColor: Color = contentColorFor(container)) {
+    Box(modifier) {
+        TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState(), modifier = Modifier.fillMaxSize()) {
+            FilledIconButton(onClick, Modifier.fillMaxSize(), shape = RoundedCornerShape(48.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = container, contentColor = contentColor)) {
+                Icon(image, label)
+            }
         }
     }
 }
 
 @Composable
-private fun PlaybackButton(state: PlaybackState, onClick: () -> Unit, modifier: Modifier) {
+internal fun PlaybackButton(state: PlaybackState, onClick: () -> Unit, modifier: Modifier) {
     val label = when (state.phase) {
         PlaybackPhase.Preparing -> "取消准备"
         PlaybackPhase.Refreshing -> "取消获取地址"
@@ -275,9 +285,13 @@ private fun PlaybackButton(state: PlaybackState, onClick: () -> Unit, modifier: 
     }
     val corner by animateDpAsState(if (state.isPlaying) 16.dp else 48.dp, if (LocalPlayerReducedMotion.current) snap() else MaterialTheme.motionScheme.fastSpatialSpec())
     val recovering = state.phase == PlaybackPhase.Failed || state.phase == PlaybackPhase.Expired
-    TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState(), modifier = modifier) {
-        Button(onClick, modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(corner), contentPadding = PaddingValues(0.dp), colors = ButtonDefaults.buttonColors(containerColor = if (recovering) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.primary, contentColor = if (recovering) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary)) {
-            Icon(icon, label, Modifier.size(32.dp))
+    // Tooltip's modifier is applied to its inner anchor in the locked Material3 version.
+    // Keep Row weight and requested size on a direct layout child.
+    Box(modifier) {
+        TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState(), modifier = Modifier.fillMaxSize()) {
+            Button(onClick, modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(corner), contentPadding = PaddingValues(0.dp), colors = ButtonDefaults.buttonColors(containerColor = if (recovering) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.primary, contentColor = if (recovering) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary)) {
+                Icon(icon, label, Modifier.size(32.dp))
+            }
         }
     }
 }
