@@ -93,7 +93,7 @@ internal fun MobileSettings(dark: Boolean, changeTheme: (Boolean) -> Unit, follo
         MobileSetting(Icons.Outlined.Album, "封面舞台底色", "用封面取色衬托封面") { Switch(followArtwork, changeArtwork, Modifier.semantics { contentDescription = "封面舞台底色" }) }
     }
     MobileSectionTitle("播放")
-    MobileSettingsGroup { MobileSetting(Icons.Outlined.History, "恢复播放位置", "尚未开放 · 当前不保存退出时的位置") { Icon(Icons.Outlined.Schedule, "暂未开放", tint = MaterialTheme.colorScheme.onSurfaceVariant) } }
+    MobileSettingsGroup { MobileSetting(Icons.Outlined.History, "恢复播放位置", "打开时保持暂停，由你决定何时继续") { Icon(Icons.Outlined.Check, "已启用", tint = MaterialTheme.colorScheme.onSurfaceVariant) } }
     MobileSectionTitle("音源账号")
     MobileSettingsGroup {
         listOf(MusicSource.Bilibili, MusicSource.Netease, MusicSource.YouTube).forEach { source ->

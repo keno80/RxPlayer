@@ -9,6 +9,7 @@ import java.io.File
 import java.io.ByteArrayOutputStream
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.serialization.json.*
@@ -31,12 +32,14 @@ private interface PipeApi : StdCallLibrary {
 /** One actor owns both directions of the synchronous pipe. UI controls never block on IPC. */
 class DesktopAudioPlayer : AudioPlayer {
     private data class Snapshot(val duration: Int = 0, val position: Int = 0, val playing: Boolean = false, val buffering: Boolean = false, val ended: Boolean = false, val failure: PlaybackFailure? = null)
+    private data class SeekRequest(val position: Int, val submitted: Boolean = false)
+    private val pendingSeek = AtomicReference<SeekRequest?>(null)
     @Volatile private var snapshot = Snapshot()
     override val durationMs get() = snapshot.duration
-    override val positionMs get() = snapshot.position
+    override val positionMs get() = pendingSeek.get()?.position ?: snapshot.position
     override val isPlaying get() = snapshot.playing
-    override val isBuffering get() = snapshot.buffering
-    override val isEnded get() = snapshot.ended
+    override val isBuffering get() = snapshot.buffering || pendingSeek.get() != null
+    override val isEnded get() = pendingSeek.get() == null && snapshot.ended
     override val failure get() = snapshot.failure
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
     private val requests = Channel<suspend () -> Unit>(Channel.UNLIMITED)
@@ -50,17 +53,21 @@ class DesktopAudioPlayer : AudioPlayer {
         try {
             while (!closed) {
                 val command = withTimeoutOrNull(100) { requests.receive() }
-                try { command?.invoke() } catch (_: Exception) { snapshot = snapshot.copy(playing = false, failure = PlaybackFailure()) }
+                try { command?.invoke() } catch (_: Exception) { pendingSeek.set(null); snapshot = snapshot.copy(playing = false, failure = PlaybackFailure()) }
                 pipe?.let { ipc ->
                     try {
                         val duration = ipc.get("duration")?.jsonPrimitive?.doubleOrNull?.times(1000)?.toInt() ?: snapshot.duration
+                        val seek = pendingSeek.get()
+                        val seekFinished = seek?.submitted == true && ipc.get("seeking")?.jsonPrimitive?.booleanOrNull == false
                         val position = ipc.get("time-pos")?.jsonPrimitive?.doubleOrNull?.times(1000)?.toInt() ?: snapshot.position
                         val paused = ipc.get("pause")?.jsonPrimitive?.booleanOrNull ?: true
                         val buffering = ipc.get("paused-for-cache")?.jsonPrimitive?.booleanOrNull ?: false
                         val ended = ipc.ended || ipc.get("eof-reached")?.jsonPrimitive?.booleanOrNull == true
                         snapshot = snapshot.copy(duration = duration, position = position, playing = !paused && !buffering && !ended, buffering = buffering, ended = ended,
                             failure = if (ipc.failed) PlaybackFailure(if (deadline?.let { System.currentTimeMillis() / 1000 >= it } == true) PlaybackPhase.Expired else PlaybackPhase.Failed) else snapshot.failure)
-                    } catch (_: Exception) { invalidatePipe(); snapshot = snapshot.copy(playing = false, failure = PlaybackFailure()) }
+                        if (snapshot.failure != null) pendingSeek.set(null)
+                        else if (seekFinished) pendingSeek.compareAndSet(seek, null)
+                    } catch (_: Exception) { pendingSeek.set(null); invalidatePipe(); snapshot = snapshot.copy(playing = false, failure = PlaybackFailure()) }
                 }
             }
         } finally { pending.forEach { it.cancel() }; invalidatePipe(); temporary?.delete(); requests.close() }
@@ -72,6 +79,7 @@ class DesktopAudioPlayer : AudioPlayer {
     override suspend fun load(stream: AudioStream) = loadInput(stream.url, stream.headers, stream.expiresAtEpochSeconds, null)
     private suspend fun loadInput(uri: String, headers: Map<String, String>, expires: Long?, file: File?) {
         check(!closed)
+        pendingSeek.set(null)
         val token = generation.incrementAndGet()
         val result = CompletableDeferred<Unit>()
         pending.add(result)
@@ -103,7 +111,21 @@ class DesktopAudioPlayer : AudioPlayer {
     private fun control(vararg command: Any) { if (!closed) requests.trySend { pipe?.command(*command); Unit } }
     override fun play() = control("set_property", "pause", false)
     override fun pause() = control("set_property", "pause", true)
-    override fun seekTo(positionMs: Int) { snapshot = snapshot.copy(ended = false); if (!closed) requests.trySend { pipe?.let { it.ended = false; it.command("seek", positionMs / 1000.0, "absolute+exact") }; Unit } }
+    override fun seekTo(positionMs: Int) {
+        if (closed) return
+        val request = SeekRequest(positionMs)
+        pendingSeek.set(request)
+        snapshot = snapshot.copy(ended = false)
+        requests.trySend {
+            pipe?.let { ipc ->
+                ipc.ended = false
+                check(ipc.command("seek", positionMs / 1000.0, "absolute+exact")["error"]?.jsonPrimitive?.content == "success")
+                // Keep the requested position visible until the actor observes seek completion.
+                pendingSeek.compareAndSet(request, request.copy(submitted = true))
+            }
+            Unit
+        }
+    }
     override fun setVolume(volume: Float) = control("set_property", "volume", volume.coerceIn(0f, 1f) * 100)
     override fun release() { closed = true; generation.incrementAndGet(); pending.forEach { it.cancel() } }
     private fun invalidatePipe() { runCatching { pipe?.close() }; pipe = null }
