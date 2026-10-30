@@ -383,6 +383,12 @@
 
   function transport() {
     const track = current();
+    if (state.device === 'desktop' && ['a','b','c'].includes(product.dataset.transport)) {
+      return `<button class="now-track" data-action="open-player" aria-label="展开 ${escape(track.title)} 的播放器">${art(track,'mini')}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${escape(track.author)} · ${track.source}</span></span></button>
+        <div class="compact-controls" role="group" aria-label="播放操作">${iconButton('shuffle','shuffle','随机播放',`aria-pressed="${state.shuffle}"`)}${iconButton('previous','skip_previous','上一首')}${playButton()}${iconButton('next','skip_next','下一首')}${iconButton('repeat','repeat','列表循环',`aria-pressed="${state.repeat}"`)}</div>
+        <div class="compact-progress">${progress()}</div>
+        <div class="transport-right"><span class="symbol volume-icon" aria-hidden="true">volume_up</span><input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="音量">${iconButton('open-queue','queue_music','播放队列')}</div>`;
+    }
     return `<button class="now-track" data-action="open-player" aria-label="展开 ${escape(track.title)} 的播放器">${art(track, 'mini')}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${!state.prepared && state.phase === 'paused' ? '尚未播放' : phaseLabels[state.phase]} · ${track.source}</span></span></button>
       <div class="transport-center"><div class="play-controls">${iconButton('shuffle','shuffle','随机播放',`aria-pressed="${state.shuffle}"`)}${iconButton('previous','skip_previous','上一首')}${playButton()}${iconButton('next','skip_next','下一首')}${iconButton('repeat','repeat','列表循环',`aria-pressed="${state.repeat}"`)}</div>${progress()}</div>
       <div class="transport-right"><span class="symbol volume-icon" aria-hidden="true">volume_up</span><input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="音量">${iconButton('open-queue','queue_music','播放队列')}</div>
@@ -725,6 +731,8 @@
     });
   }, 1000);
   const review = new URLSearchParams(location.search);
+  if (['a','b','c'].includes(review.get('transport'))) product.dataset.transport = review.get('transport');
+  if (review.has('embed')) document.body.classList.add('transport-embed');
   if (['android','desktop'].includes(review.get('device'))) state.device = review.get('device');
   if (['dark','light'].includes(review.get('theme'))) state.theme = review.get('theme');
   if (['results','idle','loading','empty','error','expired'].includes(review.get('scene'))) state.scene = review.get('scene');

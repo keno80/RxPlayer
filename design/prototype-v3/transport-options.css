@@ -1,0 +1,50 @@
+/* RxPlayer review proposals. Heights and grouping are product decisions, not M3 tokens. */
+.transport-embed .review-tools,.transport-embed .review-caption{display:none}
+.transport-embed .review-stage{max-width:none;padding:0}
+.transport-embed .product{height:100vh;border-radius:0;border:0;box-shadow:none}
+.product[data-device=desktop][data-transport] .transport{flex-shrink:0;min-height:0;gap:16px;padding:12px 24px;grid-template-columns:minmax(150px,1fr) auto minmax(180px,1.4fr) auto}
+.product[data-device=desktop][data-transport] .compact-controls{display:flex;align-items:center;gap:0}
+.product[data-device=desktop][data-transport] .compact-progress{min-width:0}
+.product[data-device=desktop][data-transport] .transport .play-button{height:48px;min-width:56px;border-radius:16px}
+.product[data-device=desktop][data-transport] .transport .play-button.is-playing{border-radius:28px}
+.product[data-device=desktop][data-transport] .transport .play-button .symbol{font-size:28px}
+.product[data-device=desktop][data-transport] .transport .art{width:48px;height:48px;border-radius:12px}
+.product[data-device=desktop][data-transport] .transport input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px}
+.product[data-device=desktop][data-transport] .transport input[type=range]::-webkit-slider-thumb{height:24px;margin-top:-9px;box-shadow:0 0 0 3px var(--surface-container)}
+.product[data-device=desktop][data-transport] .transport input[type=range]::-moz-range-track,.product[data-device=desktop][data-transport] .transport input[type=range]::-moz-range-progress{height:6px}
+.product[data-device=desktop][data-transport] .transport input[type=range]::-moz-range-thumb{height:24px}
+.product[data-device=desktop][data-transport] .transport .track-title{font-size:14px;line-height:20px;font-weight:700}
+.product[data-device=desktop][data-transport] .transport .track-sub{max-width:240px}
+.product[data-device=desktop][data-transport] .transport-right{display:flex;gap:4px}
+.product[data-device=desktop][data-transport] .volume{width:80px}
+.product[data-device=desktop][data-transport=a] .transport{height:80px}
+.product[data-device=desktop][data-transport=a] .compact-controls .play-button{margin-inline:4px}
+.product[data-device=desktop][data-transport=b] .transport{height:96px;border-top:0;box-shadow:inset 0 1px var(--outline-variant);grid-template-columns:minmax(150px,1fr) minmax(280px,1.6fr) minmax(140px,1fr);grid-template-rows:48px 48px;padding:0 24px;column-gap:24px;row-gap:0}
+.product[data-device=desktop][data-transport=b] .transport .now-track{grid-column:1;grid-row:1/3}
+.product[data-device=desktop][data-transport=b] .compact-controls{grid-column:2;grid-row:1;justify-content:center}
+.product[data-device=desktop][data-transport=b] .compact-progress{grid-column:2;grid-row:2;align-self:start;width:100%}
+.product[data-device=desktop][data-transport=b] .transport-right{grid-column:3;grid-row:1/3}
+.product[data-device=desktop][data-transport=c] .transport{height:88px;padding:8px 16px;background:var(--surface);border-top:0;grid-template-columns:minmax(160px,1fr) auto minmax(160px,1.4fr) auto;gap:0}
+.product[data-device=desktop][data-transport=c] .transport .now-track{height:72px;background:var(--surface-low);padding:12px!important;border-radius:20px;margin-right:12px}
+.product[data-device=desktop][data-transport=c] .compact-controls,.product[data-device=desktop][data-transport=c] .compact-progress{height:72px;background:var(--surface-high)}
+.product[data-device=desktop][data-transport=c] .compact-controls{padding:8px;border-radius:28px 0 0 28px;gap:2px}
+.product[data-device=desktop][data-transport=c] .compact-progress{padding:12px 20px 12px 8px;border-radius:0 28px 28px 0;display:flex;align-items:center}
+.product[data-device=desktop][data-transport=c] .compact-controls .play-button{height:56px;min-width:64px;border-radius:20px}
+.product[data-device=desktop][data-transport=c] .transport-right{height:72px;padding:12px;background:var(--surface-low);border-radius:20px;margin-left:12px}
+@media(max-width:1150px){
+ .product[data-device=desktop][data-transport] .transport{padding-inline:16px;gap:8px}
+ .product[data-device=desktop][data-transport=b] .transport{row-gap:0}
+ .product[data-device=desktop][data-transport] .transport .track-sub{max-width:140px}
+ .product[data-device=desktop][data-transport] .transport-right .volume,.product[data-device=desktop][data-transport] .transport-right .volume-icon{display:inline-flex}
+ .product[data-device=desktop][data-transport=c] .transport{gap:0;grid-template-columns:150px auto minmax(140px,1fr) auto}
+ .product[data-device=desktop][data-transport=c] .transport-right{padding:4px}
+}
+@media(max-width:850px){
+ .product[data-device=desktop][data-transport] .transport-right .volume,.product[data-device=desktop][data-transport] .transport-right .volume-icon{display:none}
+ .product[data-device=desktop][data-transport] .transport{height:112px;display:grid;grid-template-columns:minmax(150px,1fr) auto auto;grid-template-rows:56px 48px;padding:4px 12px;gap:0 8px}
+ .product[data-device=desktop][data-transport] .transport .now-track{grid-column:1;grid-row:1;max-width:100%;height:48px;padding:0!important;margin:0;background:none}
+ .product[data-device=desktop][data-transport] .compact-controls{grid-column:2;grid-row:1;height:56px;padding:0;border-radius:0;background:none}
+ .product[data-device=desktop][data-transport] .compact-progress{grid-column:1/4;grid-row:2;width:100%;height:48px;padding:0;background:none}
+ .product[data-device=desktop][data-transport] .transport-right{grid-column:3;grid-row:1;padding:0;margin:0;height:48px;background:none}
+ .product[data-device=desktop][data-transport] .compact-controls .play-button{height:48px;min-width:56px}
+}
