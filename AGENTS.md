@@ -78,6 +78,7 @@ These instructions apply to all coding tasks unless a more specific project inst
 - 提交、推送和合并后核对远端状态，在最终回复中说明提交与合并结果。
 
 ## Tests and quality
+- 小幅 UI 修改仅定向检查本次改动及直接受影响的行为，不因构建 / 启动请求自动重走完整双端或全部播放流程。完整流程回归留到阶段收尾、集中验收或用户明确要求时统一执行；修复后只重复相关检查。
 - Add or update tests when behavior changes or a meaningful regression risk exists; avoid tests that only assert implementation details.
 - Do not create extensive mocks, fixtures, test helpers, or edge-case matrices without a concrete need.
 - Do not claim a test passed unless it was actually run.

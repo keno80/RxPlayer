@@ -93,7 +93,8 @@ UI 规格、实现和审查统一依据 Google 官方设计指导与 m3-expressi
 - [x] 以上播放状态的原型范围已确认并同步到原生规格；此项仅代表设计 / 契约确认，上一项原生实现与验收仍未完成。
 - [x] 按确认范围实现双端播放页及本地播放状态源码：贴边歌词 / 无歌词分区卡、Windows 双栏、唯一队列、轨道缓冲、短提示及末尾停止；[实现记录](technical/2026-10-29-native-player-implementation.md)。
 - [x] 按新确认范围实现 Windows 浮岛迷你播控栏源码，接线进度、模式、上一 / 下一曲、音量与队列，Android 保持原 MiniPlayer；语法与源码检查通过。
-- [ ] Windows 新浮岛底栏构建 / 运行验收，重点检查 Popup 键盘焦点、竖向 Slider 拖动、窄窗口及 DPI；本轮遵循默认不构建约定，未执行。
+- [x] 用户授权后构建并启动 Windows 浮岛底栏，9 项状态测试通过；定向复测音量初始焦点修复、拖动及窗口重排，见 [运行记录](technical/2026-10-30-floating-transport-runtime.md)。
+- [ ] 阶段收尾统一进行完整流程、多 DPI 及双端回归；按用户最新约定，小改只检查改动点，不逐次重走全部流程。
 - [x] 用户授权后构建 Android Debug / desktopJar 并启动双端；9 项状态测试、Android 16 项核心交互检查通过，见 [运行报告](technical/2026-10-29-native-player-runtime-validation.md)。
 - [ ] 完成最终修复版 Windows 底部控件及尺寸 / 键盘、Android 大字体 / 横屏与生命周期验收；当前电脑锁屏、手机离线，保持未通过。
 - [ ] 收敛欢迎卡片的视觉权重，把搜索和播放作为主任务。
