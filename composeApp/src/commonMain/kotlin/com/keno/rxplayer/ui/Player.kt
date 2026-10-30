@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import com.keno.rxplayer.DemoTrack
 import com.keno.rxplayer.audio.PlaybackPhase
@@ -267,7 +268,8 @@ internal fun PlayerIcon(image: ImageVector, label: String, onClick: () -> Unit, 
 }
 
 @Composable
-internal fun PlaybackButton(state: PlaybackState, onClick: () -> Unit, modifier: Modifier) {
+internal fun PlaybackButton(state: PlaybackState, onClick: () -> Unit, modifier: Modifier,
+    restingCorner: Dp = 48.dp, playingCorner: Dp = 16.dp, iconSize: Dp = 32.dp) {
     val label = when (state.phase) {
         PlaybackPhase.Preparing -> "取消准备"
         PlaybackPhase.Refreshing -> "取消获取地址"
@@ -283,14 +285,14 @@ internal fun PlaybackButton(state: PlaybackState, onClick: () -> Unit, modifier:
         PlaybackPhase.Failed, PlaybackPhase.Expired -> Icons.Rounded.Refresh
         else -> Icons.Rounded.PlayArrow
     }
-    val corner by animateDpAsState(if (state.isPlaying) 16.dp else 48.dp, if (LocalPlayerReducedMotion.current) snap() else MaterialTheme.motionScheme.fastSpatialSpec())
+    val corner by animateDpAsState(if (state.isPlaying) playingCorner else restingCorner, if (LocalPlayerReducedMotion.current) snap() else MaterialTheme.motionScheme.fastSpatialSpec())
     val recovering = state.phase == PlaybackPhase.Failed || state.phase == PlaybackPhase.Expired
     // Tooltip's modifier is applied to its inner anchor in the locked Material3 version.
     // Keep Row weight and requested size on a direct layout child.
     Box(modifier) {
         TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState(), modifier = Modifier.fillMaxSize()) {
             Button(onClick, modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(corner), contentPadding = PaddingValues(0.dp), colors = ButtonDefaults.buttonColors(containerColor = if (recovering) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.primary, contentColor = if (recovering) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary)) {
-                Icon(icon, label, Modifier.size(32.dp))
+                Icon(icon, label, Modifier.size(iconSize))
             }
         }
     }
