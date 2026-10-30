@@ -175,8 +175,8 @@ private fun VolumeControl(state: PlaybackState) {
                         Text("${(state.volume * 100).roundToInt()}%", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
+                LaunchedEffect(Unit) { if (state.canChangeVolume) sliderFocus.requestFocus() }
             }
-            LaunchedEffect(Unit) { if (state.canChangeVolume) sliderFocus.requestFocus() }
         }
     }
 }
