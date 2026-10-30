@@ -7,6 +7,8 @@ interface AudioPlayer {
     val durationMs: Int
     val positionMs: Int
     val isPlaying: Boolean
+    /** Actual engine intent when available, including focus loss and unplug pauses. */
+    val playWhenReady: Boolean? get() = null
     val isBuffering: Boolean get() = false
     val failure: PlaybackFailure? get() = null
     val isEnded: Boolean get() = durationMs > 0 && positionMs >= durationMs

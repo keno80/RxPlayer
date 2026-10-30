@@ -204,6 +204,17 @@ class PlaybackState(
         } catch (_: Exception) { reportFailure(PlaybackFailure()) }
     }
 
+    fun stop() {
+        cancelPreparation()
+        prepared = false
+        phase = PlaybackPhase.Idle
+    }
+
+    val queueInPlaybackOrder: List<PlaybackTrack> get() {
+        val tracks = queue.associateBy { it.id }
+        return playOrder().mapNotNull { tracks[it] }
+    }
+
     suspend fun step(offset: Int) { adjacent(offset)?.let { select(it) } }
 
     fun enqueue(next: PlaybackTrack, nextInQueue: Boolean = false) {
@@ -266,6 +277,7 @@ class PlaybackState(
         if (isLoading || !prepared || phase == PlaybackPhase.Ended || phase in faultPhases) return null
         try {
             player.failure?.let { reportFailure(it); return null }
+            player.playWhenReady?.let { playWhenReady = it }
             positionMs = player.positionMs.coerceIn(0, durationMs)
             if (player.isEnded && playWhenReady) {
                 positionMs = durationMs

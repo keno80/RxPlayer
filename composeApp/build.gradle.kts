@@ -39,6 +39,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation("io.ktor:ktor-client-okhttp:3.3.1")
             implementation("androidx.media3:media3-exoplayer:1.8.0")
+            implementation("androidx.media3:media3-session:1.8.0")
             implementation("androidx.media3:media3-datasource-okhttp:1.8.0")
         }
         val desktopMain by getting {
