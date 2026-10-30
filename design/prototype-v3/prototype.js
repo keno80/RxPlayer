@@ -388,7 +388,8 @@
       const info = `<button class="now-track" data-action="open-player" aria-label="展开 ${escape(track.title)} 的播放器">${art(track,'mini')}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${escape(track.author)}${floating ? '' : ` · ${track.source}`}</span></span></button>`;
       const controls = `<div class="compact-controls" role="group" aria-label="播放操作">${iconButton('shuffle','shuffle','随机播放',`aria-pressed="${state.shuffle}"`)}${iconButton('previous','skip_previous','上一首')}${playButton()}${iconButton('next','skip_next','下一首')}${iconButton('repeat','repeat','列表循环',`aria-pressed="${state.repeat}"`)}</div>`;
       const seek = `<div class="compact-progress">${progress()}</div>`;
-      const auxiliary = `<div class="transport-right"><span class="symbol volume-icon" aria-hidden="true">volume_up</span><input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="音量">${iconButton('open-queue','queue_music','播放队列')}</div>`;
+      const volume = floating ? `<div class="volume-control">${iconButton('toggle-volume',state.volume === 0 ? 'volume_off' : 'volume_up','音量', 'aria-expanded="false" aria-controls="transport-volume-popover"')}<section id="transport-volume-popover" class="volume-popover" role="group" aria-label="调整音量" hidden><div class="volume-heading"><span>音量</span><output class="volume-readout">${state.volume}%</output></div><input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="调整音量"></section></div>` : `<span class="symbol volume-icon" aria-hidden="true">volume_up</span><input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="音量">`;
+      const auxiliary = `<div class="transport-right">${volume}${iconButton('open-queue','queue_music','播放队列')}</div>`;
       return floating ? `${info}${seek}<div class="control-island" role="group" aria-label="播放控制与音量、列表">${controls}${auxiliary}</div>` : `${info}${controls}${seek}${auxiliary}`;
     }
     return `<button class="now-track" data-action="open-player" aria-label="展开 ${escape(track.title)} 的播放器">${art(track, 'mini')}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${!state.prepared && state.phase === 'paused' ? '尚未播放' : phaseLabels[state.phase]} · ${track.source}</span></span></button>
@@ -535,7 +536,17 @@
     playTrack(state.queue[nextIndex]);
   }
 
+  function closeVolume(restoreFocus = false) {
+    const popup = $('#transport-volume-popover');
+    if (!popup || popup.hidden) return;
+    popup.hidden = true;
+    const button = $('[data-action="toggle-volume"]');
+    button.setAttribute('aria-expanded','false');
+    if (restoreFocus) button.focus({preventScroll:true});
+  }
+
   document.addEventListener('click', event => {
+    if (!event.target.closest('.volume-control')) closeVolume();
     const deviceChoice = event.target.closest('[data-device-choice]');
     if (deviceChoice) { closeQueue(false); closeOverlay(); state.device = deviceChoice.dataset.deviceChoice; state.queueOpen = queueDocked(); render(); return; }
     const button = event.target.closest('[data-action]');
@@ -553,6 +564,12 @@
       case 'retry': runSearch(); break;
       case 'play-track': playTrack(id); break;
       case 'toggle-play': togglePlayback(); break;
+      case 'toggle-volume': {
+        const popup = $('#transport-volume-popover');
+        if (!popup.hidden) closeVolume(true);
+        else { popup.hidden = false; button.setAttribute('aria-expanded','true'); $('.volume',popup).focus({preventScroll:true}); }
+        break;
+      }
       case 'next': step(1); break;
       case 'previous': step(-1); break;
       case 'seek-lyric': seekTo(lyricLines()[Number(button.dataset.index)].at); break;
@@ -646,6 +663,7 @@
   });
 
   document.addEventListener('focusin', event => {
+    if (!event.target.closest('.volume-control')) closeVolume();
     if (event.target.id === 'search-input') {
       product.classList.add('is-searching');
       $('#search-back').hidden = false;
@@ -673,6 +691,9 @@
     if (event.target.matches('.volume')) {
       state.volume = Number(event.target.value);
       $$('.volume').forEach(input => { input.value = state.volume; input.style.setProperty('--progress', `${state.volume}%`); });
+      $$('.volume-readout').forEach(output => { output.textContent = `${state.volume}%`; });
+      const volumeIcon = $('[data-action="toggle-volume"] .symbol');
+      if (volumeIcon) volumeIcon.textContent = state.volume === 0 ? 'volume_off' : 'volume_up';
     }
     if (event.target.matches('[data-progress]')) {
       seekTo(Number(event.target.value));
@@ -681,6 +702,7 @@
 
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
+      if ($('#transport-volume-popover') && !$('#transport-volume-popover').hidden) { event.preventDefault(); closeVolume(true); return; }
       if (state.queueOpen && (queueModal() || $('#support-pane').contains(document.activeElement))) { event.preventDefault(); closeQueue(); }
       else if (state.overlay) { event.preventDefault(); closeOverlay(); }
       else if (document.activeElement?.id === 'search-input') { event.preventDefault(); $('[data-action="exit-search"]').click(); }

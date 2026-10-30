@@ -38,6 +38,13 @@
 .product[data-device=desktop][data-transport=c] .compact-controls{gap:4px}
 .product[data-device=desktop][data-transport=c] .compact-controls .play-button{height:56px;min-width:64px;border-radius:20px}
 .product[data-device=desktop][data-transport=c] .transport-right{padding-left:8px;border-left:1px solid var(--outline-variant)}
+.volume-control{position:relative;display:flex}
+.volume-popover{position:absolute;z-index:50;bottom:calc(100% + 16px);right:0;width:216px;padding:16px;background:var(--surface-high);color:var(--on-surface);border:1px solid var(--outline-variant);border-radius:20px;box-shadow:0 8px 24px #0003}
+.volume-heading{display:flex;align-items:center;justify-content:space-between;font-size:14px;line-height:20px}
+.volume-readout{color:var(--on-surface-variant);font-variant-numeric:tabular-nums}
+.product[data-device=desktop][data-transport=c] .volume-popover .volume{display:block;width:100%;margin-top:8px}
+.product[data-device=desktop][data-transport=c] .volume-popover input[type=range]::-webkit-slider-thumb{box-shadow:0 0 0 3px var(--surface-high)}
+.product[data-device=desktop][data-transport=c] .control-island:has(.volume-popover:not([hidden])){position:relative;z-index:50}
 @media(max-width:1150px){
  .product[data-device=desktop][data-transport] .transport{padding-inline:16px;gap:8px}
  .product[data-device=desktop][data-transport=b] .transport{row-gap:0}
