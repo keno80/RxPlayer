@@ -13,24 +13,46 @@ import androidx.compose.ui.unit.dp
 import com.keno.rxplayer.audio.*
 import com.keno.rxplayer.source.*
 import com.keno.rxplayer.ui.*
+import com.keno.rxplayer.persistence.*
 import kotlinx.coroutines.*
 
 @Composable
-fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged: (Boolean, Boolean) -> Unit = { _, _ -> }) {
+fun App(isForeground: Boolean = true, isDesktop: Boolean = false,
+    onPersistenceReady: (suspend () -> Unit) -> Unit = {},
+    onThemeChanged: (Boolean, Boolean) -> Unit = { _, _ -> }) {
+    val store = rememberLibraryStore()
+    val loaded by produceState<LoadedLibrary?>(null, store) {
+        value = try { LoadedLibrary(store.load(), true) }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { LoadedLibrary(LibrarySnapshot(), false) }
+    }
+    val library = loaded
+    if (library == null) {
+        RxTheme(isSystemInDarkTheme()) { Surface(Modifier.fillMaxSize()) {} }
+    } else AppContent(library.snapshot, if (library.writable) store else null, isForeground, isDesktop, onPersistenceReady, onThemeChanged)
+}
+
+private data class LoadedLibrary(val snapshot: LibrarySnapshot, val writable: Boolean)
+
+@Composable
+private fun AppContent(initial: LibrarySnapshot, store: LibraryStore?, isForeground: Boolean, isDesktop: Boolean,
+    onPersistenceReady: (suspend () -> Unit) -> Unit,
+    onThemeChanged: (Boolean, Boolean) -> Unit) {
     val systemDark = isSystemInDarkTheme()
-    var dark by remember { mutableStateOf(systemDark) }
-    var followArtwork by remember { mutableStateOf(true) }
+    var themeOverride by remember { mutableStateOf(initial.dark) }
+    val dark = themeOverride ?: systemDark
+    var followArtwork by remember { mutableStateOf(initial.followArtwork) }
     var expanded by remember { mutableStateOf(false) }
     var queueOpen by remember { mutableStateOf(false) }
     var queryFocused by remember { mutableStateOf(false) }
-    val favorites = remember { mutableStateMapOf<String, ContentItem>() }
-    val recent = remember { mutableStateListOf<BilibiliTrack>() }
+    val favorites = remember { mutableStateMapOf<String, ContentItem>().apply { putAll(initial.favorites.associateBy { it.stableKey }) } }
+    val recent = remember { mutableStateListOf<BilibiliTrack>().apply { addAll(initial.recent) } }
     val scope = rememberCoroutineScope()
     val source = remember { BilibiliSource() }
     val covers = remember { ArtworkStore() }
     DisposableEffect(source, covers) { onDispose { source.close(); covers.close() } }
     val player = rememberAudioPlayer()
-    val playback = remember(player, source) { PlaybackState(player, resolveStream = { source.resolve(it.item.id, it.part.cid) }, initialQueue = emptyList()) }
+    val playback = remember(player, source) { PlaybackState(player, resolveStream = { source.resolve(it.item.id, it.part.cid) }, initialQueue = emptyList(), restored = initial.playback) }
     val foreground by rememberUpdatedState(isForeground)
     fun select(track: PlaybackTrack) { scope.launch { playback.select(track, autoPlay = foreground) } }
     val browse = remember(source, playback) { BilibiliBrowseState(source, scope) { track, action ->
@@ -72,6 +94,27 @@ fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged
         val showing = launch { snackbar.showSnackbar(text, duration = SnackbarDuration.Indefinite) }
         delay(3_000); snackbar.currentSnackbarData?.dismiss(); showing.join()
     }
+    var storageWarningShown by remember { mutableStateOf(false) }
+    fun capture(periodic: Boolean = false) = LibrarySnapshot(favorites.values.toList(), recent.toList(), playback.checkpoint(periodic), themeOverride, followArtwork)
+    suspend fun persist(snapshot: LibrarySnapshot) {
+        try { store?.save(snapshot) }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) {
+            if (!storageWarningShown) {
+                storageWarningShown = true
+                scope.launch { showMessage("本地数据保存失败，本次更改尚未保存") }
+            }
+        }
+    }
+    LaunchedEffect(store) {
+        if (store == null) {
+            showMessage("本地数据读取失败，原文件已保留；当前更改不会写入")
+            return@LaunchedEffect
+        }
+        try { snapshotFlow { capture(periodic = true) }.collect { persist(it) } }
+        finally { withContext(NonCancellable) { persist(capture()) } }
+    }
+    SideEffect { onPersistenceReady { playback.pause(); persist(capture()) } }
     LaunchedEffect(playback.message?.id) { playback.message?.let { showMessage(it.text) } }
     LaunchedEffect(browse.feedback?.first) { browse.feedback?.let { showMessage(it.second) } }
     CompositionLocalProvider(LocalArtworkStore provides covers) {
@@ -87,7 +130,7 @@ fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged
                     if (!expanded || track == null) SourceWorkspace(
                         workspace, browse, playback, favorites, recent, isDesktop, dark, followArtwork, queueOpen,
                         { queueOpen = false }, ::select, ::favorite, { queryFocused = false; expanded = true }, { queryFocused = it },
-                        { dark = it }, { followArtwork = it },
+                        { themeOverride = it }, { followArtwork = it },
                         queueContent = { PlayerTheme(dark, track, followArtwork) { Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) { DesktopQueuePane(playback, { queueOpen = false }, ::select) } } },
                         transport = {
                             if (displayTrack != null) PlayerTheme(dark, displayTrack, followArtwork) {

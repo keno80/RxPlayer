@@ -28,6 +28,7 @@ class PlaybackState(
     private val player: AudioPlayer,
     private val resolveStream: suspend (BilibiliTrack) -> AudioStream = { error("No online source configured") },
     initialQueue: List<PlaybackTrack> = demoTracks,
+    restored: PlaybackCheckpoint? = null,
     private val readAudio: suspend (DemoTrack) -> ByteArray = { Res.readBytes(it.resourcePath) },
 ) {
     private val selectionMutex = Mutex()
@@ -45,6 +46,7 @@ class PlaybackState(
         private set
     var positionMs by mutableIntStateOf(0)
         private set
+    private var checkpointPositionMs by mutableIntStateOf(0)
     var queue by mutableStateOf(initialQueue)
         private set
     var shuffle by mutableStateOf(false)
@@ -57,6 +59,31 @@ class PlaybackState(
         private set
     var message: PlaybackMessage? by mutableStateOf(null)
         private set
+
+    init {
+        if (restored != null) {
+            queue = restored.queue.distinctBy { it.id }
+            track = queue.firstOrNull { it.id == restored.currentId }
+            durationMs = track?.durationMs?.coerceAtLeast(0) ?: 0
+            positionMs = if (track == null) 0 else restored.positionMs.coerceIn(0, durationMs)
+            checkpointPositionMs = positionMs
+            shuffle = restored.shuffle
+            repeat = restored.repeat
+            volume = restored.volume.coerceIn(0f, 1f)
+            phase = when {
+                track == null -> PlaybackPhase.Idle
+                durationMs > 0 && positionMs == durationMs -> PlaybackPhase.Ended
+                else -> PlaybackPhase.Paused
+            }
+            if (shuffle) shuffleOrder = listOfNotNull(track?.id) + queue.filterNot { it.id == track?.id }.shuffled().map { it.id }
+        }
+    }
+
+    fun checkpoint(periodic: Boolean = false): PlaybackCheckpoint {
+        val current = track?.id?.takeIf { id -> queue.any { it.id == id } }
+        val position = if (current == null) 0 else positionMs
+        return PlaybackCheckpoint(queue.toList(), current, if (periodic && isPlaying && current != null) checkpointPositionMs else position, shuffle, repeat, volume)
+    }
 
     val isPlaying get() = phase == PlaybackPhase.Playing
     val isLoading get() = phase == PlaybackPhase.Preparing || phase == PlaybackPhase.Refreshing
@@ -76,6 +103,7 @@ class PlaybackState(
             if (shuffle) shuffleOrder = shuffleOrder + next.id
         }
         positionMs = resumeAt
+        checkpointPositionMs = positionMs
         playWhenReady = autoPlay
         message = null
         prepared = false
@@ -94,6 +122,7 @@ class PlaybackState(
                 check(player.durationMs > 0) { "Audio duration unavailable" }
                 durationMs = player.durationMs
                 positionMs = resumeAt.coerceIn(0, durationMs)
+                checkpointPositionMs = positionMs
                 player.seekTo(positionMs)
                 player.setVolume(volume)
                 prepared = true
@@ -144,8 +173,10 @@ class PlaybackState(
     fun seek(position: Int) {
         if (!canSeek) return
         try {
-            player.seekTo(position.coerceIn(0, durationMs))
-            positionMs = player.positionMs.coerceIn(0, durationMs)
+            val target = position.coerceIn(0, durationMs)
+            player.seekTo(target)
+            positionMs = target
+            checkpointPositionMs = positionMs
         } catch (_: Exception) { reportFailure(PlaybackFailure()) }
     }
 
@@ -155,6 +186,7 @@ class PlaybackState(
         loadingJob?.cancel()
         loadingJob = null
         playWhenReady = false
+        checkpointPositionMs = positionMs
         try { player.pause() } catch (_: Exception) { player.release() }
         phase = if (refreshing) PlaybackPhase.Expired else PlaybackPhase.Paused
     }
@@ -164,7 +196,11 @@ class PlaybackState(
         playWhenReady = false
         try {
             player.pause()
-            if (prepared && phase !in faultPhases && phase != PlaybackPhase.Ended) phase = PlaybackPhase.Paused
+            if (prepared && phase !in faultPhases && phase != PlaybackPhase.Ended) {
+                positionMs = player.positionMs.coerceIn(0, durationMs)
+                checkpointPositionMs = positionMs
+                phase = PlaybackPhase.Paused
+            }
         } catch (_: Exception) { reportFailure(PlaybackFailure()) }
     }
 
@@ -206,6 +242,7 @@ class PlaybackState(
             prepared = false
             durationMs = 0
             positionMs = 0
+            checkpointPositionMs = 0
             track = queue.getOrNull(index.coerceIn(0, queue.lastIndex.coerceAtLeast(0))) ?: track
             phase = PlaybackPhase.Paused
         }
@@ -232,6 +269,7 @@ class PlaybackState(
             positionMs = player.positionMs.coerceIn(0, durationMs)
             if (player.isEnded && playWhenReady) {
                 positionMs = durationMs
+                checkpointPositionMs = positionMs
                 playWhenReady = false
                 phase = PlaybackPhase.Ended
                 val order = playOrder()
@@ -243,6 +281,7 @@ class PlaybackState(
                 player.isPlaying -> PlaybackPhase.Playing
                 else -> PlaybackPhase.Paused
             }
+            if (!isPlaying || kotlin.math.abs(positionMs - checkpointPositionMs) >= 5000) checkpointPositionMs = positionMs
         } catch (_: Exception) { reportFailure(PlaybackFailure()) }
         return null
     }

@@ -27,6 +27,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation("io.ktor:ktor-client-core:3.3.1")
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+            implementation("androidx.sqlite:sqlite-bundled:2.7.1")
             implementation("com.materialkolor:material-color-utilities:3.0.0")
         }
         commonTest.dependencies {

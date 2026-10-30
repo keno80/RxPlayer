@@ -66,6 +66,89 @@ class OnlinePlaybackStateTest {
     }
 
     private fun stream() = AudioStream("https://sample.bilivideo.com/audio", emptyMap(), "audio/mp4", "mp4a.40.2", null)
+
+    @Test fun restoringDoesNotResolveOrTouchTheEngineUntilUserPlays() = runTest {
+        var resolutions = 0
+        var loads = 0
+        val engine = object : AudioPlayer by StreamingMemoryPlayer() {
+            override suspend fun load(stream: AudioStream) { loads++ }
+        }
+        val state = PlaybackState(engine, resolveStream = { resolutions++; stream() }, initialQueue = emptyList(),
+            restored = PlaybackCheckpoint(listOf(first, second), second.id, 3200, shuffle = true, repeat = true, volume = .3f))
+        assertEquals(listOf(first, second), state.queue)
+        assertEquals(second, state.track)
+        assertEquals(3200, state.positionMs)
+        assertEquals(PlaybackPhase.Paused, state.phase)
+        assertFalse(state.playWhenReady)
+        assertFalse(state.canSeek)
+        assertTrue(state.shuffle)
+        assertTrue(state.repeat)
+        assertEquals(.3f, state.volume)
+        assertEquals(0, resolutions)
+        assertEquals(0, loads)
+        state.sync()
+        assertEquals(3200, state.positionMs)
+        state.activate()
+        assertEquals(1, resolutions)
+        assertEquals(1, loads)
+        assertEquals(3200, state.positionMs)
+        assertTrue(state.isPlaying)
+    }
+
+    @Test fun restoreDropsMissingSelectionAndClampsPositionToMetadata() = runTest {
+        val state = PlaybackState(StreamingMemoryPlayer(), initialQueue = emptyList(),
+            restored = PlaybackCheckpoint(listOf(first), first.id, Int.MAX_VALUE))
+        assertEquals(first.durationMs, state.positionMs)
+        val removed = PlaybackState(StreamingMemoryPlayer(), initialQueue = emptyList(),
+            restored = PlaybackCheckpoint(listOf(first), second.id, 2000))
+        assertNull(removed.track)
+        assertEquals(0, removed.positionMs)
+        assertEquals(PlaybackPhase.Idle, removed.phase)
+    }
+
+    @Test fun finishedRestoredTrackRestartsAtZeroWhenUserPlays() = runTest {
+        val engine = StreamingMemoryPlayer()
+        val state = PlaybackState(engine, resolveStream = { stream() }, initialQueue = emptyList(),
+            restored = PlaybackCheckpoint(listOf(first), first.id, first.durationMs))
+        assertFalse(state.isPlaying)
+        state.activate()
+        assertEquals(0, state.positionMs)
+        assertTrue(state.isPlaying)
+    }
+
+    @Test fun manualSeekIsExactWhileNormalPlaybackUsesPeriodicCheckpoints() = runTest {
+        val engine = StreamingMemoryPlayer()
+        val state = PlaybackState(engine, resolveStream = { stream() }, initialQueue = emptyList())
+        state.select(first)
+        engine.positionMs = 8100
+        state.sync()
+        assertTrue(state.checkpoint(periodic = true).positionMs >= 5000)
+        state.seek(8900)
+        assertEquals(8900, state.checkpoint(periodic = true).positionMs)
+        engine.positionMs = 9100
+        state.sync()
+        assertEquals(8900, state.checkpoint(periodic = true).positionMs)
+    }
+
+    @Test fun pauseSamplesLatestEnginePositionForFinalSave() = runTest {
+        val engine = StreamingMemoryPlayer()
+        val state = PlaybackState(engine, resolveStream = { stream() }, initialQueue = emptyList())
+        state.select(first)
+        engine.positionMs = 8450
+        state.pause()
+        assertEquals(8450, state.checkpoint().positionMs)
+    }
+
+    @Test fun seekingRecordsRequestedPositionBeforeAsyncEngineUpdates() = runTest {
+        val delegate = StreamingMemoryPlayer()
+        val engine = object : AudioPlayer by delegate {
+            override fun seekTo(positionMs: Int) = Unit
+        }
+        val state = PlaybackState(engine, resolveStream = { stream() }, initialQueue = emptyList())
+        state.select(first)
+        state.seek(8900)
+        assertEquals(8900, state.checkpoint(periodic = true).positionMs)
+    }
 }
 
 private class StreamingMemoryPlayer : AudioPlayer {
