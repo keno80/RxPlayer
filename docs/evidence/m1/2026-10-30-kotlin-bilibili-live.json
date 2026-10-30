@@ -1,0 +1,25 @@
+{
+    "checked_at": "2026-10-30T04:53:25.524317900Z",
+    "auth": "anonymous",
+    "search_count": 17,
+    "part_count": 36,
+    "audio_parts": [
+        {
+            "part": 1,
+            "cid": 1138102370,
+            "http_status": 206,
+            "bytes_read": 65536,
+            "mime": "audio/mp4",
+            "deadline_present": true
+        },
+        {
+            "part": 2,
+            "cid": 1138106698,
+            "http_status": 206,
+            "bytes_read": 65536,
+            "mime": "audio/mp4",
+            "deadline_present": true
+        }
+    ],
+    "passed": true
+}

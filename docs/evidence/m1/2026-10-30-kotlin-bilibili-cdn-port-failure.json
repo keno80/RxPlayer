@@ -1,0 +1,8 @@
+{
+    "checked_at": "2026-10-30T04:52:20.791100100Z",
+    "auth": "anonymous",
+    "search_count": 17,
+    "part_count": 36,
+    "passed": false,
+    "failure": "InvalidResponse"
+}

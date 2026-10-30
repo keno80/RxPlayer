@@ -21,13 +21,17 @@ kotlin {
             implementation(compose.components.resources)
             implementation(libs.material3.expressive)
             implementation(libs.kotlinx.coroutines.core)
+            implementation("io.ktor:ktor-client-core:3.3.1")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+            implementation("io.ktor:ktor-client-mock:3.3.1")
         }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
+            implementation("io.ktor:ktor-client-okhttp:3.3.1")
         }
         val desktopMain by getting {
             dependencies {
@@ -35,6 +39,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
                 // Read Windows' animation accessibility preference; no settings are written.
                 implementation("net.java.dev.jna:jna:5.17.0")
+                implementation("io.ktor:ktor-client-okhttp:3.3.1")
             }
         }
     }
