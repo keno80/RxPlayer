@@ -8,9 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,9 +26,9 @@ import com.keno.rxplayer.audio.PlaybackState
 @Composable
 internal fun QueueButton(count: Int, opened: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, iconOnly: Boolean = false) {
     val label = "${if (opened) "收起" else "展开"}播放队列，$count 首"
-    if (iconOnly) PlayerIcon(Icons.Rounded.QueueMusic, label, onClick, modifier.size(48.dp), corner = 16.dp)
+    if (iconOnly) PlayerIcon(PlayerSymbols.QueueMusic, label, onClick, modifier.size(48.dp), corner = 16.dp)
     else FilledTonalButton(onClick, modifier.heightIn(min = 48.dp).semantics { contentDescription = label }, colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onSurface)) {
-        Icon(Icons.Rounded.QueueMusic, null)
+        Icon(PlayerSymbols.QueueMusic, null)
         Spacer(Modifier.width(8.dp))
         Text("队列 · $count")
     }
@@ -47,7 +44,7 @@ internal fun QueuePane(state: PlaybackState, onClose: () -> Unit, onSelect: (Pla
                 Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.tertiaryContainer, contentColor = MaterialTheme.colorScheme.onTertiaryContainer) { Text("${state.queue.size} 首", Modifier.padding(8.dp, 4.dp), fontSize = 12.sp, lineHeight = 16.sp) }
                 Spacer(Modifier.weight(1f))
             } else Text("${state.queue.size} 首", style = MaterialTheme.typography.labelMedium)
-            PlayerIcon(Icons.Rounded.Close, "收起播放队列", onClose, container = if (mobile) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer)
+            PlayerIcon(PlayerSymbols.Close, "收起播放队列", onClose, container = if (mobile) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer)
         }
         if (state.queue.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text("队列为空", color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -64,7 +61,7 @@ internal fun QueuePane(state: PlaybackState, onClose: () -> Unit, onSelect: (Pla
                                 Text("${track.source.label} · ${formatTime(track.durationMs)}", style = if (mobile) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
-                        IconButton(onClick = { onRemove(track.id) }, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.Close, "移除 ${track.title}") }
+                        IconButton(onClick = { onRemove(track.id) }, modifier = Modifier.size(48.dp)) { Icon(PlayerSymbols.Close, "移除 ${track.title}") }
                     }
                 }
             }
