@@ -33,13 +33,13 @@ def require(condition, message):
 
 
 class Mpv:
-    def __init__(self, executable, proxy_mode="system"):
+    def __init__(self, executable, proxy_mode="system", environment=None, working_directory=None):
         self.pipe_name = r"\\.\pipe\rxplayer-m1-" + uuid.uuid4().hex
         self.events = []
         self.sequence = 0
         self.pipe = None
         self.buffer = b""
-        environment = os.environ.copy()
+        environment = os.environ.copy() if environment is None else dict(environment)
         if proxy_mode == "system":
             # FFmpeg/mpv does not automatically read the Windows Internet proxy.
             # Bridge existing user configuration only to this child, never argv/logs.
@@ -56,6 +56,7 @@ class Mpv:
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             creationflags=subprocess.CREATE_NO_WINDOW,
             env=environment,
+            cwd=working_directory,
         )
         try:
             deadline = time.monotonic() + 10
