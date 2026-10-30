@@ -1,6 +1,6 @@
 # Bilibili 搜索与分 P 交互审核
 
-- 状态：待用户确认；仅原型。来源核心 `5ebec5c` 已以 `2e01efe` 合入 main；这不代表新分 P UI 获得确认或已经接入产品。
+- 状态：用户于 2026-10-30 明确回复“确认这版，继续正式接线”，确认 `f48cf05` 的双端 Bilibili 搜索 / 分 P 播放、入队及取消保留流程。可据此实现对应正式 UI；来源核心 `5ebec5c` 已以 `2e01efe` 合入 main。确认不代表原生接线或完整 M2 已验收。
 - 预览：`http://127.0.0.1:8767/prototype-v3/bilibili-review.html`，可切换 Windows / Android、深浅主题。
 - 依据：现有原型 03 的搜索 / 浮岛结构、m3-expressive 中 Google 对话框与列表指导。沿用现有颜色角色和模态焦点约束；分 P 行的尺寸 / 分组及即时操作为 RxPlayer 产品决策，不声称是 Google 固定布局。
 

@@ -37,13 +37,13 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.keno.rxplayer.DemoTrack
+import com.keno.rxplayer.PlaybackTrack
 import com.keno.rxplayer.audio.PlaybackState
 import kotlin.math.roundToInt
 
 @Composable
 internal fun DesktopMiniPlayer(
-    state: PlaybackState, track: DemoTrack, queueOpen: Boolean,
+    state: PlaybackState, track: PlaybackTrack, queueOpen: Boolean,
     onToggle: () -> Unit, onPrevious: () -> Unit, onNext: () -> Unit,
     onExpand: () -> Unit, onQueue: () -> Unit,
     expandFocus: FocusRequester, queueFocus: FocusRequester,
@@ -77,10 +77,10 @@ internal fun DesktopMiniPlayer(
 }
 
 @Composable
-private fun TrackIsland(track: DemoTrack, onExpand: () -> Unit, focus: FocusRequester, modifier: Modifier, compact: Boolean = false) {
+private fun TrackIsland(track: PlaybackTrack, onExpand: () -> Unit, focus: FocusRequester, modifier: Modifier, compact: Boolean = false) {
     Surface(modifier.height(if (compact) 48.dp else 72.dp), shape = RoundedCornerShape(20.dp), color = if (compact) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLow) {
         TextButton(onExpand, Modifier.fillMaxSize().focusRequester(focus), shape = RoundedCornerShape(20.dp), contentPadding = PaddingValues(if (compact) 4.dp else 12.dp)) {
-            Artwork(track.artwork, Modifier.size(if (compact) 40.dp else 48.dp))
+            Artwork(track, Modifier.size(if (compact) 40.dp else 48.dp))
             Column(Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(track.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 Text(track.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

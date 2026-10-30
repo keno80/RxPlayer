@@ -2,6 +2,11 @@ package com.keno.rxplayer.audio
 
 import androidx.compose.runtime.*
 import com.keno.rxplayer.DemoTrack
+import com.keno.rxplayer.BilibiliTrack
+import com.keno.rxplayer.PlaybackTrack
+import com.keno.rxplayer.source.AudioStream
+import com.keno.rxplayer.source.SourceFailure
+import com.keno.rxplayer.source.SourceFailureKind
 import com.keno.rxplayer.demoTracks
 import com.keno.rxplayer.generated.resources.Res
 import kotlinx.coroutines.CancellationException
@@ -15,11 +20,14 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 enum class PlaybackPhase { Idle, Preparing, Buffering, Playing, Paused, Refreshing, Failed, Unavailable, Expired, Ended }
 
 data class PlaybackFailure(val phase: PlaybackPhase = PlaybackPhase.Failed)
+class PlaybackExceptionSafe(val failure: PlaybackFailure) : Exception("Playback failed: ${failure.phase}")
 data class PlaybackMessage(val id: Long, val text: String)
 
 @OptIn(ExperimentalResourceApi::class)
 class PlaybackState(
     private val player: AudioPlayer,
+    private val resolveStream: suspend (BilibiliTrack) -> AudioStream = { error("No online source configured") },
+    initialQueue: List<PlaybackTrack> = demoTracks,
     private val readAudio: suspend (DemoTrack) -> ByteArray = { Res.readBytes(it.resourcePath) },
 ) {
     private val selectionMutex = Mutex()
@@ -27,8 +35,9 @@ class PlaybackState(
     private var loadingJob: Job? = null
     private var messageId = 0L
     private var prepared = false
+    private var automaticRefreshUsed = false
     private var shuffleOrder = emptyList<String>()
-    var track: DemoTrack? by mutableStateOf(null)
+    var track: PlaybackTrack? by mutableStateOf(null)
         private set
     var phase by mutableStateOf(PlaybackPhase.Idle)
         private set
@@ -36,7 +45,7 @@ class PlaybackState(
         private set
     var positionMs by mutableIntStateOf(0)
         private set
-    var queue by mutableStateOf(demoTracks)
+    var queue by mutableStateOf(initialQueue)
         private set
     var shuffle by mutableStateOf(false)
         private set
@@ -55,7 +64,7 @@ class PlaybackState(
     val canSeek get() = prepared && durationMs > 0 && (phase == PlaybackPhase.Playing || phase == PlaybackPhase.Paused)
     val canChangeVolume get() = prepared && player.supportsVolume
 
-    suspend fun select(next: DemoTrack, autoPlay: Boolean = true, resumeAt: Int = 0, refreshing: Boolean = false) {
+    suspend fun select(next: PlaybackTrack, autoPlay: Boolean = true, resumeAt: Int = 0, refreshing: Boolean = false) {
         val job = currentCoroutineContext()[Job]
         if (loadingJob !== job) loadingJob?.cancel()
         val ticket = ++generation
@@ -70,14 +79,16 @@ class PlaybackState(
         playWhenReady = autoPlay
         message = null
         prepared = false
+        if (!refreshing) automaticRefreshUsed = false
         phase = if (refreshing) PlaybackPhase.Refreshing else PlaybackPhase.Preparing
         try {
             selectionMutex.withLock {
                 currentCoroutineContext().ensureActive()
                 player.pause()
-                val bytes = readAudio(next)
-                currentCoroutineContext().ensureActive()
-                player.load(bytes)
+                when (next) {
+                    is DemoTrack -> { val bytes = readAudio(next); currentCoroutineContext().ensureActive(); player.load(bytes) }
+                    is BilibiliTrack -> { val stream = resolveStream(next); currentCoroutineContext().ensureActive(); player.load(stream) }
+                }
                 currentCoroutineContext().ensureActive()
                 if (ticket != generation) return@withLock
                 check(player.durationMs > 0) { "Audio duration unavailable" }
@@ -96,6 +107,13 @@ class PlaybackState(
                 phase = if (refreshing) PlaybackPhase.Expired else PlaybackPhase.Paused
             }
             throw cancelled
+        } catch (failure: PlaybackExceptionSafe) {
+            if (ticket == generation) reportFailure(failure.failure)
+        } catch (failure: SourceFailure) {
+            if (ticket == generation) {
+                reportFailure(PlaybackFailure(if (failure.kind in setOf(SourceFailureKind.Unavailable, SourceFailureKind.LoginRequired, SourceFailureKind.Restricted)) PlaybackPhase.Unavailable else PlaybackPhase.Failed))
+                if (failure.kind == SourceFailureKind.LoginRequired) notify("这项内容需要登录，当前尚未接入音源账号")
+            }
         } catch (_: Exception) {
             if (ticket == generation) reportFailure(PlaybackFailure())
         } finally {
@@ -152,7 +170,24 @@ class PlaybackState(
 
     suspend fun step(offset: Int) { adjacent(offset)?.let { select(it) } }
 
-    private fun adjacent(offset: Int): DemoTrack? {
+    fun enqueue(next: PlaybackTrack, nextInQueue: Boolean = false) {
+        if (next.id == track?.id || !nextInQueue && queue.any { it.id == next.id }) return
+        val remaining = queue.filterNot { it.id == next.id }
+        val index = if (nextInQueue) (remaining.indexOfFirst { it.id == track?.id } + 1).coerceAtLeast(0) else remaining.size
+        queue = remaining.toMutableList().apply { add(index, next) }
+        if (shuffle) shuffleOrder = shuffleOrder.filterNot { it == next.id }.toMutableList().apply {
+            add(if (nextInQueue) (indexOf(track?.id) + 1).coerceAtLeast(0) else size, next.id)
+        }
+    }
+
+    suspend fun recoverExpiredIfPlaying() {
+        if (phase != PlaybackPhase.Expired || !playWhenReady || automaticRefreshUsed) return
+        val selected = track ?: return
+        automaticRefreshUsed = true
+        select(selected, autoPlay = true, resumeAt = positionMs, refreshing = true)
+    }
+
+    private fun adjacent(offset: Int): PlaybackTrack? {
         val order = playOrder()
         if (order.isEmpty()) return null
         val index = order.indexOf(track?.id)
@@ -190,7 +225,7 @@ class PlaybackState(
     }
 
     /** Returns a next selection once, only after the engine reports completion. */
-    fun sync(): DemoTrack? {
+    fun sync(): PlaybackTrack? {
         if (isLoading || !prepared || phase == PlaybackPhase.Ended || phase in faultPhases) return null
         try {
             player.failure?.let { reportFailure(it); return null }

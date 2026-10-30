@@ -4,8 +4,13 @@ package com.keno.rxplayer.ui
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
+import com.keno.rxplayer.PlaybackTrack
+import com.keno.rxplayer.DemoTrack
+import com.materialkolor.hct.Hct
+import com.materialkolor.scheme.SchemeTonalSpot
 
 // Brand roles match the approved prototype's MCU-generated colors.css.
 internal fun brandColors(dark: Boolean): ColorScheme = if (dark) darkColorScheme(
@@ -52,4 +57,24 @@ fun PlayerTheme(dark: Boolean, artwork: Int?, content: @Composable () -> Unit) {
         colorScheme = artwork?.let { coverColors(base, dark, it) } ?: base,
         motionScheme = MotionScheme.expressive(), content = content,
     )
+}
+
+@Composable
+fun PlayerTheme(dark: Boolean, track: PlaybackTrack?, followArtwork: Boolean = true, content: @Composable () -> Unit) {
+    val store = LocalArtworkStore.current
+    LaunchedEffect(track?.artworkUrl, followArtwork) { if (followArtwork) store.load(track?.artworkUrl) }
+    val seed = if (followArtwork) store.get(track?.artworkUrl)?.seed else null
+    val colors = androidx.compose.runtime.remember(dark, seed, followArtwork, track?.artwork) {
+        val base = brandColors(dark)
+        when {
+            seed != null -> SchemeTonalSpot(Hct.fromInt(seed), dark, 0.0).let { s -> base.copy(
+                primary = Color(s.primary), onPrimary = Color(s.onPrimary), primaryContainer = Color(s.primaryContainer), onPrimaryContainer = Color(s.onPrimaryContainer),
+                secondary = Color(s.secondary), onSecondary = Color(s.onSecondary), secondaryContainer = Color(s.secondaryContainer), onSecondaryContainer = Color(s.onSecondaryContainer),
+                tertiary = Color(s.tertiary), onTertiary = Color(s.onTertiary), tertiaryContainer = Color(s.tertiaryContainer), onTertiaryContainer = Color(s.onTertiaryContainer),
+            ) }
+            followArtwork && track is DemoTrack -> coverColors(base, dark, track.artwork)
+            else -> base
+        }
+    }
+    MaterialExpressiveTheme(colorScheme = colors, motionScheme = MotionScheme.expressive(), content = content)
 }

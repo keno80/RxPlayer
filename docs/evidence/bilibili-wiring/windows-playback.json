@@ -1,0 +1,14 @@
+{
+    "checked_at": "2026-10-30T06:17:01.409069500Z",
+    "platform": "Windows",
+    "search_count": 17,
+    "part_count": 36,
+    "distinct_parts_played": [
+        1138102370,
+        1138106698
+    ],
+    "pause_seek_queue_passed": true,
+    "natural_end_passed": true,
+    "engine_restart_passed": true,
+    "passed": true
+}

@@ -169,7 +169,7 @@
       <button class="featured-art" data-action="play-track" data-id="${track.id}" aria-label="播放 ${escape(track.title)}">${art(track)}</button>
       <div class="featured-copy"><span class="source-label">${symbol('music_note')}最佳匹配 · ${track.source}</span>
       <h2>${escape(track.title)}</h2><p>${escape(track.author)} · ${track.type} · ${time(track.duration)}</p>
-      ${track.parts ? `<small class="part-count">${track.parts.length} 分P · 选择后播放</small>` : ''}</div><button class="icon-button featured-play" data-action="play-track" data-id="${track.id}" aria-label="播放 ${escape(track.title)}" data-tip="播放">${symbol('play_arrow', true)}</button></section>`;
+      ${track.parts ? `<small class="part-count">${track.parts.length} 分P · 选择后播放</small>` : ''}</div><div class="featured-actions"><button class="icon-button featured-play" data-action="play-track" data-id="${track.id}" aria-label="播放 ${escape(track.title)}" data-tip="播放">${symbol('play_arrow', true)}</button>${bilibiliPreview ? iconButton('track-menu', 'more_horiz', `${track.title} 的更多操作`, `data-id="${track.id}"`) : ''}</div></section>`;
   }
 
   function sourceSelector() {
