@@ -43,21 +43,20 @@ import com.keno.rxplayer.audio.PlaybackState
 @Composable
 fun MiniPlayer(
     state: PlaybackState, displayTrack: PlaybackTrack,
-    onToggle: () -> Unit, onNext: () -> Unit, onExpand: () -> Unit, onQueue: () -> Unit,
+    onToggle: () -> Unit, onExpand: () -> Unit, onQueue: () -> Unit,
     expandFocus: FocusRequester, queueFocus: FocusRequester,
 ) {
-    Surface(Modifier.fillMaxWidth().padding(12.dp, 8.dp), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-        Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onExpand, modifier = Modifier.weight(1f).focusRequester(expandFocus), contentPadding = PaddingValues(0.dp)) {
+    Surface(Modifier.fillMaxWidth().padding(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 4.dp), shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 76.dp).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onExpand, modifier = Modifier.weight(1f).focusRequester(expandFocus), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(0.dp)) {
                 Artwork(displayTrack, Modifier.size(48.dp))
-                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                    Text(displayTrack.title, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
-                    Text(phaseLabel(state.phase), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(Modifier.weight(1f).padding(start = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(displayTrack.title, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
+                    Text("${phaseLabel(state.phase)} · ${displayTrack.source.label}", fontSize = 12.sp, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            PlaybackButton(state, onToggle, Modifier.size(56.dp, 48.dp))
-            PlayerIcon(Icons.Rounded.SkipNext, "下一首", onNext)
-            PlayerIcon(Icons.Rounded.QueueMusic, "播放队列", onQueue, Modifier.size(48.dp).focusRequester(queueFocus))
+            PlaybackButton(state, onToggle, Modifier.size(48.dp), restingCorner = 16.dp, playingCorner = 48.dp, iconSize = 28.dp)
+            PlayerIcon(Icons.Rounded.QueueMusic, "播放队列", onQueue, Modifier.size(48.dp).focusRequester(queueFocus), container = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
         }
     }
 }
@@ -120,7 +119,8 @@ fun PlayerScreen(
                     }
                 }
             } else if (track.lyrics.isNotEmpty()) {
-                val stageHeight = (maxHeight - 260.dp).coerceAtLeast(380.dp)
+                val bottomInset = WindowInsets.safeDrawing.asPaddingValues().calculateBottomPadding()
+                val stageHeight = (maxHeight - 276.dp - bottomInset).coerceAtLeast(380.dp)
                 val topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
                 val surface = MaterialTheme.colorScheme.surface
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -131,15 +131,15 @@ fun PlayerScreen(
                         // The image fills the status area; foreground consumes real system insets.
                         PlayerTheme(dark = true, track = track) {
                             Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)).padding(horizontal = 24.dp)) {
-                                PlayerHeader(onClose, backModifier = Modifier.focusRequester(backFocus))
-                                Box(Modifier.fillMaxWidth().heightIn(min = (stageHeight - 64.dp - topInset).coerceAtLeast(0.dp)).padding(bottom = 96.dp), contentAlignment = Alignment.Center) {
+                                PlayerHeader(onClose, backModifier = Modifier.focusRequester(backFocus), height = 48.dp)
+                                Box(Modifier.fillMaxWidth().heightIn(min = (stageHeight - 48.dp - topInset).coerceAtLeast(0.dp)).padding(bottom = 96.dp), contentAlignment = Alignment.Center) {
                                     LyricsLines(state, track, windowed = true)
                                 }
                             }
                         }
                     }
                     Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)).padding(horizontal = 24.dp)) {
-                        TrackInformation(track, favorite, onFavorite, compact = true) {
+                        MobileTrackInformation(track, favorite, onFavorite, compact = true) {
                             QueueButton(state.queue.size, queueOpen, onQueue, Modifier.focusRequester(queueFocus), iconOnly = true)
                         }
                         Spacer(Modifier.height(20.dp))
@@ -150,12 +150,15 @@ fun PlayerScreen(
                     }
                 }
             } else {
-                Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    PlayerHeader(onClose, { QueueButton(state.queue.size, queueOpen, onQueue, Modifier.focusRequester(queueFocus)) }, Modifier.focusRequester(backFocus))
-                    Spacer(Modifier.height(24.dp))
-                    CoverCard(track, Modifier.widthIn(max = 280.dp).fillMaxWidth())
-                    Spacer(Modifier.height(24.dp))
-                    TrackInformation(track, favorite, onFavorite)
+                val insets = WindowInsets.safeDrawing.asPaddingValues()
+                // Reserve the confirmed controls and two title lines before sizing the cover.
+                val coverSize = (maxHeight - insets.calculateTopPadding() - insets.calculateBottomPadding() - 540.dp).coerceIn(160.dp, 280.dp)
+                Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    PlayerHeader(onClose, { QueueButton(state.queue.size, queueOpen, onQueue, Modifier.focusRequester(queueFocus)) }, Modifier.focusRequester(backFocus), height = 48.dp)
+                    Spacer(Modifier.height(20.dp))
+                    CoverCard(track, Modifier.width(coverSize))
+                    Spacer(Modifier.height(20.dp))
+                    MobileTrackInformation(track, favorite, onFavorite)
                     Spacer(Modifier.height(24.dp))
                     SplitControls(state, onToggle, onPrevious, onNext)
                     PlaybackModes(state, desktop = false)
@@ -167,11 +170,31 @@ fun PlayerScreen(
 }
 
 @Composable
-private fun PlayerHeader(onClose: () -> Unit, trailing: (@Composable () -> Unit)? = null, backModifier: Modifier = Modifier) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun PlayerHeader(onClose: () -> Unit, trailing: (@Composable () -> Unit)? = null, backModifier: Modifier = Modifier, height: Dp = 64.dp) {
+    Row(Modifier.fillMaxWidth().heightIn(min = height), verticalAlignment = Alignment.CenterVertically) {
         PlayerIcon(Icons.AutoMirrored.Rounded.ArrowBack, "返回", onClose, backModifier.size(48.dp), Color.Transparent)
         Spacer(Modifier.weight(1f))
         trailing?.invoke()
+    }
+}
+
+@Composable
+private fun MobileTrackInformation(track: PlaybackTrack, favorite: Boolean, onFavorite: () -> Unit, compact: Boolean = false, extra: (@Composable () -> Unit)? = null) {
+    Column(Modifier.fillMaxWidth().padding(bottom = if (compact) 0.dp else 12.dp)) {
+        if (!compact) {
+            Text("${track.source.label} · ${if (track is com.keno.rxplayer.DemoTrack) "本地演示" else "视频"}", fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(8.dp))
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 12.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 6.dp)) {
+                Text(track.title, fontSize = if (compact) 24.sp else 32.sp, lineHeight = if (compact) 32.sp else 40.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.semantics { heading() })
+                Text(if (compact) "${track.artist} · ${track.source.label}" else track.artist, fontSize = if (compact) 12.sp else 16.sp, lineHeight = if (compact) 16.sp else 24.sp, fontWeight = FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            extra?.invoke()
+            FilledIconToggleButton(favorite, { onFavorite() }, Modifier.size(48.dp), shape = RoundedCornerShape(16.dp), colors = IconButtonDefaults.filledIconToggleButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onSurfaceVariant, checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer, checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer)) {
+                Icon(if (favorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (favorite) "取消收藏 ${track.title}" else "收藏 ${track.title}")
+            }
+        }
     }
 }
 
@@ -257,10 +280,10 @@ internal fun ModeButton(selected: Boolean, image: ImageVector, label: String, on
 }
 
 @Composable
-internal fun PlayerIcon(image: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier.size(48.dp), container: Color = MaterialTheme.colorScheme.surfaceContainer, contentColor: Color = contentColorFor(container)) {
+internal fun PlayerIcon(image: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier.size(48.dp), container: Color = MaterialTheme.colorScheme.surfaceContainer, contentColor: Color = contentColorFor(container), corner: Dp = 48.dp) {
     Box(modifier) {
         TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState(), modifier = Modifier.fillMaxSize()) {
-            FilledIconButton(onClick, Modifier.fillMaxSize(), shape = RoundedCornerShape(48.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = container, contentColor = contentColor)) {
+            FilledIconButton(onClick, Modifier.fillMaxSize(), shape = RoundedCornerShape(corner), colors = IconButtonDefaults.filledIconButtonColors(containerColor = container, contentColor = contentColor)) {
                 Icon(image, label)
             }
         }

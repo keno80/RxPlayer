@@ -62,6 +62,10 @@ class BilibiliBrowseState(
         }
         return searchJob
     }
+    fun cancelSearch() {
+        ++searchGeneration; searchJob?.cancel(); searchJob = null
+        searching = false; submitted = ""; results = emptyList(); error = null; page = 0; hasMore = false
+    }
     fun more(): Job? {
         if (!hasMore || searching || error != null) return null
         val ticket = searchGeneration
