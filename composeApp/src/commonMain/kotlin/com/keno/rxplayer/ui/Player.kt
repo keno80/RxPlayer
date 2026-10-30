@@ -12,9 +12,6 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,7 +53,7 @@ fun MiniPlayer(
                 }
             }
             PlaybackButton(state, onToggle, Modifier.size(48.dp), restingCorner = 16.dp, playingCorner = 48.dp, iconSize = 28.dp)
-            PlayerIcon(Icons.Rounded.QueueMusic, "播放队列", onQueue, Modifier.size(48.dp).focusRequester(queueFocus), container = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
+            PlayerIcon(PlayerSymbols.QueueMusic, "播放队列", onQueue, Modifier.size(48.dp).focusRequester(queueFocus), container = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
         }
     }
 }
@@ -172,7 +169,7 @@ fun PlayerScreen(
 @Composable
 private fun PlayerHeader(onClose: () -> Unit, trailing: (@Composable () -> Unit)? = null, backModifier: Modifier = Modifier, height: Dp = 64.dp) {
     Row(Modifier.fillMaxWidth().heightIn(min = height), verticalAlignment = Alignment.CenterVertically) {
-        PlayerIcon(Icons.AutoMirrored.Rounded.ArrowBack, "返回", onClose, backModifier.size(48.dp), Color.Transparent)
+        PlayerIcon(PlayerSymbols.ArrowBack, "返回", onClose, backModifier.size(48.dp), Color.Transparent)
         Spacer(Modifier.weight(1f))
         trailing?.invoke()
     }
@@ -192,7 +189,7 @@ private fun MobileTrackInformation(track: PlaybackTrack, favorite: Boolean, onFa
             }
             extra?.invoke()
             FilledIconToggleButton(favorite, { onFavorite() }, Modifier.size(48.dp), shape = RoundedCornerShape(16.dp), colors = IconButtonDefaults.filledIconToggleButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onSurfaceVariant, checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer, checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer)) {
-                Icon(if (favorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (favorite) "取消收藏 ${track.title}" else "收藏 ${track.title}")
+                Icon(PlayerSymbols.Favorite, if (favorite) "取消收藏 ${track.title}" else "收藏 ${track.title}")
             }
         }
     }
@@ -218,7 +215,7 @@ private fun TrackInformation(track: PlaybackTrack, favorite: Boolean, onFavorite
             checked = favorite, onCheckedChange = { onFavorite() }, modifier = Modifier.size(48.dp),
             shape = RoundedCornerShape(16.dp),
             colors = IconButtonDefaults.filledIconToggleButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onSurfaceVariant, checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer, checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer),
-        ) { Icon(if (favorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (favorite) "取消收藏 ${track.title}" else "收藏 ${track.title}") }
+        ) { Icon(PlayerSymbols.Favorite, if (favorite) "取消收藏 ${track.title}" else "收藏 ${track.title}") }
     }
 }
 
@@ -231,10 +228,10 @@ private fun SplitControls(state: PlaybackState, onToggle: () -> Unit, onPrevious
             Column(Modifier.fillMaxWidth().padding(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.CenterVertically) {
                     PlaybackButton(state, onToggle, Modifier.weight(1f).height(size))
-                    PlayerIcon(Icons.Rounded.SkipNext, "下一首", onNext, Modifier.size(size), MaterialTheme.colorScheme.secondaryContainer)
+                    PlayerIcon(PlayerSymbols.SkipNext, "下一首", onNext, Modifier.size(size), MaterialTheme.colorScheme.secondaryContainer)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.CenterVertically) {
-                    PlayerIcon(Icons.Rounded.SkipPrevious, "上一首", onPrevious, Modifier.size(size), MaterialTheme.colorScheme.secondaryContainer)
+                    PlayerIcon(PlayerSymbols.SkipPrevious, "上一首", onPrevious, Modifier.size(size), MaterialTheme.colorScheme.secondaryContainer)
                     SeekBar(state, Modifier.weight(1f), compact = true)
                 }
             }
@@ -246,11 +243,11 @@ private fun SplitControls(state: PlaybackState, onToggle: () -> Unit, onPrevious
 private fun ConnectedControls(state: PlaybackState, onToggle: () -> Unit, onPrevious: () -> Unit, onNext: () -> Unit) {
     Surface(shape = RoundedCornerShape(48.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-            PlayerIcon(Icons.Rounded.SkipPrevious, "上一首", onPrevious, container = MaterialTheme.colorScheme.tertiaryContainer)
-            ModeButton(state.shuffle, Icons.Rounded.Shuffle, "随机播放", state::toggleShuffle)
+            PlayerIcon(PlayerSymbols.SkipPrevious, "上一首", onPrevious, container = MaterialTheme.colorScheme.tertiaryContainer)
+            ModeButton(state.shuffle, PlayerSymbols.Shuffle, "随机播放", state::toggleShuffle)
             PlaybackButton(state, onToggle, Modifier.weight(1f).height(48.dp))
-            ModeButton(state.repeat, Icons.Rounded.Repeat, if (state.repeat) "列表循环" else "顺序播放", state::toggleRepeat)
-            PlayerIcon(Icons.Rounded.SkipNext, "下一首", onNext, container = MaterialTheme.colorScheme.tertiaryContainer)
+            ModeButton(state.repeat, PlayerSymbols.Repeat, if (state.repeat) "列表循环" else "顺序播放", state::toggleRepeat)
+            PlayerIcon(PlayerSymbols.SkipNext, "下一首", onNext, container = MaterialTheme.colorScheme.tertiaryContainer)
         }
     }
 }
@@ -258,11 +255,11 @@ private fun ConnectedControls(state: PlaybackState, onToggle: () -> Unit, onPrev
 @Composable
 private fun PlaybackModes(state: PlaybackState, desktop: Boolean) {
     Row(Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, if (desktop) Alignment.Start else Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
-        ModeButton(state.shuffle, Icons.Rounded.Shuffle, "随机播放", state::toggleShuffle)
-        ModeButton(state.repeat, Icons.Rounded.Repeat, if (state.repeat) "列表循环" else "顺序播放", state::toggleRepeat)
+        ModeButton(state.shuffle, PlayerSymbols.Shuffle, "随机播放", state::toggleShuffle)
+        ModeButton(state.repeat, PlayerSymbols.Repeat, if (state.repeat) "列表循环" else "顺序播放", state::toggleRepeat)
         if (desktop) {
             Spacer(Modifier.weight(1f))
-            Icon(Icons.Rounded.VolumeUp, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(PlayerSymbols.VolumeUp, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Slider(value = state.volume, onValueChange = state::changeVolume, enabled = state.canChangeVolume, modifier = Modifier.width(88.dp).onPreviewKeyEvent { it.key == Key.Spacebar }.semantics { contentDescription = "音量" })
         }
     }
@@ -303,10 +300,10 @@ internal fun PlaybackButton(state: PlaybackState, onClick: () -> Unit, modifier:
         else -> if (state.isPlaying) "暂停" else "播放"
     }
     val icon = when (state.phase) {
-        PlaybackPhase.Preparing, PlaybackPhase.Refreshing -> Icons.Rounded.Close
-        PlaybackPhase.Buffering, PlaybackPhase.Playing -> Icons.Rounded.Pause
-        PlaybackPhase.Failed, PlaybackPhase.Expired -> Icons.Rounded.Refresh
-        else -> Icons.Rounded.PlayArrow
+        PlaybackPhase.Preparing, PlaybackPhase.Refreshing -> PlayerSymbols.Close
+        PlaybackPhase.Buffering, PlaybackPhase.Playing -> PlayerSymbols.Pause
+        PlaybackPhase.Failed, PlaybackPhase.Expired -> PlayerSymbols.Refresh
+        else -> PlayerSymbols.PlayArrow
     }
     val corner by animateDpAsState(if (state.isPlaying) playingCorner else restingCorner, if (LocalPlayerReducedMotion.current) snap() else MaterialTheme.motionScheme.fastSpatialSpec())
     val recovering = state.phase == PlaybackPhase.Failed || state.phase == PlaybackPhase.Expired
