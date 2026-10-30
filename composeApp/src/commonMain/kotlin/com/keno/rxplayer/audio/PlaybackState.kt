@@ -184,7 +184,7 @@ class PlaybackState(
         }
     }
     fun toggleRepeat() { repeat = !repeat }
-    fun setVolume(value: Float) {
+    fun changeVolume(value: Float) {
         volume = value.coerceIn(0f, 1f)
         if (prepared) try { player.setVolume(volume) } catch (_: Exception) { notify("当前设备无法调整音量") }
     }
@@ -196,6 +196,7 @@ class PlaybackState(
             player.failure?.let { reportFailure(it); return null }
             positionMs = player.positionMs.coerceIn(0, durationMs)
             if (player.isEnded && playWhenReady) {
+                positionMs = durationMs
                 playWhenReady = false
                 phase = PlaybackPhase.Ended
                 val order = playOrder()
