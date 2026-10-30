@@ -234,3 +234,14 @@ button{color:inherit}a{color:#365e54;text-underline-offset:3px}
 .product .seek-track.is-buffering input[data-progress]{opacity:0}
 .product .full-player .split-controls .buffer-track{top:20px;height:8px;border-radius:4px}
 @media(prefers-reduced-motion:reduce){.buffer-track>span{animation:none;transform:translateX(75%)}}
+
+/* M2 review: RxPlayer geometry decisions using existing M3 color/type roles. */
+.part-count{display:block;margin-top:8px;font-size:12px;line-height:16px}
+.part-context{font-size:16px;line-height:24px;margin:0 0 8px;font-weight:500}
+.parts-list{display:flex;flex-direction:column;gap:2px;margin:16px 0;max-height:360px;overflow:auto;border-radius:20px}
+.product .part-option{display:flex;align-items:center;gap:12px;width:100%;min-height:72px;padding:12px 16px;text-align:left;background:var(--surface-container);border-radius:12px}
+.product .part-option:first-child{border-top-left-radius:20px;border-top-right-radius:20px}.product .part-option:last-child{border-bottom-left-radius:20px;border-bottom-right-radius:20px}
+.product .part-option[aria-current=true]{background:var(--secondary-container);color:var(--on-secondary-container)}
+.product .part-option:hover{background:color-mix(in srgb,var(--on-surface) 8%,var(--surface-container))}
+.product .part-option[aria-current=true]:hover{background:color-mix(in srgb,var(--on-surface) 8%,var(--secondary-container))}.product .part-option:focus-visible{outline-offset:-3px}
+.part-number{width:24px;flex-shrink:0;color:var(--on-surface-variant);font-size:12px}.part-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}.part-copy strong{font-size:16px;line-height:24px;font-weight:500;overflow-wrap:anywhere}.part-copy small{font-size:12px;line-height:16px;color:var(--on-surface-variant)}

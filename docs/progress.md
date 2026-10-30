@@ -30,6 +30,7 @@ Compose 播放页按确认基线迁移，源码交付与运行验收分别记录
 
 ## 当前任务与交付
 
+- 2026-10-30 下一步 UI 审核：来源核心已合并 main `2e01efe`；为正式接线补充 [Bilibili 分 P 原型](../design/prototype-v3/bilibili-review.html)。新增单 P / 多 P 播放与入队选择、取消保留、分 P 独立队列项，其他来源 / 批量播放未启用。8 组双端主题边界和新交互定向检查通过；修正键盘绕过禁用来源及批量取消覆盖队列问题。该原型仅推送 `codex/bilibili-playback` 审核分支，等待用户确认，不合并或先改正式 UI。见 [审核范围](superpowers/specs/2026-10-30-bilibili-parts-prototype.md)。
 - 2026-10-30 Bilibili 共享来源核心已实现并验证：独立真实内容模型、匿名搜索分页、BV / AV / HTTPS 视频链接、分 P 和 AAC 解析；修正合法 MCDN HTTPS 8082 被误拒。10 项模拟 / 边界 + 1 项桌面真请求通过，Android API 37 真请求 1 项通过。双端构建、安装 / 启动完成；测试包清理。来源真请求仅证明元数据与音频字节，未接 UI / 流媒体 / 持久化。见 [来源核心记录](technical/2026-10-30-bilibili-source-core.md)。
 - 2026-10-30 技术验证收口：已收录 Bilibili 自然到期 403 / 重解析 206 证据；YouTube 观察已中断并明确未通过。新增匿名分页、AV / BV / 36 分 P 视频前两 P 解析检查，以及固定 hash 引擎在隔离目录 / 最小 PATH 下的本地 WAV 与真实 HTTPS AAC 控制验证，均已取得通过报告。完整边界及剩余发布 / 账号 / 平台门槛见 [M1 后续记录](technical/2026-10-30-m1-closeout.md)。M1 整体仍进行中，不重复全流程 UI 回归。
 - 当前分支：`codex/bilibili-playback`，承接已合入 main 的 M1 技术证据；本批完成来源核心，下一步接流媒体和真实搜索入口。M1 剩余边界继续保留，UI 变化仍先原型确认。

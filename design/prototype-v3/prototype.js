@@ -4,6 +4,7 @@
   const $ = (selector, parent = document) => parent.querySelector(selector);
   const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
   const product = $('#product');
+  const bilibiliPreview = new URLSearchParams(location.search).get('stage') === 'm2';
   const queueBreakpoint = matchMedia('(min-width:1101px)');
   const sources = ['Bilibili', '网易云', 'YouTube'];
   const titles = ['夜航', '夜航 · 城市现场', '夜航之后', '夜航 / Midnight Session'];
@@ -20,16 +21,24 @@
     id: `${sourceIndex}-${index}`, title, author: authors[index], duration: durations[index],
     source, art: index, hasLyrics: demoLyrics[index].length > 0, type: source === '网易云' ? '歌曲' : '视频',
   })));
+  if (bilibiliPreview) {
+    const parts = [['现场正片',222],['舞台纯享',183],['幕后片段',198]];
+    tracks.forEach(track => { track.hasLyrics = false; });
+    tracks.filter(track => ['0-0','0-1'].includes(track.id)).forEach(track => {
+      track.parts = parts.map(([title,duration],index) => ({number:index+1,title,duration,id:`${track.id}:p${index+1}`}));
+      track.parts.forEach(part => tracks.push({...track,parts:undefined,id:part.id,partBaseId:track.id,title:`${track.title} · P${part.number} ${part.title}`,duration:part.duration}));
+    });
+  }
   const initial = () => ({
     device: matchMedia('(max-width:700px)').matches ? 'android' : 'desktop',
     theme: 'dark', route: 'search', source: 'Bilibili', scene: 'results',
     queries: Object.fromEntries(sources.map(source => [source, '夜航'])),
-    favorites: ['0-0', '1-2'], recent: ['0-0', '2-1'],
-    queue: ['0-0', '1-2', '2-1'], queueOpen: queueBreakpoint.matches, current: '0-0', playing: false, position: 82,
+    favorites: bilibiliPreview ? ['0-0:p1'] : ['0-0', '1-2'], recent: bilibiliPreview ? ['0-0:p1'] : ['0-0', '2-1'],
+    queue: bilibiliPreview ? ['0-0:p1'] : ['0-0', '1-2', '2-1'], queueOpen: queueBreakpoint.matches, current: bilibiliPreview ? '0-0:p1' : '0-0', playing: false, position: 82,
     phase: 'paused', prepared: true, wantPlay: false,
     libraryTab: 'favorites', playlist: null,
     playlists: [{name: '通勤路上', ids: ['0-0', '1-2', '2-1'], art: 0}, {name: '安静片刻', ids: ['1-0', '2-2'], art: 2}],
-    connected: ['Bilibili'], artworkColor: true, lyricsLayout: 'auto', repeat: false, shuffle: false, volume: 65,
+    connected: bilibiliPreview ? [] : ['Bilibili'], artworkColor: true, lyricsLayout: 'auto', repeat: false, shuffle: false, volume: 65,
     history: ['夜航', '午后纯音乐', '城市现场'], overlay: null, menuTrack: null,
   });
   let state = initial();
@@ -146,9 +155,9 @@
   function row(track) {
     const selected = track.id === state.current;
     return `<article class="track-row ${selected ? 'current' : ''}">
-      <button class="track-main" data-action="play-track" data-id="${track.id}" aria-label="播放 ${escape(track.title)}，${escape(track.author)}，${track.source}">
+      <button class="track-main" data-action="play-track" data-id="${track.id}" aria-label="播放 ${escape(track.title)}，${escape(track.author)}，${track.source}" ${bilibiliPreview && track.source !== 'Bilibili' ? 'disabled' : ''}>
         ${art(track)}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${escape(track.author)} · ${track.type}</span></span>
-      </button><span class="track-source">${track.source}</span>
+      </button><span class="track-source">${track.parts ? `${track.parts.length} 分P · ` : ''}${track.source}</span>
       ${selected && state.playing ? `<span class="symbol playing" aria-label="正在播放">graphic_eq</span>` : ''}
       <span class="track-meta">${time(track.duration)}</span>${favoriteButton(track)}
       ${iconButton('track-menu', 'more_horiz', `${track.title} 的更多操作`, `data-id="${track.id}"`)}
@@ -160,11 +169,11 @@
       <button class="featured-art" data-action="play-track" data-id="${track.id}" aria-label="播放 ${escape(track.title)}">${art(track)}</button>
       <div class="featured-copy"><span class="source-label">${symbol('music_note')}最佳匹配 · ${track.source}</span>
       <h2>${escape(track.title)}</h2><p>${escape(track.author)} · ${track.type} · ${time(track.duration)}</p>
-      </div><button class="icon-button featured-play" data-action="play-track" data-id="${track.id}" aria-label="播放 ${escape(track.title)}" data-tip="播放">${symbol('play_arrow', true)}</button></section>`;
+      ${track.parts ? `<small class="part-count">${track.parts.length} 分P · 选择后播放</small>` : ''}</div><button class="icon-button featured-play" data-action="play-track" data-id="${track.id}" aria-label="播放 ${escape(track.title)}" data-tip="播放">${symbol('play_arrow', true)}</button></section>`;
   }
 
   function sourceSelector() {
-    return `<div class="sources" role="radiogroup" aria-label="搜索音源">${sources.map(source => `<button class="source-button" role="radio" aria-checked="${state.source === source}" data-action="source" data-source="${source}">${state.source === source ? symbol('check') : ''}${source}</button>`).join('')}</div>`;
+    return `<div class="sources" role="radiogroup" aria-label="搜索音源">${sources.map(source => `<button class="source-button" role="radio" aria-checked="${state.source === source}" data-action="source" data-source="${source}" ${bilibiliPreview && source !== 'Bilibili' ? 'disabled aria-label="'+source+'，尚未接入"' : ''}>${state.source === source ? symbol('check') : ''}${source}</button>`).join('')}</div>`;
   }
 
   function empty(icon, title, copy, action, label) {
@@ -185,10 +194,10 @@
     } else if (state.scene === 'empty') {
       content = empty('search', '还没找到这段声音', '试试更短的关键词，或换一个音源。你也可以直接粘贴视频或歌曲链接。', 'clear-search', '重新搜索');
     } else {
-      const results = tracks.filter(track => track.source === state.source && (!query.trim() || `${track.title} ${track.author}`.toLowerCase().includes(query.trim().toLowerCase())));
+      const results = tracks.filter(track => !track.partBaseId && track.source === state.source && (!query.trim() || `${track.title} ${track.author}`.toLowerCase().includes(query.trim().toLowerCase())));
       const expired = state.scene === 'expired' ? `<div class="inline-banner">${symbol('login')}<div class="banner-copy">账号连接已过期<small>匿名可用的内容仍可搜索；账号内内容需要重新连接。</small></div><button class="text-button" data-action="account-settings">查看账号</button></div>` : '';
       content = `${expired}<div class="section-head results-heading"><h2>搜索结果</h2><small role="status">${results.length} 个${state.source === '网易云' ? '歌曲' : '视频'}</small></div>${results.length ? featured(results[0]) : ''}${results.length > 1 ? `<div class="section-head"><h2>更多匹配</h2></div><div class="track-list">${results.slice(1).map(row).join('')}</div>` : ''}
-        <p class="hint">来自 ${state.source} · 保留原始标题与版本信息</p>`;
+        <p class="hint">来自 ${state.source} · 保留原始标题与版本信息${bilibiliPreview ? '<br>本次审核 Bilibili 接入及分P流程；其他音源尚未接入。' : ''}</p>`;
       if (!results.length) content = empty('search', '没有匹配的结果', '换个关键词，再发现一些好声音。', 'clear-search', '重新搜索');
     }
     return `<header class="page-head"><div><p class="eyebrow">RxPlayer</p><h1>搜索</h1><p class="page-intro">歌曲、视频，从这里开始听。</p></div>${iconButton('open-player', 'headphones', '展开播放器')}</header>
@@ -204,7 +213,7 @@
   function libraryPage() {
     const playlist = state.playlist === null ? null : state.playlists[state.playlist];
     if (playlist) return `<header class="page-head"><div><p class="eyebrow">本地歌单</p><h1>${escape(playlist.name)}</h1></div>${iconButton('library-back', 'arrow_back', '返回音乐库')}</header>
-      <p class="page-caption">${playlist.ids.length} 首 · 混合音源</p><div class="paired-actions"><button class="filled-button" data-action="play-playlist">${symbol('play_arrow', true)}播放全部</button><button class="icon-button tonal-action" data-action="shuffle-playlist" aria-label="随机播放歌单" data-tip="随机播放">${symbol('shuffle')}</button></div><div class="track-list">${playlist.ids.map(trackById).map(row).join('')}</div>`;
+      <p class="page-caption">${playlist.ids.length} 首 · 混合音源</p><div class="paired-actions"><button class="filled-button" data-action="play-playlist" ${bilibiliPreview ? 'disabled title="批量播放尚未接入"' : ''}>${symbol('play_arrow', true)}播放全部</button><button class="icon-button tonal-action" data-action="shuffle-playlist" aria-label="随机播放歌单" data-tip="随机播放" ${bilibiliPreview ? 'disabled title="批量播放尚未接入"' : ''}>${symbol('shuffle')}</button></div><div class="track-list">${playlist.ids.map(trackById).map(row).join('')}</div>`;
     const tabs = [['favorites', '收藏'], ['playlists', '歌单'], ['recent', '最近播放']];
     let content;
     if (state.libraryTab === 'playlists') {
@@ -214,7 +223,7 @@
       content = ids.length ? `<div class="section-head"><h2>${state.libraryTab === 'favorites' ? '喜欢的声音' : '最近听过'}</h2><small>${ids.length} 首</small></div><div class="track-list">${ids.map(trackById).map(row).join('')}</div>` : empty('favorite', '把喜欢的声音留在这里', '在曲目旁点击收藏，就可以随时回来再听。', 'go-search', '去搜索');
     }
     return `<header class="page-head"><div><p class="eyebrow">为喜欢的声音留个位置</p><h1>音乐库</h1></div>${iconButton('new-playlist', 'add', '新建歌单')}</header>
-      <section class="collection-summary"><span class="collection-mark">${symbol('favorite',true)}</span><div><h2>喜欢的声音</h2><p>${state.favorites.length} 首收藏 · 跨音源收纳</p></div><button class="icon-button summary-play" data-action="play-favorites" aria-label="播放收藏" data-tip="播放收藏" ${state.favorites.length ? '' : 'disabled'}>${symbol('play_arrow', true)}</button></section>
+      <section class="collection-summary"><span class="collection-mark">${symbol('favorite',true)}</span><div><h2>喜欢的声音</h2><p>${state.favorites.length} 首收藏 · 跨音源收纳</p></div><button class="icon-button summary-play" data-action="play-favorites" aria-label="播放收藏" data-tip="播放收藏" ${bilibiliPreview ? 'disabled title="批量播放尚未接入"' : state.favorites.length ? '' : 'disabled'}>${symbol('play_arrow', true)}</button></section>
       <div class="tabs" role="tablist" aria-label="音乐库分类">${tabs.map(([id, label]) => `<button class="tab" role="tab" aria-selected="${state.libraryTab === id}" data-action="library-tab" data-tab="${id}" id="tab-${id}" aria-controls="library-content">${label}</button>`).join('')}</div><section id="library-content" role="tabpanel" aria-labelledby="tab-${state.libraryTab}">${content}</section>`;
   }
 
@@ -493,10 +502,15 @@
       const track = trackById(state.menuTrack);
       title = track.title;
       body = `<p class="hint">${escape(track.author)} · ${track.source}</p>
+        ${bilibiliPreview && (track.parts || track.partBaseId) ? `<button class="menu-action" data-action="choose-parts" data-id="${track.partBaseId || track.id}">${symbol('view_list')}选择分P</button>` : ''}
         <button class="menu-action" data-action="enqueue-next" data-id="${track.id}">${symbol('skip_next')}下一首播放</button>
         <button class="menu-action" data-action="enqueue" data-id="${track.id}">${symbol('queue_music')}加入播放队列</button>
         <button class="menu-action" data-action="favorite" data-id="${track.id}">${symbol('favorite', state.favorites.includes(track.id))}${state.favorites.includes(track.id) ? '取消收藏' : '收藏'}</button>
         <button class="menu-action" data-action="choose-playlist" data-id="${track.id}">${symbol('playlist_add')}添加到歌单</button>`;
+    } else if (state.overlay === 'parts') {
+      const track = trackById(state.menuTrack);
+      title = '选择分P';
+      body = `<p class="part-context">${escape(track.title)}</p><p class="hint">${state.partIntent === 'play' ? '选择一集开始播放；取消会继续保留当前播放。' : state.partIntent === 'enqueue-next' ? '选择一集，安排在当前曲目之后。' : '选择一集加入队列，当前播放保持不变。'}</p><div class="parts-list">${track.parts.map(part => `<button class="part-option" data-action="select-part" data-id="${part.id}" ${state.current === part.id ? 'aria-current="true"' : ''}><span class="part-number">${part.number}</span><span class="part-copy"><strong>${escape(part.title)}</strong><small>P${part.number} · ${time(part.duration)}</small></span>${state.current === part.id ? symbol('graphic_eq') : symbol(state.partIntent === 'play' ? 'play_arrow' : 'add')}</button>`).join('')}</div><div class="dialog-actions"><button class="text-button" data-action="close-overlay">取消</button></div>`;
     } else if (state.overlay === 'new-playlist') {
       title = '新建歌单';
       body = '<form id="playlist-form"><label for="playlist-name">歌单名称</label><input class="dialog-input" id="playlist-name" placeholder="给这段旅程起个名字" required maxlength="40"><div class="dialog-actions"><button class="text-button" type="button" data-action="close-overlay">取消</button><button class="filled-button" type="submit">创建</button></div></form>';
@@ -518,12 +532,33 @@
   }
 
   function playTrack(id) {
+    const track = trackById(id);
+    if (bilibiliPreview && track.source !== 'Bilibili') { toast('该音源尚未接入'); return; }
+    if (bilibiliPreview && track.parts) { openParts(id,'play'); return; }
     cancelPlayback();
     state.current = id;
     state.position = 0;
     state.prepared = false;
     if (!state.queue.includes(id)) state.queue.push(id);
     preparePlayback('preparing',true);
+  }
+
+  function openParts(id,intent) {
+    const origin = [previousFocus,previousFocusData,previousFocusRegion];
+    const fromMenu = state.overlay === 'menu';
+    state.partIntent = intent;
+    openOverlay('parts',id);
+    if (fromMenu) [previousFocus,previousFocusData,previousFocusRegion] = origin;
+    requestAnimationFrame(() => $('#dialog [data-action="select-part"]')?.focus());
+  }
+
+  function enqueueTrack(id,next) {
+    if (bilibiliPreview && trackById(id).source !== 'Bilibili') { closeOverlay(); toast('该音源尚未接入'); return; }
+    if (id === state.current && state.queue.includes(id)) { closeOverlay(); toast('当前曲目已在队列中'); return; }
+    state.queue = state.queue.filter(item => item !== id || item === state.current);
+    if (next) state.queue.splice(Math.max(0,state.queue.indexOf(state.current)+1),0,id);
+    else if (!state.queue.includes(id)) state.queue.push(id);
+    closeOverlay(); render(); toast(next ? '将下一首播放' : '已加入播放队列');
   }
 
   function step(offset) {
@@ -549,7 +584,7 @@
     const deviceChoice = event.target.closest('[data-device-choice]');
     if (deviceChoice) { closeQueue(false); closeOverlay(); state.device = deviceChoice.dataset.deviceChoice; state.queueOpen = queueDocked(); render(); return; }
     const button = event.target.closest('[data-action]');
-    if (!button) return;
+    if (!button || button.disabled) return;
     const {action, id, source} = button.dataset;
     switch (action) {
       case 'navigate': closeOverlay(); state.route = button.dataset.route; state.playlist = null; render(); break;
@@ -562,6 +597,13 @@
       case 'exit-search': product.classList.remove('is-searching'); $('#search-back').hidden = true; $('#search-leading').hidden = false; $('#search-input').blur(); break;
       case 'retry': runSearch(); break;
       case 'play-track': playTrack(id); break;
+      case 'choose-parts': openParts(id,'play'); break;
+      case 'select-part': {
+        const intent = state.partIntent;
+        if (intent === 'play') { closeOverlay(); playTrack(id); }
+        else enqueueTrack(id,intent === 'enqueue-next');
+        break;
+      }
       case 'toggle-play': togglePlayback(); break;
       case 'toggle-volume': {
         const popup = $('#transport-volume-popover');
@@ -579,11 +621,9 @@
       case 'close-queue': closeQueue(); break;
       case 'close-overlay': closeOverlay(); break;
       case 'enqueue': case 'enqueue-next': {
-        if (id === state.current && state.queue.includes(id)) { closeOverlay(); toast('当前曲目已在队列中'); break; }
-        state.queue = state.queue.filter(item => item !== id || item === state.current);
-        if (action === 'enqueue-next') state.queue.splice(Math.max(0, state.queue.indexOf(state.current) + 1), 0, id);
-        else if (!state.queue.includes(id)) state.queue.push(id);
-        closeOverlay(); render(); toast(action === 'enqueue' ? '已加入播放队列' : '将下一首播放'); break;
+        if (bilibiliPreview && trackById(id).parts) openParts(id,action);
+        else enqueueTrack(id,action === 'enqueue-next');
+        break;
       }
       case 'remove-queue': {
         state.queue = state.queue.filter(item => item !== id);
@@ -719,8 +759,10 @@
     if (event.code === 'Space' && !input && !focusedButton && (!state.overlay || state.overlay === 'player') && !queueModal()) { event.preventDefault(); togglePlayback(); }
     if (['ArrowLeft','ArrowRight'].includes(event.key) && event.target instanceof Element && event.target.closest('.sources')) {
       event.preventDefault();
+      const available = $$('.source-button:not(:disabled)').map(button => button.dataset.source);
+      if (!available.length) return;
       cancelSearch(); state.scene = 'results';
-      state.source = sources[(sources.indexOf(state.source) + (event.key === 'ArrowRight' ? 1 : 2)) % 3];
+      state.source = available[(available.indexOf(state.source) + (event.key === 'ArrowRight' ? 1 : available.length - 1)) % available.length];
       render(); $(`.source-button[data-source="${state.source}"]`).focus();
     }
   });
