@@ -21,7 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.keno.rxplayer.DemoTrack
+import com.keno.rxplayer.PlaybackTrack
 import com.keno.rxplayer.audio.PlaybackState
 
 @Composable
@@ -36,7 +36,7 @@ internal fun QueueButton(count: Int, opened: Boolean, onClick: () -> Unit, modif
 }
 
 @Composable
-internal fun QueuePane(state: PlaybackState, onClose: () -> Unit, onSelect: (DemoTrack) -> Unit, onRemove: (String) -> Unit) {
+internal fun QueuePane(state: PlaybackState, onClose: () -> Unit, onSelect: (PlaybackTrack) -> Unit, onRemove: (String) -> Unit) {
     Column(Modifier.fillMaxSize().padding(20.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("播放队列", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f).semantics { heading() })
@@ -52,10 +52,10 @@ internal fun QueuePane(state: PlaybackState, onClose: () -> Unit, onSelect: (Dem
                     Row(Modifier.fillMaxWidth().padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
                         TextButton(onClick = { onSelect(track) }, modifier = Modifier.weight(1f).heightIn(min = 64.dp).semantics { this.selected = selected; contentDescription = "播放 ${track.title}" }, contentPadding = PaddingValues(4.dp)) {
                             Text("${index + 1}", modifier = Modifier.width(24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Artwork(track.artwork, Modifier.size(44.dp), RoundedCornerShape(8.dp))
+                            Artwork(track, Modifier.size(44.dp), RoundedCornerShape(8.dp))
                             Column(Modifier.weight(1f).padding(start = 12.dp)) {
                                 Text(track.title, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
-                                Text("${track.source.label} · 本地演示", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("${track.source.label} · ${formatTime(track.durationMs)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                         IconButton(onClick = { onRemove(track.id) }, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.Close, "移除 ${track.title}") }
@@ -67,7 +67,7 @@ internal fun QueuePane(state: PlaybackState, onClose: () -> Unit, onSelect: (Dem
 }
 
 @Composable
-internal fun QueueModal(state: PlaybackState, desktop: Boolean, onClose: () -> Unit, onSelect: (DemoTrack) -> Unit, onRemove: (String) -> Unit) {
+internal fun QueueModal(state: PlaybackState, desktop: Boolean, onClose: () -> Unit, onSelect: (PlaybackTrack) -> Unit, onRemove: (String) -> Unit) {
     if (desktop) {
         Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
             Box(Modifier.fillMaxSize()) {

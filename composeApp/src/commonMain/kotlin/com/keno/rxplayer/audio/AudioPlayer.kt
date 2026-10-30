@@ -1,8 +1,8 @@
 package com.keno.rxplayer.audio
 
 import androidx.compose.runtime.Composable
+import com.keno.rxplayer.source.AudioStream
 
-// The prototype only plays bundled PCM WAV. Online streams belong to a later milestone.
 interface AudioPlayer {
     val durationMs: Int
     val positionMs: Int
@@ -12,6 +12,7 @@ interface AudioPlayer {
     val isEnded: Boolean get() = durationMs > 0 && positionMs >= durationMs
     val supportsVolume: Boolean get() = true
     suspend fun load(bytes: ByteArray)
+    suspend fun load(stream: AudioStream) { error("HTTP streams are not supported by this engine") }
     fun play()
     fun pause()
     fun seekTo(positionMs: Int)

@@ -36,20 +36,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
-import com.keno.rxplayer.DemoTrack
+import com.keno.rxplayer.PlaybackTrack
 import com.keno.rxplayer.audio.PlaybackPhase
 import com.keno.rxplayer.audio.PlaybackState
 
 @Composable
 fun MiniPlayer(
-    state: PlaybackState, displayTrack: DemoTrack,
+    state: PlaybackState, displayTrack: PlaybackTrack,
     onToggle: () -> Unit, onNext: () -> Unit, onExpand: () -> Unit, onQueue: () -> Unit,
     expandFocus: FocusRequester, queueFocus: FocusRequester,
 ) {
     Surface(Modifier.fillMaxWidth().padding(12.dp, 8.dp), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onExpand, modifier = Modifier.weight(1f).focusRequester(expandFocus), contentPadding = PaddingValues(0.dp)) {
-                Artwork(displayTrack.artwork, Modifier.size(48.dp))
+                Artwork(displayTrack, Modifier.size(48.dp))
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                     Text(displayTrack.title, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
                     Text(phaseLabel(state.phase), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -64,10 +64,10 @@ fun MiniPlayer(
 
 @Composable
 fun PlayerScreen(
-    state: PlaybackState, track: DemoTrack, favorite: Boolean, isDesktop: Boolean, dark: Boolean,
+    state: PlaybackState, track: PlaybackTrack, favorite: Boolean, isDesktop: Boolean, dark: Boolean,
     queueOpen: Boolean, onQueue: () -> Unit, onCloseQueue: () -> Unit, onClose: () -> Unit,
     onFavorite: () -> Unit, onToggle: () -> Unit, onPrevious: () -> Unit, onNext: () -> Unit,
-    onSelect: (DemoTrack) -> Unit, onRemove: (String) -> Unit,
+    onSelect: (PlaybackTrack) -> Unit, onRemove: (String) -> Unit,
 ) {
     val queueFocus = remember { FocusRequester() }
     val backFocus = remember { FocusRequester() }
@@ -125,11 +125,11 @@ fun PlayerScreen(
                 val surface = MaterialTheme.colorScheme.surface
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                     Box(Modifier.fillMaxWidth().heightIn(min = stageHeight)) {
-                        Artwork(track.artwork, Modifier.matchParentSize().blur(2.dp), RectangleShape)
+                        Artwork(track, Modifier.matchParentSize().blur(2.dp), RectangleShape)
                         Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .72f), Color.Black.copy(alpha = .86f)))))
                         Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(96.dp).background(Brush.verticalGradient(listOf(Color.Transparent, surface))))
                         // The image fills the status area; foreground consumes real system insets.
-                        PlayerTheme(dark = true, artwork = track.artwork) {
+                        PlayerTheme(dark = true, track = track) {
                             Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)).padding(horizontal = 24.dp)) {
                                 PlayerHeader(onClose, backModifier = Modifier.focusRequester(backFocus))
                                 Box(Modifier.fillMaxWidth().heightIn(min = (stageHeight - 64.dp - topInset).coerceAtLeast(0.dp)).padding(bottom = 96.dp), contentAlignment = Alignment.Center) {
@@ -176,19 +176,19 @@ private fun PlayerHeader(onClose: () -> Unit, trailing: (@Composable () -> Unit)
 }
 
 @Composable
-private fun CoverCard(track: DemoTrack, modifier: Modifier) {
+private fun CoverCard(track: PlaybackTrack, modifier: Modifier) {
     Surface(modifier.aspectRatio(1f), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.primaryContainer) {
-        Artwork(track.artwork, Modifier.padding(16.dp).fillMaxSize())
+        Artwork(track, Modifier.padding(16.dp).fillMaxSize())
     }
 }
 
 @Composable
-private fun TrackInformation(track: DemoTrack, favorite: Boolean, onFavorite: () -> Unit, compact: Boolean = false, extra: (@Composable () -> Unit)? = null) {
+private fun TrackInformation(track: PlaybackTrack, favorite: Boolean, onFavorite: () -> Unit, compact: Boolean = false, extra: (@Composable () -> Unit)? = null) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Column(Modifier.weight(1f)) {
-            if (!compact) Text("${track.source.label} · 本地演示", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-            Text(track.title, style = if (compact) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })
-            Text(if (compact) "${track.artist} · ${track.source.label} · 演示" else track.artist, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (!compact) Text("${track.source.label} · ${if (track is com.keno.rxplayer.DemoTrack) "本地演示" else "视频"}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            Text(track.title, maxLines = 2, overflow = TextOverflow.Ellipsis, style = if (compact) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })
+            Text(if (compact) "${track.artist} · ${track.source.label}" else track.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         extra?.invoke()
         FilledIconToggleButton(
@@ -333,7 +333,7 @@ private fun SeekBar(state: PlaybackState, modifier: Modifier = Modifier, compact
 }
 
 @Composable
-private fun LyricsPane(state: PlaybackState, track: DemoTrack, modifier: Modifier = Modifier) {
+private fun LyricsPane(state: PlaybackState, track: PlaybackTrack, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)) {
         Text("歌词 · 本地演示", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Box(Modifier.fillMaxWidth().heightIn(min = 400.dp).padding(vertical = 48.dp), contentAlignment = Alignment.Center) {
@@ -344,7 +344,7 @@ private fun LyricsPane(state: PlaybackState, track: DemoTrack, modifier: Modifie
 }
 
 @Composable
-private fun LyricsLines(state: PlaybackState, track: DemoTrack, windowed: Boolean) {
+private fun LyricsLines(state: PlaybackState, track: PlaybackTrack, windowed: Boolean) {
     val active = if (state.durationMs > 0) track.lyrics.indexOfLast { state.positionMs >= it.atMs } else -1
     val indices = if (windowed) (active.coerceAtLeast(0) - 2..active.coerceAtLeast(0) + 2).toList() else track.lyrics.indices.toList()
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(if (windowed) 8.dp else 12.dp)) {

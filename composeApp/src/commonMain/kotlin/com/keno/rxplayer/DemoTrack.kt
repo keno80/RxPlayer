@@ -5,14 +5,14 @@ enum class MusicSource(val label: String) {
 }
 
 data class DemoTrack(
-    val id: String,
-    val title: String,
-    val subtitle: String,
-    val source: MusicSource,
-    val artwork: Int,
-    val artist: String = "RxPlayer Studio",
-    val lyrics: List<LyricLine> = emptyList(),
-) {
+    override val id: String,
+    override val title: String,
+    override val subtitle: String,
+    override val source: MusicSource,
+    override val artwork: Int,
+    override val artist: String = "RxPlayer Studio",
+    override val lyrics: List<LyricLine> = emptyList(),
+) : PlaybackTrack {
     val resourcePath: String get() = "files/$id.wav"
 }
 
