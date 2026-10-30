@@ -1,13 +1,9 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RxPlayer · Windows 浮岛播控栏</title><link rel="icon" href="data:,"><style>
-@font-face{font-family:Rx;src:url(../prototype-v1/assets/roboto-flex.ttf)}
-*{box-sizing:border-box}body{margin:0;background:#e4ebe7;color:#20332e;font:14px/1.5 Rx,'Microsoft YaHei',sans-serif}header{max-width:1600px;margin:auto;padding:20px 24px;display:flex;align-items:center;gap:16px;justify-content:space-between}h1{font-size:20px;margin:0}.badge{font-size:12px;padding:6px 12px;border-radius:24px;background:#244d43;color:#effaf5}.tools{display:flex;gap:12px;align-items:center}button{font:inherit;cursor:pointer;background:#f5faf6;color:inherit;border:0;border-radius:24px;padding:0 16px;min-height:48px}button:focus-visible{outline:3px solid #426d60;outline-offset:3px}main{max-width:1600px;margin:auto;padding:0 24px}iframe{display:block;width:100%;height:calc(100vh - 140px);min-height:520px;border:1px solid #a8bab1;border-radius:20px;background:#0c1512;box-shadow:0 12px 36px #17372a18}footer{max-width:1600px;margin:auto;padding:10px 24px 16px;font-size:12px;color:#52675e}@media(max-width:850px){header{padding:12px}h1{font-size:17px}main{padding:0 12px}.badge{display:none}iframe{height:640px}}
-</style></head><body>
-<header><h1>RxPlayer / Windows 浮岛播控栏</h1><div class="tools"><span class="badge">已确认采用 · 原生运行待验收</span><button id="theme" aria-label="切换深浅主题">切换浅色</button></div></header>
-<main><iframe id="preview" title="Windows 浮岛播控栏交互原型" src="./?device=desktop&embed=1&playback=paused"></iframe></main>
-<footer>播放信息 → 进度 → 播控 · 音量点击展开竖条 · 全部为模拟数据，无真实音频。Windows 首页其余区域仍是设计提案。</footer>
-<script>
-const frame=document.querySelector('iframe'),q=new URLSearchParams(location.search);let theme=q.get('theme')==='light'?'light':'dark';
-function update(){frame.src=`./?device=desktop&transport=c&embed=1&theme=${theme}&playback=paused`;document.querySelector('#theme').textContent=theme==='dark'?'切换浅色':'切换深色';history.replaceState(null,'',`?option=c&theme=${theme}`)}
-document.querySelector('#theme').onclick=()=>{theme=theme==='dark'?'light':'dark';update()};update();
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>正在打开 RxPlayer 完整原型</title></head>
+<body><p><a href="./">打开 RxPlayer 完整原型</a></p><script>
+// Compatibility bookmark only; all UI and state live in the complete prototype.
+const target=new URL('./',location.href),legacy=new URLSearchParams(location.search);
+target.searchParams.set('device','desktop');
+for(const key of ['theme','view','playback'])if(legacy.has(key))target.searchParams.set(key,legacy.get(key));
+location.replace(target.href);
 </script></body></html>

@@ -1,13 +1,8 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RxPlayer · Bilibili 接入流程审核</title><link rel="icon" href="data:,"><style>
-@font-face{font-family:Rx;src:url(../prototype-v1/assets/roboto-flex.ttf)}
-*{box-sizing:border-box}body{margin:0;background:#e4ebe7;color:#20332e;font:14px/1.5 Rx,'Microsoft YaHei',sans-serif}header,footer{max-width:1600px;margin:auto;padding:16px 24px}header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}h1{font-size:20px;margin:0}.tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}button{font:inherit;border:0;border-radius:24px;min-height:48px;padding:8px 16px;background:#f5faf6;color:inherit;cursor:pointer}button[aria-pressed=true]{background:#244d43;color:#effaf5}button:focus-visible{outline:3px solid #426d60;outline-offset:3px}.badge{font-size:12px;padding:4px 12px;background:#d1e5dd;border-radius:24px}main{padding:0 24px;display:flex;justify-content:center}iframe{display:block;width:100%;max-width:1552px;height:calc(100vh - 172px);min-height:640px;border:1px solid #a8bab1;border-radius:20px;background:#0e1514}main[data-device=android] iframe{max-width:412px;height:900px}footer{font-size:12px;color:#52675e}@media(max-width:700px){header,footer{padding:12px}main{padding:0 8px}h1{font-size:18px}.badge{display:none}main[data-device=android] iframe{height:840px}}
-</style></head><body>
-<header><div><h1>RxPlayer / Bilibili 接入流程</h1><span class="badge">分P选择 · 待审核 · 尚未实现到正式页面</span></div><div class="tools"><button data-device="desktop" aria-pressed="true">Windows</button><button data-device="android" aria-pressed="false">Android</button><button id="theme">切换浅色</button></div></header>
-<main id="stage"><iframe id="preview" title="Bilibili 搜索、分P与入队交互原型"></iframe></main>
-<footer>仅审核单曲 / 分P交互：点击最佳匹配播放或曲目更多操作，选择分P播放 / 入队；取消保留当前播放。分P分别进入队列，其他音源及批量播放暂未启用。全部为模拟数据，不发真实请求、不播放真实音频。来源核心已独立验证，正式搜索与流媒体尚未接线。</footer>
-<script>
-const frame=document.querySelector('iframe'),params=new URLSearchParams(location.search);let device=params.get('device')==='android'?'android':'desktop',theme=params.get('theme')==='light'?'light':'dark';
-function update(){frame.src=`./?stage=m2&device=${device}&embed=1&theme=${theme}&playback=paused`;document.querySelector('main').dataset.device=device;document.querySelectorAll('button[data-device]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.device===device)));document.querySelector('#theme').textContent=theme==='dark'?'切换浅色':'切换深色';history.replaceState(null,'',`?device=${device}&theme=${theme}`)}
-document.querySelectorAll('button[data-device]').forEach(b=>b.onclick=()=>{device=b.dataset.device;update()});document.querySelector('#theme').onclick=()=>{theme=theme==='dark'?'light':'dark';update()};update();
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>正在打开 RxPlayer 完整原型</title></head>
+<body><p><a href="./">打开 RxPlayer 完整原型</a></p><script>
+// Compatibility bookmark only; all UI and state live in the complete prototype.
+const target=new URL('./',location.href),legacy=new URLSearchParams(location.search);
+for(const key of ['device','theme','view','playback'])if(legacy.has(key))target.searchParams.set(key,legacy.get(key));
+location.replace(target.href);
 </script></body></html>
