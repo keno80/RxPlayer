@@ -28,7 +28,7 @@ Compose 播放页正按确认基线迁移，源码交付与运行验收分别记
 
 ## 当前任务与交付
 
-- 2026-10-30：当前 UI 任务为 Windows 底部播控栏占比过大的三方案审核。已在 `codex/desktop-transport-review` 提供 [交互比较页](../design/prototype-v3/transport-review.html) 及 [审核说明](superpowers/specs/2026-10-30-desktop-transport-options.md)，A / B / C 常规高度为 80 / 96 / 88 CSS px；等待用户选择和确认，不修改正式应用、不合并。原工作区的双端运行修复与验收记录另行保留。
+- 2026-10-30：当前 UI 任务为 Windows 底部播控栏占比过大的三方案审核。已在 `codex/desktop-transport-review` 提供 [交互比较页](../design/prototype-v3/transport-review.html) 及 [审核说明](superpowers/specs/2026-10-30-desktop-transport-options.md)。根据用户反馈为 B 恢复上下留白与按钮间距，A / B / C 常规高度现为 80 / 112 / 88 CSS px；等待选择和确认，不修改正式应用、不合并。原工作区的双端运行修复与验收记录另行保留。
 - 当前任务源码交付已完成：两套手机布局、桌面双栏、单队列、轨道等待、toast、末尾停止、真实本地加载及取消已接线；实现提交 `690adce`、收起焦点修正 `babf0ca` 已推送，并通过 `1010204` 合并推送至 `main`。未构建 / 启动或运行新增单元测试；见 [实现记录](technical/2026-10-29-native-player-implementation.md)。
 - 当前工作区为 `main`，功能分支 `codex/native-player` 已完成合并。此前确认原型由 `codex/approved-player-states` 独立交付；源审核分支仍保留，其未收口的 M1 技术验证未带入此次合并。
 - 新增确认范围：准备 / 缓冲 / 地址更新只在原进度条显示缓冲效果，其他播放异常使用 toast，顺序播放到队列末尾直接停止；包括对应取消、重试和恢复上下文。确认原话为“ok，这版没问题”，日期 2026-10-29。搜索、音乐库、设置不因此获得完整审核。
