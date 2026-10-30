@@ -9,7 +9,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.outlined.QueueMusic
+import androidx.compose.material.icons.outlined.Shuffle
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.SkipNext
+import androidx.compose.material.icons.outlined.SkipPrevious
+import androidx.compose.material.icons.outlined.VolumeOff
+import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +32,7 @@ import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
@@ -43,10 +50,10 @@ internal fun DesktopMiniPlayer(
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val width = maxWidth
-        if (width >= 904.dp) {
+        if (width > 904.dp) {
             Row(Modifier.fillMaxWidth().padding(16.dp, 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 TrackIsland(track, onExpand, expandFocus, Modifier.weight(1f))
-                ProgressIsland(state, Modifier.weight(1.6f))
+                ProgressIsland(state, Modifier.weight(if (width <= 1054.dp) 1.3f else 1.6f))
                 ControlIsland(state, queueOpen, onToggle, onPrevious, onNext, onQueue, queueFocus)
             }
         } else {
@@ -71,12 +78,12 @@ internal fun DesktopMiniPlayer(
 
 @Composable
 private fun TrackIsland(track: DemoTrack, onExpand: () -> Unit, focus: FocusRequester, modifier: Modifier, compact: Boolean = false) {
-    Surface(modifier.height(if (compact) 48.dp else 72.dp), shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerLow) {
-        TextButton(onExpand, Modifier.fillMaxSize().focusRequester(focus), contentPadding = PaddingValues(if (compact) 4.dp else 12.dp)) {
+    Surface(modifier.height(if (compact) 48.dp else 72.dp), shape = RoundedCornerShape(20.dp), color = if (compact) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLow) {
+        TextButton(onExpand, Modifier.fillMaxSize().focusRequester(focus), shape = RoundedCornerShape(20.dp), contentPadding = PaddingValues(if (compact) 4.dp else 12.dp)) {
             Artwork(track.artwork, Modifier.size(if (compact) 40.dp else 48.dp))
             Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                Text(track.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
-                Text(track.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(track.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(track.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -88,7 +95,7 @@ private fun ProgressIsland(state: PlaybackState, modifier: Modifier, compact: Bo
     var dragPosition by remember(state.track?.id) { mutableFloatStateOf(0f) }
     val position = if (dragging) dragPosition else state.positionMs.toFloat()
     val known = state.durationMs > 0
-    Surface(modifier.height(if (compact) 48.dp else 72.dp), shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerLow) {
+    Surface(modifier.height(if (compact) 48.dp else 72.dp), shape = RoundedCornerShape(20.dp), color = if (compact) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLow) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(if (known) formatTime(position.toInt()) else "—:—", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Box(Modifier.weight(1f).height(48.dp), contentAlignment = Alignment.Center) {
@@ -123,17 +130,21 @@ private fun ControlIsland(
     onNext: () -> Unit, onQueue: () -> Unit, queueFocus: FocusRequester, compact: Boolean = false,
 ) {
     Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-        Row(Modifier.height(if (compact) 56.dp else 72.dp).padding(if (compact) 4.dp else 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-            ModeButton(state.shuffle, Icons.Rounded.Shuffle, "随机播放", state::toggleShuffle, Color.Transparent)
-            PlayerIcon(Icons.Rounded.SkipPrevious, "上一首", onPrevious, container = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
-            PlaybackButton(state, onToggle, Modifier.size(if (compact) 56.dp else 64.dp, if (compact) 48.dp else 56.dp))
-            PlayerIcon(Icons.Rounded.SkipNext, "下一首", onNext, container = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
-            ModeButton(state.repeat, Icons.Rounded.Repeat, if (state.repeat) "列表循环" else "顺序播放", state::toggleRepeat, Color.Transparent)
-            VerticalDivider(Modifier.height(32.dp).padding(horizontal = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            VolumeControl(state)
-            PlayerIcon(Icons.Rounded.QueueMusic, "播放队列，${state.queue.size} 首", onQueue,
-                Modifier.size(48.dp).focusRequester(queueFocus).semantics { stateDescription = if (queueOpen) "已展开" else "已收起" },
-                Color.Transparent, if (queueOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.height(if (compact) 56.dp else 72.dp).padding(if (compact) 4.dp else 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                ModeButton(state.shuffle, Icons.Outlined.Shuffle, "随机播放", state::toggleShuffle, Color.Transparent)
+                PlayerIcon(Icons.Outlined.SkipPrevious, "上一首", onPrevious, container = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+                PlaybackButton(state, onToggle, Modifier.size(if (compact) 56.dp else 64.dp, if (compact) 48.dp else 56.dp), restingCorner = 20.dp, playingCorner = 28.dp, iconSize = 28.dp)
+                PlayerIcon(Icons.Outlined.SkipNext, "下一首", onNext, container = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+                ModeButton(state.repeat, Icons.Outlined.Repeat, if (state.repeat) "列表循环" else "顺序播放", state::toggleRepeat, Color.Transparent)
+            }
+            VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                VolumeControl(state)
+                PlayerIcon(Icons.Outlined.QueueMusic, "播放队列，${state.queue.size} 首", onQueue,
+                    Modifier.size(48.dp).focusRequester(queueFocus).semantics { stateDescription = if (queueOpen) "已展开" else "已收起" },
+                    Color.Transparent, if (queueOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }
@@ -147,7 +158,7 @@ private fun VolumeControl(state: PlaybackState) {
     val offset = with(LocalDensity.current) { IntOffset(0, -60.dp.roundToPx()) }
     LaunchedEffect(volumeOpen) { if (!volumeOpen && restoreFocus) { buttonFocus.requestFocus(); restoreFocus = false } }
     Box {
-        PlayerIcon(if (state.volume == 0f) Icons.Rounded.VolumeOff else Icons.Rounded.VolumeUp, "音量", { volumeOpen = !volumeOpen },
+        PlayerIcon(if (state.volume == 0f) Icons.Outlined.VolumeOff else Icons.Outlined.VolumeUp, "音量", { volumeOpen = !volumeOpen },
             Modifier.size(48.dp).focusRequester(buttonFocus).semantics { stateDescription = "${(state.volume * 100).roundToInt()}%，${if (volumeOpen) "已展开" else "已收起"}" }, Color.Transparent, MaterialTheme.colorScheme.onSurfaceVariant)
         if (volumeOpen) {
             Popup(alignment = Alignment.BottomCenter, offset = offset, onDismissRequest = { volumeOpen = false }, properties = PopupProperties(focusable = true)) {
@@ -168,7 +179,7 @@ private fun VolumeControl(state: PlaybackState) {
                                         else -> false
                                     }
                                 }.semantics { contentDescription = "调整音量" },
-                                thumb = { Box(Modifier.size(12.dp).background(MaterialTheme.colorScheme.primary, CircleShape)) },
+                                thumb = { Box(Modifier.size(16.dp).background(MaterialTheme.colorScheme.primary, CircleShape)) },
                                 track = { SliderDefaults.Track(it, Modifier.height(4.dp), enabled = state.canChangeVolume) },
                             )
                         }

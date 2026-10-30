@@ -47,6 +47,7 @@ fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged
     var queueOpen by remember { mutableStateOf(false) }
     var queryFocused by remember { mutableStateOf(false) }
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val desktopBrowsing = remember { DesktopWorkspaceState() }
     val snackbar = remember { SnackbarHostState() }
     val miniExpandFocus = remember { FocusRequester() }
     val miniQueueFocus = remember { FocusRequester() }
@@ -126,7 +127,24 @@ fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged
                 }
             }.focusable()) {
                 val desktop = maxWidth >= 720.dp
-                if (!expandedPlayer) Row(Modifier.fillMaxSize().safeDrawingPadding()) {
+                if (!expandedPlayer && isDesktop) DesktopWorkspace(
+                    desktopBrowsing, playback, favorites, dark, followArtwork, queueOpen, { queueOpen = false }, ::select, ::toggleFavorite,
+                    { queryFocused = false; expandedPlayer = true }, { queryFocused = it }, { dark = it }, { followArtwork = it },
+                    queueContent = {
+                        PlayerTheme(dark, currentTrack.artwork.takeIf { followArtwork }) {
+                            Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                                DesktopQueuePane(playback, { queueOpen = false }, ::select)
+                            }
+                        }
+                    },
+                    transport = {
+                        PlayerTheme(dark, currentTrack.artwork.takeIf { followArtwork }) {
+                            DesktopMiniPlayer(playback, currentTrack, queueOpen, ::toggle, { step(-1) }, { step(1) },
+                                { queryFocused = false; expandedPlayer = true }, { queueOpen = !queueOpen }, miniExpandFocus, miniQueueFocus)
+                        }
+                    },
+                )
+                if (!expandedPlayer && !isDesktop) Row(Modifier.fillMaxSize().safeDrawingPadding()) {
                     if (desktop) {
                         NavigationRail(
                             modifier = Modifier.fillMaxHeight().width(100.dp),
@@ -230,12 +248,7 @@ fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged
                         }
                         if (playback.track != null) {
                             PlayerTheme(dark, currentTrack.artwork.takeIf { followArtwork }) {
-                                if (isDesktop) {
-                                    DesktopMiniPlayer(playback, currentTrack, queueOpen, ::toggle, { step(-1) }, { step(1) },
-                                        { queryFocused = false; expandedPlayer = true }, { queueOpen = !queueOpen }, miniExpandFocus, miniQueueFocus)
-                                } else {
-                                    MiniPlayer(playback, currentTrack, ::toggle, { step(1) }, { queryFocused = false; expandedPlayer = true }, { queueOpen = true }, miniExpandFocus, miniQueueFocus)
-                                }
+                                MiniPlayer(playback, currentTrack, ::toggle, { step(1) }, { queryFocused = false; expandedPlayer = true }, { queueOpen = true }, miniExpandFocus, miniQueueFocus)
                             }
                         }
                         if (!desktop) {
@@ -260,7 +273,7 @@ fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged
                             { toggleFavorite(currentTrack) }, ::toggle, { step(-1) }, { step(1) },
                             ::select, playback::removeFromQueue,
                         )
-                    } else if (queueOpen) {
+                    } else if (queueOpen && !isDesktop) {
                         QueueModal(playback, isDesktop, { queueOpen = false }, ::select, playback::removeFromQueue)
                     }
                 }
