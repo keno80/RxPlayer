@@ -20,13 +20,31 @@ actual fun rememberAudioPlayer(): AudioPlayer {
 
 private class AndroidAudioPlayer(private val cacheDir: File) : AudioPlayer {
     private var player: MediaPlayer? = null
+    override var isBuffering = false
+        private set
+    override var failure: PlaybackFailure? = null
+        private set
+    private var completed = false
+    override val isEnded get() = completed
     override val durationMs: Int get() = player?.duration ?: 0
     override val positionMs: Int get() = player?.currentPosition ?: 0
     override val isPlaying: Boolean get() = player?.isPlaying == true
 
     override suspend fun load(bytes: ByteArray) {
         release()
+        failure = null
+        isBuffering = false
+        completed = false
         val next = MediaPlayer()
+        next.setOnCompletionListener { if (player === next) completed = true }
+        next.setOnInfoListener { _, what, _ ->
+            if (player === next) when (what) {
+                MediaPlayer.MEDIA_INFO_BUFFERING_START -> isBuffering = true
+                MediaPlayer.MEDIA_INFO_BUFFERING_END -> isBuffering = false
+            }
+            true
+        }
+        next.setOnErrorListener { _, _, _ -> if (player === next) failure = PlaybackFailure(); true }
         try {
             withContext(Dispatchers.IO) {
                 val file = File.createTempFile("rxplayer-", ".wav", cacheDir)
@@ -52,9 +70,10 @@ private class AndroidAudioPlayer(private val cacheDir: File) : AudioPlayer {
         }
     }
 
-    override fun play() { player?.start() }
+    override fun play() { completed = false; player?.start() }
     override fun pause() { if (isPlaying) player?.pause() }
-    override fun seekTo(positionMs: Int) { player?.seekTo(positionMs.toLong(), MediaPlayer.SEEK_CLOSEST) }
+    override fun seekTo(positionMs: Int) { completed = false; player?.seekTo(positionMs.toLong(), MediaPlayer.SEEK_CLOSEST) }
+    override fun setVolume(volume: Float) { player?.setVolume(volume, volume) }
     override fun release() {
         player?.release()
         player = null

@@ -7,9 +7,10 @@
   <title>RxPlayer · 原型 03 · 待审核</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="colors.css">
-  <link rel="stylesheet" href="prototype.css?revision=queue-fade">
+  <link rel="stylesheet" href="prototype.css?revision=row-hover">
+  <link rel="stylesheet" href="transport-options.css?revision=9">
   <script defer src="cover-palettes.js"></script>
-  <script defer src="prototype.js?revision=queue-fade"></script>
+  <script defer src="prototype.js?revision=approved-floating"></script>
 </head>
 <body>
   <header class="review-tools">
@@ -19,9 +20,11 @@
         <button data-device-choice="android" aria-pressed="false">Android</button>
         <button data-device-choice="desktop" aria-pressed="true">Windows</button>
       </div>
-      <label class="scene-picker">搜索场景<select id="scene-select"><option value="results">搜索结果</option><option value="idle">起始状态</option><option value="empty">没有结果</option><option value="error">网络错误</option><option value="expired">登录失效</option></select></label>
+      <label class="scene-picker">搜索场景<select id="scene-select"><option value="results">搜索结果</option><option value="idle">起始状态</option><option value="loading">搜索中</option><option value="empty">没有结果</option><option value="error">网络错误</option><option value="expired">登录失效</option></select></label>
+      <label class="scene-picker">播放场景<select id="playback-select" aria-label="预览播放状态"><option value="paused">就绪 / 暂停</option><option value="playing">播放中</option><option value="preparing">准备音频</option><option value="buffering">缓冲中</option><option value="failed">播放失败</option><option value="unavailable">内容不可用</option><option value="expired">地址失效</option><option value="refreshing">重新获取地址</option><option value="ended">播放结束</option></select></label>
       <label class="scene-picker">歌词状态<select id="lyrics-layout-select" aria-label="预览歌词状态"><option value="auto">跟随曲目</option><option value="none">无歌词</option><option value="available">有歌词</option></select></label>
       <button id="review-player" class="review-button">查看播放页</button>
+      <button id="review-complete" class="review-button" hidden>模拟等待成功</button>
       <button id="review-theme" class="review-button" aria-label="切换深浅主题"><span class="symbol" aria-hidden="true">light_mode</span></button>
       <button id="review-reset" class="review-button">重置</button>
     </div>
@@ -44,8 +47,9 @@
       <button id="queue-scrim" class="queue-scrim" data-action="close-queue" aria-label="关闭播放队列" hidden></button>
       <aside id="support-pane" class="support-pane" aria-labelledby="queue-title" hidden></aside>
       <div id="snackbar" class="snackbar" role="status" hidden></div>
+      <p id="live-feedback" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
     </section>
   </main>
-  <footer class="review-caption"><span>原型 03 · 搜索 → 播放 → 收藏 / 队列 · 所有数据和播放均为模拟</span><span><a href="../prototype-v2/?view=player">原型 02</a> / <a href="../prototype-v1/">原型 01</a></span></footer>
+  <footer class="review-caption"><span>原型 03 · 状态补齐待审核 · 全部模拟，无真实音频；场景切换停留供审核，“模拟等待成功”可继续演示</span><span><a href="../prototype-v2/?view=player">原型 02</a> / <a href="../prototype-v1/">原型 01</a></span></footer>
 </body>
 </html>

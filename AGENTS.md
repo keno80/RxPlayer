@@ -55,7 +55,7 @@ These instructions apply to all coding tasks unless a more specific project inst
 1. Read the relevant instructions, files, and nearby tests.
 2. State a short plan only for nontrivial tasks; do not produce lengthy design documents for small edits.
 3. Make the smallest coherent implementation.
-4. Run the most relevant available checks or tests. Do not run expensive full-suite checks by default when targeted checks suffice. Do not run a build unless the user explicitly requests a build, launch, or build verification for the current work.
+4. Run the most relevant available checks or tests. 修改代码或正式应用 UI 后，默认构建并启动本次受影响的平台，无需用户逐次授权；只改文档或原型时按对应范围处理，不额外构建正式应用。Do not run expensive full-suite checks by default when targeted checks suffice. 构建 / 启动不等于完整流程验收。
 5. Fix failures caused by your change. Clearly distinguish pre-existing failures.
 6. Update progress records as meaningful work is completed, then commit, push, and merge according to the rules below once the current task meets its acceptance criteria.
 7. Report what changed, current progress, verification evidence, and delivery results. Stop.
@@ -72,12 +72,13 @@ These instructions apply to all coding tasks unless a more specific project inst
 - 常规文档修订和小型修复可复用适合的当前分支；涉及同一目标的改动集中交付，不为拆分而拆分。
 - 当前已获授权的任务达到约定验收要求后，直接暂存本仓库工作区的全部改动，提交并推送功能分支，再合并到远端默认主分支（当前为 `main`）并推送，不再询问确认。若直接在主分支上处理允许的小型改动，则提交后直接推送主分支。
 - “任务完成”以本次授权范围为准，不要求整个项目所有阶段完成。例如规划文档可以独立交付，但不能把尚未完成的产品阶段标成通过。
-- 合并前获取远端最新状态并完成本次变更适用的检查。遵循用户默认不构建的约定，不因提交或合并而额外运行构建；如某验收尚未执行，准确记录验证边界，不宣称其通过。
+- 合并前获取远端最新状态并完成本次变更适用的检查。代码或正式 UI 修改默认构建并启动受影响端；同一版本已完成构建 / 启动后，不因提交或合并重复执行。如某验收尚未执行，准确记录验证边界，不宣称其通过。
 - 使用正常的 Git 合并与推送，不强制推送、不破坏已有历史。远端分支保护、权限或无法安全解决的冲突阻塞交付时，保留现有工作并明确报告实际状态，不绕过限制。
 - 提交信息使用 Conventional Commits：`<type>(<scope>): <subject>`。`type` 仅允许 `feat`、`fix`、`perf`、`refactor`、`docs`、`style`、`test`、`build`、`revert`、`ci`、`chore`、`release`、`workflow`；`scope` 优先使用实际模块、页面、组件、目录或领域，`subject` 使用简洁中文；有多个重点时使用中文分行补充正文。
 - 提交、推送和合并后核对远端状态，在最终回复中说明提交与合并结果。
 
 ## Tests and quality
+- 小幅 UI 修改仅定向检查本次改动及直接受影响的行为，不因构建 / 启动请求自动重走完整双端或全部播放流程。完整流程回归留到阶段收尾、集中验收或用户明确要求时统一执行；修复后只重复相关检查。
 - Add or update tests when behavior changes or a meaningful regression risk exists; avoid tests that only assert implementation details.
 - Do not create extensive mocks, fixtures, test helpers, or edge-case matrices without a concrete need.
 - Do not claim a test passed unless it was actually run.

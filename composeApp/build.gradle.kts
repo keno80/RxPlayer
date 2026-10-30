@@ -22,10 +22,19 @@ kotlin {
             implementation(libs.material3.expressive)
             implementation(libs.kotlinx.coroutines.core)
         }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+        }
+        androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
+        }
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
+                // Read Windows' animation accessibility preference; no settings are written.
+                implementation("net.java.dev.jna:jna:5.17.0")
             }
         }
     }
