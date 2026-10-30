@@ -149,6 +149,21 @@ class OnlinePlaybackStateTest {
         state.seek(8900)
         assertEquals(8900, state.checkpoint(periodic = true).positionMs)
     }
+
+    @Test fun systemPauseClearsUserIntentAndPreventsBackgroundAdvance() = runTest {
+        val delegate = StreamingMemoryPlayer()
+        var intent: Boolean? = null
+        val engine = object : AudioPlayer by delegate { override val playWhenReady get() = intent }
+        val state = PlaybackState(engine, resolveStream = { stream() }, initialQueue = listOf(first, second))
+        state.select(first)
+        delegate.pause(); intent = false
+        state.sync()
+        assertFalse(state.playWhenReady)
+        assertEquals(PlaybackPhase.Paused, state.phase)
+        delegate.positionMs = delegate.durationMs
+        assertNull(state.sync())
+        assertEquals(first, state.track)
+    }
 }
 
 private class StreamingMemoryPlayer : AudioPlayer {

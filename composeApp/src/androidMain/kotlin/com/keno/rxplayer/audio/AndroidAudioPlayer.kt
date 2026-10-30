@@ -32,6 +32,7 @@ private class AndroidAudioPlayer(private val context: Context) : AudioPlayer {
     private val player = ExoPlayer.Builder(context).build().apply {
         setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
         setHandleAudioBecomingNoisy(true)
+        setWakeMode(C.WAKE_MODE_LOCAL)
     }
     private val http = OkHttpClient()
     private var temporary: File? = null
@@ -46,6 +47,7 @@ private class AndroidAudioPlayer(private val context: Context) : AudioPlayer {
     override val durationMs get() = player.duration.takeIf { it != C.TIME_UNSET }?.coerceAtLeast(0)?.coerceAtMost(Int.MAX_VALUE.toLong())?.toInt() ?: 0
     override val positionMs get() = player.currentPosition.coerceIn(0, Int.MAX_VALUE.toLong()).toInt()
     override val isPlaying get() = player.isPlaying
+    override val playWhenReady get() = player.playWhenReady
     override val isBuffering get() = player.playbackState == Player.STATE_BUFFERING
     override val isEnded get() = player.playbackState == Player.STATE_ENDED
 

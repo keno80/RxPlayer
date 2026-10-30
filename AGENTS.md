@@ -81,6 +81,7 @@ These instructions apply to all coding tasks unless a more specific project inst
 - 提交、推送和合并后核对远端状态，在最终回复中说明提交与合并结果。
 
 ## Tests and quality
+- 默认只安装正式应用包，不主动安装独立测试 APK，也不把安装测试包作为交付前置。自动验证优先使用本地定向测试和静态检查；仅在用户明确要求自动真机测试时另行安装对应测试包。
 - 用户明确表示由自己审核界面时，完成实现、必要编译、安装和启动后交付；不再自行逐页点击、截图对照或扩展 UI 回归。将界面审核记录为“待用户审核”，不把构建 / 安装成功写成视觉验收通过。
 - 小幅 UI 修改仅定向检查本次改动及直接受影响的行为，不因构建 / 启动请求自动重走完整双端或全部播放流程。完整流程回归留到阶段收尾、集中验收或用户明确要求时统一执行；修复后只重复相关检查。
 - Add or update tests when behavior changes or a meaningful regression risk exists; avoid tests that only assert implementation details.
