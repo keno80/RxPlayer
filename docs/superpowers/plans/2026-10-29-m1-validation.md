@@ -31,7 +31,7 @@
 ## 3. 下一批 M1 验证
 
 1. **Windows 引擎**：mpv 本地 JSON IPC 已通过 Bilibili AAC、网易云 MP3 与 YouTube AAC / Opus 的真实控制、headers / Range、退出与异常终止重开，选择此方向；接着固定正式分发包并验证干净环境，不把 CI 临时包直接视作产品运行库。
-2. **YouTube 普通视频**：NewPipeExtractor `v0.26.5` 已在 JVM 23 解析样本的 5 个音轨，其中 AAC / Opus 的实际播放通过；接着验证工程 JVM 17 和 Android 的 Downloader / desugaring / 网络适配。YouTube Music 另列能力，不能代替普通视频。
+2. **YouTube 普通视频**：NewPipeExtractor `v0.26.5` 已在 JDK 17 和 Android API 37 解析样本的 5 个音轨，AAC / Opus 由 mpv / Media3 实际播放通过；Android 最低版本和 R8 边界仍需验证。YouTube Music 另列能力，不能代替普通视频。
 3. **来源边界**：补 Bilibili 多分 P / AV / 链接与签名路径；网易云完整 / 试听 / 无权限样本；来源地址过期重新解析；登录前后的独立能力和凭据生命周期。不因一个匿名样本成功就勾选整个平台通过。
 4. **UI 审核余项**：准备 / 缓冲 / 错误等新增视觉状态、未审核页面先在原型补齐并由用户确认。已暂定确认的播放器等价实现不用重复请求相同确认。
 
@@ -46,3 +46,17 @@
 - [x] 本轮 3 个 Python 脚本语法、9 份 JSON、40 个本地链接、运行结果断言、URL 脱敏与 diff 检查通过；无遗留 mpv 进程。工程与 Android 构建不在本轮范围，交付按仓库流程核对远端。
 
 详细证据与重复步骤见 [运行报告](../../technical/2026-10-29-streaming-validation.md)。第 3 节中的平台、来源边界和 UI 审核余项仍未完成，不以本批样本成功关闭 M1。
+
+## 5. 平台与来源边界补测（2026-10-29）
+
+- [x] Temurin JDK 17.0.17 实际运行四条音频格式的解析 / 播放控制。
+- [x] 用户明确授权临时 Android APK 构建 / 安装；API 37 真机检查 Media3 / NewPipe，分别保留直连与测试网络桥接结果，结束后清理测试包和转发。
+- [x] Android Keystore 与 Windows DPAPI 的模拟数据基础验证。
+- [x] 匿名可取得 / 不可取得资源、未登录和内容不可用样本；具体原因未由平台明确给出时，不伪造会员或地区结论。
+- [x] 网易云原始 URL 实际等待标称 1200 秒 TTL +30 秒，旧地址仍 206；刷新地址亦 206，记录此 TTL 非本样本硬过期证据。
+- [x] 受控硬过期 410 → 重新签发 → 206 → 实际恢复播放，明确不冒充真实 CDN 过期。
+- [ ] Bilibili / YouTube 签名地址自然到期观察，已启动，约北京时间 16:48 / 20:50 检查。
+- [ ] 真实会员 / 试听 / 登录及退出凭据生命周期，最低 Android / R8 与分发余项。
+- [x] 本批 Python / PowerShell 语法、运行证据、JSON、文档链接和 URL 脱敏检查；当前以阶段分支保存，长时效结果未齐不提前标记任务达标或合并。
+
+详细结果见 [平台与访问验证](../../technical/2026-10-29-platform-access-validation.md)。

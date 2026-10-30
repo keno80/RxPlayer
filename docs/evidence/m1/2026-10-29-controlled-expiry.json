@@ -1,0 +1,57 @@
+{
+  "checked_at": "2026-10-29T06:47:57.457387+00:00",
+  "scope": "controlled_http_expiry",
+  "real_source_expiry": false,
+  "before": {
+    "http_status": 206,
+    "bytes_read": 65536,
+    "content_type": "audio/wav",
+    "range_supported": true,
+    "https": false,
+    "host": "127.0.0.1",
+    "signature": "unclassified"
+  },
+  "expired": {
+    "error": "http",
+    "http_status": 410
+  },
+  "refreshed_url_differs": true,
+  "refreshed": {
+    "http_status": 206,
+    "bytes_read": 65536,
+    "content_type": "audio/wav",
+    "range_supported": true,
+    "https": false,
+    "host": "127.0.0.1",
+    "signature": "unclassified"
+  },
+  "refreshed_playback": {
+    "source": "controlled_expiry",
+    "id": "same-fixture",
+    "mime": "audio/wav",
+    "https": false,
+    "loaded": true,
+    "duration_seconds": 45.0,
+    "audio_codec": "PCM signed 16-bit little-endian",
+    "audio_params": {
+      "samplerate": 8000,
+      "channel-count": 1,
+      "channels": "mono",
+      "hr-channels": "mono",
+      "format": "s16"
+    },
+    "audio_output": "wasapi",
+    "seekable": true,
+    "pause_drift_seconds": 0.0,
+    "seek_position_seconds": 29.999979,
+    "resume_position_seconds": 30.750528,
+    "stopped": true,
+    "passed": true
+  },
+  "passed": true,
+  "shutdown": {
+    "exit_code": 0,
+    "forced": false,
+    "pipe_removed": true
+  }
+}

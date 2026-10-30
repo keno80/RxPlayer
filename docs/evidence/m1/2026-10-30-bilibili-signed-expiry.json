@@ -1,0 +1,39 @@
+{
+  "started_at": "2026-10-29T06:47:46.937726+00:00",
+  "status": "completed",
+  "samples": [
+    {
+      "source": "bilibili",
+      "id": "BV1xx411c7mD",
+      "mime": "audio/mp4",
+      "deadline_epoch": 1793263666,
+      "not_before_epoch": 1793263696,
+      "status": "observed",
+      "before": {
+        "http_status": 206,
+        "bytes_read": 65536,
+        "content_type": "application/octet-stream",
+        "range_supported": true,
+        "https": true,
+        "host": "xy116x169x54x7xy.mcdn.bilivideo.cn",
+        "signature": "mp4/ftyp"
+      },
+      "checked_at": "2026-10-29T08:48:16.000797+00:00",
+      "original_after": {
+        "error": "http",
+        "http_status": 403
+      },
+      "fresh_url_differs": true,
+      "fresh_media": {
+        "http_status": 206,
+        "bytes_read": 65536,
+        "content_type": "application/octet-stream",
+        "range_supported": true,
+        "https": true,
+        "host": "xy116x196x140x44xy.mcdn.bilivideo.cn",
+        "signature": "mp4/ftyp"
+      },
+      "old_resource_rejected": true
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "checked_at": "2026-10-29T06:48:58.691370+00:00",
+  "application_id": "com.keno.rxplayer.m1probe",
+  "apk_sha256": "7355b50026e1bb8c1af1be262019c672b170a5aa6b3a501b5510c95e73ae95b2",
+  "apk_bytes": 6199951,
+  "java": "Temurin 17.0.17+10",
+  "agp": "8.11.2",
+  "gradle": "8.14.3",
+  "compile_sdk": 36,
+  "target_sdk": 36,
+  "min_sdk": 26,
+  "media3": "1.8.0",
+  "okhttp": "4.12.0",
+  "newpipe": "v0.26.5",
+  "desugar_jdk_libs_nio": "2.1.5",
+  "installed_runtime_api": 37,
+  "formal_app_built": false
+}

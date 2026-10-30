@@ -1,0 +1,62 @@
+{
+  "captured_at": "2026-10-29T06:52:22.895852+00:00",
+  "status": "waiting_for_real_deadlines",
+  "samples": [
+    {
+      "source": "bilibili",
+      "id": "BV1xx411c7mD",
+      "mime": "audio/mp4",
+      "deadline_epoch": 1793263666,
+      "not_before_epoch": 1793263696,
+      "status": "waiting",
+      "before": {
+        "http_status": 206,
+        "bytes_read": 65536,
+        "content_type": "application/octet-stream",
+        "range_supported": true,
+        "https": true,
+        "host": "xy116x169x54x7xy.mcdn.bilivideo.cn",
+        "signature": "mp4/ftyp"
+      }
+    },
+    {
+      "source": "youtube",
+      "id": "aqz-KE-bpKQ",
+      "mime": "audio/mp4",
+      "deadline_epoch": 1793278189,
+      "not_before_epoch": 1793278219,
+      "status": "waiting",
+      "before": {
+        "http_status": 206,
+        "bytes_read": 65536,
+        "content_type": "audio/mp4",
+        "range_supported": true,
+        "https": true,
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com",
+        "signature": "mp4/ftyp"
+      }
+    },
+    {
+      "source": "youtube",
+      "id": "aqz-KE-bpKQ",
+      "mime": "audio/webm",
+      "deadline_epoch": 1793278189,
+      "not_before_epoch": 1793278219,
+      "status": "waiting",
+      "before": {
+        "http_status": 206,
+        "bytes_read": 65536,
+        "content_type": "audio/webm",
+        "range_supported": true,
+        "https": true,
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com",
+        "signature": "webm"
+      }
+    }
+  ],
+  "runtime_report_locations": [
+    "%TEMP%/rxplayer-m1-runtime/signed-expiry-observation.json",
+    "%TEMP%/rxplayer-m1-runtime/youtube-signed-expiry-observation.json"
+  ],
+  "boundary": "Pending real-deadline observations; no pass claimed."
+}

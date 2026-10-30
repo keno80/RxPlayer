@@ -1,15 +1,16 @@
 # M1 技术可行性记录
 
-- 更新日期：2026-10-29
-- 状态：Windows 引擎与 YouTube 普通视频解析的样本运行已通过；M1 仍有平台、权限及有效期验证未完成。
+- 更新日期：2026-10-30
+- 状态：JDK 17、Windows 与 Android API 37 的匿名样本运行已通过；M1 仍有真实账号 / 试听、长时效地址及分发验证未完成。
 - 设计规格：[播放页原生规格](../superpowers/specs/2026-10-29-m1-player-native-spec.md)
 - 本轮步骤与后续验证：[M1 验证计划](../superpowers/plans/2026-10-29-m1-validation.md)
+- 最新补充：[M1 后续收口](2026-10-30-m1-closeout.md)。Bilibili 自然到期及分 P 已取得证据，YouTube 到期观察中断；隔离目录试验不能代替最终分发验收。
 
 ## 1. 当前结论
 
-Bilibili、网易云及 YouTube 普通视频的匿名音频输入已在当前 Windows 主机上由 mpv 实际解码，暂停 / 继续、拖动、快速替换及进程退出重开通过。YouTube 采用 NewPipeExtractor 解析，分别验证了 AAC 与 Opus；Windows 播放方向选用 mpv JSON IPC。正式分发包与 Android / JDK 17 集成仍需验证，见 [本次运行报告](2026-10-29-streaming-validation.md)。
+Bilibili、网易云及 YouTube 普通视频已由 Windows mpv 和 Android Media3 实际解码，YouTube 采用 NewPipeExtractor 解析，分别验证了 AAC / Opus。JDK 17 与手机 API 37 的独立探针通过；原生正式应用未接入。见 [Windows 初次报告](2026-10-29-streaming-validation.md) 与 [平台 / 权限 / 有效期报告](2026-10-29-platform-access-validation.md)。
 
-本轮没有改动 Compose 源码或 Gradle 依赖，没有构建 / 启动 Android 或 Windows 正式应用，也没有宣称三来源已接入产品。
+没有改动 Compose 源码或正式应用依赖，没有构建 / 启动正式应用。后续 Android 独立验证 APK 经用户明确授权构建、安装、运行并已卸载。
 
 ## 2. 实测方法与边界
 
@@ -59,7 +60,7 @@ python scripts/m1/probe_sources.py --source netease --output docs/evidence/m1/20
 
 普通视频搜索和播放分开记录。本次直接读取搜索页 `ytInitialData` 与视频页 `ytInitialPlayerResponse`；只取得元数据 / 音轨描述。页面播放状态 OK 不代表已获得供原生引擎使用的音频输入。
 
-后续已验证 [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor) `v0.26.5` 在独立 JVM 上可解析样本的 5 个音轨，并让 mpv 播放其中 AAC / Opus 两种格式。Android 和工程 JVM 17 尚未运行，不把桌面验证扩展为两端通过。[yt-dlp](https://github.com/yt-dlp/yt-dlp) 本轮未运行；正式引入依赖前落实版本和许可证约束。
+后续已验证 [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor) `v0.26.5` 在 JDK 17 与 Android API 37 上解析样本的 5 个音轨，并由 mpv / Media3 播放 AAC / Opus。验证限于独立探针与当前网络条件，不代替正式应用或 Android 最低版本验收。[yt-dlp](https://github.com/yt-dlp/yt-dlp) 本轮未运行；正式引入依赖前落实版本和许可证约束。
 
 [YouTube Data API 的 search.list](https://developers.google.com/youtube/data/reference/rest/v3/search/list) 属于搜索元数据接口，不是此处音频资源解析成功的证据。本轮未配置 API Key。YouTube Music 未验证，不能用普通视频搜索结果代替 Music 能力结论，也不能反向代替普通视频需求。
 
@@ -70,7 +71,7 @@ python scripts/m1/probe_sources.py --source netease --output docs/evidence/m1/20
 | 现有 `DesktopAudioPlayer` | `AudioPlayer.load(ByteArray)`，`AudioSystem.getClip()` 完整载入 WAV | 仅保留演示回归，不作网络流媒体成品方案 |
 | mpv 子进程 + JSON IPC | 四条真实格式的 WASAPI 播放 / 暂停 / 拖动、headers / Range、退出及异常终止重开均有证据 | 选择此技术方向；正式适配与固定分发包尚未交付 |
 | vlcj / libVLC | 项目提供 Java 封装，支持 Windows，需要配套原生运行库 | 备选；尚未引入，也未验证打包与媒体请求 |
-| Android Media3 | 官方提供 ExoPlayer、HTTP 数据源与独立 MediaSessionService 生命周期 | Android 优先技术方向；未添加依赖、未运行服务 |
+| Android Media3 | 独立 APK 使用 1.8.0 与 OkHttp，API 37 真机通过四条格式的 Range / 播放 / 暂停 / 拖动 / 释放 | 选择此播放方向；正式应用及后台服务尚未接入 |
 
 依据：[mpv 控制与网络文档](https://mpv.io/manual/stable/)、[mpv Windows 分发来源说明](https://mpv.io/installation/)、[vlcj 项目说明](https://github.com/caprica/vlcj)、[Media3 后台服务](https://developer.android.com/media/media3/session/background-playback)、[HTTP 数据源工厂](https://developer.android.com/reference/androidx/media3/datasource/DefaultHttpDataSource.Factory)、[Media3 格式支持](https://developer.android.com/media/media3/exoplayer/supported-formats)。
 
@@ -92,8 +93,8 @@ Media3 后台播放应将 Player / MediaSession 生命周期放到 Service；Act
 
 | 项目 | 方案与状态 |
 |---|---|
-| Android 安全存储 | Keystore 保护密钥，应用私有存储只保存密文；来源独立命名。方案依据 [Android Keystore](https://developer.android.com/privacy-and-security/keystore)，尚未实现 / 测试 |
-| Windows 安全存储 | 优先验证当前用户范围 DPAPI，避免机器范围共享；依据 [CryptProtectData](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata)，尚未实现 / 测试 |
+| Android 安全存储 | Keystore 模拟数据加解密、密钥不可导出检查通过，测试 alias 已删除；依据 [Android Keystore](https://developer.android.com/privacy-and-security/keystore)。真实凭据持久化 / 重启 / 退出流程未实现 |
+| Windows 安全存储 | CurrentUser DPAPI 的模拟密文落盘 / 解密、篡改拒绝与清除通过；依据 [CryptProtectData](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata)。真实账号流程未实现 |
 | 来源登录 | 具体二维码 / OAuth / 会话方式仍需按可用实现逐来源验证；不先画成已支持能力 |
 | 过期与退出 | 凭据失效返回来源专属状态；退出清除内存会话和落盘凭据，保留本地歌曲引用；测试中不得泄露原始凭据 |
 
@@ -103,7 +104,10 @@ Media3 后台播放应将 Player / MediaSession 生命周期放到 Service；Act
 
 - [x] 三来源各至少一个匿名样本取得实际音频输入，YouTube AAC / Opus 的地址及播放路径成立；不等于所有内容权限均通过。
 - [x] Windows 引擎的样本解码播放、HTTPS、headers / Range、暂停 / 拖动 / 退出与异常终止重开通过，选用 mpv JSON IPC 技术方向。
-- [ ] 固定可分发引擎包及干净环境运行、工程 JDK 17 / Android 解析与网络适配验证。
+- [x] JDK 17 与 Android API 37 独立探针的解析 / 网络 / 实际播放验证；明确手机直连与测试代理条件。
+- [ ] 固定可分发引擎包及干净环境运行，Android 最低版本 / R8 等平台边界。
+- [x] Bilibili 真实地址自然到期后旧地址 403、重新解析新地址 206；匿名分页、AV / BV 与多分 P 样本通过。
+- [ ] YouTube 自然到期观察中断，旧 URL 不可恢复，尚未完成；网易云标称 TTL 后原地址仍可用，不等同硬过期。
 - [ ] 音源权限 / 试听 / 过期及多分 P 等边界样本，必要登录方式和凭据生命周期可复查。
 - [ ] 新增准备 / 错误视觉状态及未确认页面按原型流程完成审核。
 

@@ -1,0 +1,67 @@
+{
+  "checked_at": "2026-10-30T04:37:16.343440+00:00",
+  "scope": "isolated_directory_on_current_windows_host",
+  "distribution_approved": false,
+  "muted": true,
+  "executable_sha256": "ecf988cdf821d08807cb45e7fd9864f3697383c730e39edb484265f3d6c4c765",
+  "hash_matches": true,
+  "external_executables_on_path": {
+    "mpv": false,
+    "ffmpeg": false,
+    "vlc": false
+  },
+  "engine_version": "mpv v0.41.0-dev-gdc4b285c9",
+  "ffmpeg_version": "git-2026-10-28-8e362b7",
+  "local_playback": {
+    "source": "authored_wav",
+    "id": "isolation-tone",
+    "mime": "audio/wav",
+    "https": false,
+    "loaded": true,
+    "duration_seconds": 45.0,
+    "audio_codec": "PCM signed 16-bit little-endian",
+    "audio_params": {
+      "samplerate": 22050,
+      "channel-count": 1,
+      "channels": "mono",
+      "hr-channels": "mono",
+      "format": "s16"
+    },
+    "audio_output": "wasapi",
+    "seekable": true,
+    "pause_drift_seconds": 0.0,
+    "seek_position_seconds": 29.999989,
+    "resume_position_seconds": 30.734294,
+    "stopped": true,
+    "passed": true
+  },
+  "https_playback": {
+    "source": "bilibili",
+    "id": "BV1xx411c7mD",
+    "mime": "audio/mp4",
+    "https": true,
+    "loaded": true,
+    "duration_seconds": 2055.637732,
+    "audio_codec": "AAC (Advanced Audio Coding)",
+    "audio_params": {
+      "samplerate": 44100,
+      "channel-count": 2,
+      "channels": "stereo",
+      "hr-channels": "stereo",
+      "format": "floatp"
+    },
+    "audio_output": "wasapi",
+    "seekable": true,
+    "pause_drift_seconds": 0.0374,
+    "seek_position_seconds": 29.999999,
+    "resume_position_seconds": 30.740616,
+    "stopped": true,
+    "passed": true
+  },
+  "shutdown": {
+    "exit_code": 0,
+    "forced": false,
+    "pipe_removed": true
+  },
+  "passed": true
+}

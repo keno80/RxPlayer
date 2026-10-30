@@ -1,0 +1,77 @@
+{
+  "started_at_epoch_ms": 1793256211267,
+  "android_api": 37,
+  "android_release": "17",
+  "proxy_mode": "usb_existing_host_proxy",
+  "internet_permission": true,
+  "muted": true,
+  "status": "completed",
+  "playback": [
+    {
+      "source": "bilibili",
+      "id": "BV1xx411c7mD",
+      "mime": "audio/mp4",
+      "range_status": 206,
+      "range_bytes": 65536,
+      "duration_ms": 2055637,
+      "audio_session_id_positive": true,
+      "decoded_mime": "audio/mp4a-latm",
+      "pause_drift_ms": 0,
+      "seek_position_ms": 30000,
+      "resume_position_ms": 30760,
+      "passed": true,
+      "released": true
+    },
+    {
+      "source": "netease",
+      "id": "139774",
+      "mime": "audio/mpeg",
+      "range_status": 206,
+      "range_bytes": 65536,
+      "duration_ms": 223512,
+      "audio_session_id_positive": true,
+      "decoded_mime": "audio/mpeg",
+      "pause_drift_ms": 0,
+      "seek_position_ms": 30000,
+      "resume_position_ms": 30770,
+      "passed": true,
+      "released": true
+    },
+    {
+      "source": "youtube",
+      "id": "aqz-KE-bpKQ",
+      "mime": "audio/mp4",
+      "range_status": 206,
+      "range_bytes": 65536,
+      "duration_ms": 634694,
+      "audio_session_id_positive": true,
+      "decoded_mime": "audio/mp4a-latm",
+      "pause_drift_ms": 0,
+      "seek_position_ms": 30000,
+      "resume_position_ms": 30766,
+      "passed": true,
+      "released": true
+    },
+    {
+      "source": "youtube",
+      "id": "aqz-KE-bpKQ",
+      "mime": "audio/webm",
+      "range_status": 206,
+      "range_bytes": 65536,
+      "duration_ms": 634601,
+      "audio_session_id_positive": true,
+      "decoded_mime": "audio/opus",
+      "pause_drift_ms": 0,
+      "seek_position_ms": 30000,
+      "resume_position_ms": 30758,
+      "passed": true,
+      "released": true
+    }
+  ],
+  "keystore": {
+    "round_trip": true,
+    "key_exportable": false
+  },
+  "youtube_audio_count": 5,
+  "finished_at_epoch_ms": 1793256248136
+}

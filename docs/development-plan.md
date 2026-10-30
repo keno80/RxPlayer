@@ -111,7 +111,7 @@ UI 规格、实现和审查统一依据 Google 官方设计指导与 m3-expressi
 
 ### 4.2 验证三个音源与 Windows 引擎
 
-当前证据见 [M1 技术可行性记录](technical/m1-feasibility.md) 与 [Windows / YouTube 运行报告](technical/2026-10-29-streaming-validation.md)，执行步骤见 [验证计划](superpowers/plans/2026-10-29-m1-validation.md)。已核对 15 项 Material3 API 声明；mpv 真实播放 Bilibili AAC、网易云 MP3、NewPipe 解析的 YouTube AAC / Opus，控制、headers / Range 及正常 / 异常退出重开通过。工程 JDK 17、Android、正式分发包及完整来源边界仍未验收。
+当前证据见 [M1 技术可行性记录](technical/m1-feasibility.md)、[Windows / YouTube 报告](technical/2026-10-29-streaming-validation.md)、[JDK 17 / Android / 权限及有效期报告](technical/2026-10-29-platform-access-validation.md) 与 [后续收口记录](technical/2026-10-30-m1-closeout.md)。JDK 17 / API 37 四格式样本通过；Bilibili 自然到期、分页 / AV / BV / 多分 P 和 Windows 引擎隔离目录试验已取得结果。YouTube 自然到期观察中断，账号 / 试听、最低系统边界及最终分发仍未验收。
 
 - [ ] 对每个音源分别验证关键词搜索、内容标识、音频解析、格式、请求头、链接有效期、匿名 / 登录边界。
 - [ ] 对 YouTube 单独记录普通视频和 YouTube Music 能力；不能只记录后者后宣称完成前者。

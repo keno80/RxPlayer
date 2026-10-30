@@ -1,0 +1,95 @@
+{
+  "checked_at": "2026-10-30T04:35:03.479452+00:00",
+  "auth": "anonymous",
+  "query": "Blender 入门教程 合集",
+  "session": {
+    "http_status": 200
+  },
+  "search_pages": [
+    {
+      "http_status": 200,
+      "code": 0,
+      "requested_page": 1,
+      "returned_page": 1,
+      "ids": [
+        "BV14u41147YH",
+        "BV1DFuE6tEqU",
+        "BV13Dnb6WE6u",
+        "BV1kX4y1m7G5"
+      ]
+    },
+    {
+      "http_status": 200,
+      "code": 0,
+      "requested_page": 2,
+      "returned_page": 2,
+      "ids": [
+        "BV1udBYBBEVG",
+        "BV1zt411d7kW",
+        "BV1XsJ96WExc",
+        "BV1tB4y1d7bT"
+      ]
+    }
+  ],
+  "pagination_distinct": true,
+  "multipart_candidates": [
+    {
+      "bvid": "BV14u41147YH",
+      "code": 0,
+      "parts": 36
+    }
+  ],
+  "multipart": {
+    "bvid": "BV14u41147YH",
+    "aid": 528990022,
+    "parts": 36,
+    "av_bv_same_video": true,
+    "audio_parts": [
+      {
+        "part": 1,
+        "cid": 1138102370,
+        "duration_seconds": 288,
+        "http_status": 200,
+        "code": 0,
+        "audio_present": true,
+        "mime": "audio/mp4",
+        "codec": "mp4a.40.2",
+        "deadline_present": true,
+        "media": {
+          "http_status": 206,
+          "bytes_read": 65536,
+          "content_type": "video/mp4",
+          "range_supported": true,
+          "https": true,
+          "host": "upos-sz-mirrorcosov.bilivideo.com",
+          "signature": "mp4/ftyp"
+        }
+      },
+      {
+        "part": 2,
+        "cid": 1138106698,
+        "duration_seconds": 242,
+        "http_status": 200,
+        "code": 0,
+        "audio_present": true,
+        "mime": "audio/mp4",
+        "codec": "mp4a.40.2",
+        "deadline_present": true,
+        "media": {
+          "http_status": 206,
+          "bytes_read": 65536,
+          "content_type": "video/mp4",
+          "range_supported": true,
+          "https": true,
+          "host": "upos-sz-mirrorcosov.bilivideo.com",
+          "signature": "mp4/ftyp"
+        }
+      }
+    ],
+    "different_cids": true
+  },
+  "unavailable": {
+    "code": 62002
+  },
+  "passed": true
+}

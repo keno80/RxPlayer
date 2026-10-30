@@ -1,0 +1,116 @@
+{
+  "started_at": "2026-10-29T06:49:42.442552+00:00",
+  "status": "interrupted_unobserved",
+  "samples": [
+    {
+      "source": "youtube",
+      "id": "aqz-KE-bpKQ",
+      "mime": "audio/mp4",
+      "deadline_epoch": 1793278189,
+      "not_before_epoch": 1793278219,
+      "status": "waiting",
+      "before": {
+        "http_status": 206,
+        "bytes_read": 65536,
+        "content_type": "audio/mp4",
+        "range_supported": true,
+        "https": true,
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com",
+        "signature": "mp4/ftyp"
+      }
+    },
+    {
+      "source": "youtube",
+      "id": "aqz-KE-bpKQ",
+      "mime": "audio/webm",
+      "deadline_epoch": 1793278189,
+      "not_before_epoch": 1793278219,
+      "status": "waiting",
+      "before": {
+        "http_status": 206,
+        "bytes_read": 65536,
+        "content_type": "audio/webm",
+        "range_supported": true,
+        "https": true,
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com",
+        "signature": "webm"
+      }
+    }
+  ],
+  "youtube_resolution": {
+    "extractor_version": "v0.26.5",
+    "java_version": "17.0.17",
+    "video_id": "aqz-KE-bpKQ",
+    "duration_seconds": 635,
+    "success": true,
+    "requests": [
+      {
+        "host": "youtubei.googleapis.com",
+        "status": 200
+      },
+      {
+        "host": "youtubei.googleapis.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      },
+      {
+        "host": "youtubei.googleapis.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      }
+    ],
+    "audio": [
+      {
+        "is_url": true,
+        "bitrate_kbps": 48,
+        "mime": "audio/mp4",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      },
+      {
+        "is_url": true,
+        "bitrate_kbps": 128,
+        "mime": "audio/mp4",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      },
+      {
+        "is_url": true,
+        "bitrate_kbps": 50,
+        "mime": "audio/webm",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      },
+      {
+        "is_url": true,
+        "bitrate_kbps": 70,
+        "mime": "audio/webm",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      },
+      {
+        "is_url": true,
+        "bitrate_kbps": 160,
+        "mime": "audio/webm",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      }
+    ]
+  },
+  "previous_status": "waiting_for_real_deadlines",
+  "captured_at": "2026-10-30T04:37:16.270362+00:00",
+  "boundary": "Observation process no longer exists; old signed URLs were kept only in memory. Deadline outcomes cannot be reconstructed from this report."
+}

@@ -1,0 +1,201 @@
+{
+  "checked_at": "2026-10-29T06:26:25.776931+00:00",
+  "muted": true,
+  "mpv_sha256": "ecf988cdf821d08807cb45e7fd9864f3697383c730e39edb484265f3d6c4c765",
+  "platform": "Windows",
+  "auth": "anonymous",
+  "playback": [
+    {
+      "source": "bilibili",
+      "id": "BV1xx411c7mD",
+      "mime": "audio/mp4",
+      "https": true,
+      "loaded": true,
+      "duration_seconds": 2055.637732,
+      "audio_codec": "AAC (Advanced Audio Coding)",
+      "audio_params": {
+        "samplerate": 44100,
+        "channel-count": 2,
+        "channels": "stereo",
+        "hr-channels": "stereo",
+        "format": "floatp"
+      },
+      "audio_output": "wasapi",
+      "seekable": true,
+      "pause_drift_seconds": 0.0,
+      "seek_position_seconds": 29.999999,
+      "resume_position_seconds": 30.731267,
+      "stopped": true,
+      "passed": true
+    },
+    {
+      "source": "netease",
+      "id": "139774",
+      "mime": "audio/mpeg",
+      "https": true,
+      "loaded": true,
+      "duration_seconds": 223.467979,
+      "audio_codec": "MP3 (MPEG audio layer 3)",
+      "audio_params": {
+        "samplerate": 48000,
+        "channel-count": 2,
+        "channels": "stereo",
+        "hr-channels": "stereo",
+        "format": "floatp"
+      },
+      "audio_output": "wasapi",
+      "seekable": true,
+      "pause_drift_seconds": 0.0,
+      "seek_position_seconds": 30.0,
+      "resume_position_seconds": 30.735909,
+      "stopped": true,
+      "passed": true
+    },
+    {
+      "source": "youtube",
+      "id": "aqz-KE-bpKQ",
+      "mime": "audio/mp4",
+      "https": true,
+      "loaded": true,
+      "duration_seconds": 634.69424,
+      "audio_codec": "AAC (Advanced Audio Coding)",
+      "audio_params": {
+        "samplerate": 44100,
+        "channel-count": 2,
+        "channels": "stereo",
+        "hr-channels": "stereo",
+        "format": "floatp"
+      },
+      "audio_output": "wasapi",
+      "seekable": true,
+      "pause_drift_seconds": 0.0,
+      "seek_position_seconds": 29.999991,
+      "resume_position_seconds": 30.743516,
+      "stopped": true,
+      "passed": true
+    },
+    {
+      "source": "youtube",
+      "id": "aqz-KE-bpKQ",
+      "mime": "audio/webm",
+      "https": true,
+      "loaded": true,
+      "duration_seconds": 634.601,
+      "audio_codec": "Opus (Opus Interactive Audio Codec)",
+      "audio_params": {
+        "samplerate": 48000,
+        "channel-count": 2,
+        "channels": "stereo",
+        "hr-channels": "stereo",
+        "format": "floatp"
+      },
+      "audio_output": "wasapi",
+      "seekable": true,
+      "pause_drift_seconds": 0.0,
+      "seek_position_seconds": 30.0,
+      "resume_position_seconds": 30.740526,
+      "stopped": true,
+      "passed": true
+    }
+  ],
+  "proxy_mode": "system",
+  "youtube": {
+    "extractor_version": "v0.26.5",
+    "java_version": "17.0.17",
+    "video_id": "aqz-KE-bpKQ",
+    "duration_seconds": 635,
+    "success": true,
+    "requests": [
+      {
+        "host": "youtubei.googleapis.com",
+        "status": 200
+      },
+      {
+        "host": "youtubei.googleapis.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      },
+      {
+        "host": "youtubei.googleapis.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      },
+      {
+        "host": "www.youtube.com",
+        "status": 200
+      }
+    ],
+    "audio": [
+      {
+        "is_url": true,
+        "bitrate_kbps": 48,
+        "mime": "audio/mp4",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      },
+      {
+        "is_url": true,
+        "bitrate_kbps": 128,
+        "mime": "audio/mp4",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      },
+      {
+        "is_url": true,
+        "bitrate_kbps": 50,
+        "mime": "audio/webm",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      },
+      {
+        "is_url": true,
+        "bitrate_kbps": 70,
+        "mime": "audio/webm",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      },
+      {
+        "is_url": true,
+        "bitrate_kbps": 160,
+        "mime": "audio/webm",
+        "host": "rr1---sn-4jpm0n-nwje.googlevideo.com"
+      }
+    ]
+  },
+  "mpv_version": "mpv v0.41.0-dev-gdc4b285c9",
+  "rapid_replace": {
+    "last_source": "bilibili",
+    "identity_matches": true,
+    "playlist_count": 1
+  },
+  "shutdown": {
+    "exit_code": 0,
+    "forced": false,
+    "pipe_removed": true
+  },
+  "events": [
+    "audio-reconfig",
+    "end-file",
+    "file-loaded",
+    "idle",
+    "playback-restart",
+    "seek",
+    "start-file"
+  ],
+  "restart_output": "wasapi",
+  "restart_shutdown": {
+    "exit_code": 0,
+    "forced": false,
+    "pipe_removed": true
+  }
+}
