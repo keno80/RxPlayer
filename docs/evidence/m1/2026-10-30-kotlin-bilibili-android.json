@@ -1,0 +1,26 @@
+{
+  "platform": "Android",
+  "api": 37,
+  "auth": "anonymous",
+  "search_count": 17,
+  "part_count": 36,
+  "audio_parts": [
+    {
+      "part": 1,
+      "cid": 1138102370,
+      "http_status": 206,
+      "bytes_read": 65536,
+      "mime": "audio/mp4"
+    },
+    {
+      "part": 2,
+      "cid": 1138106698,
+      "http_status": 206,
+      "bytes_read": 65536,
+      "mime": "audio/mp4"
+    }
+  ],
+  "passed": true,
+  "captured_at": "2026-10-30T05:05:50.252036+00:00",
+  "instrumentation_result": "OK (1 test)"
+}
