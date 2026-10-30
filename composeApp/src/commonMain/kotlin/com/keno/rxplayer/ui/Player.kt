@@ -245,10 +245,10 @@ private fun PlaybackModes(state: PlaybackState, desktop: Boolean) {
 }
 
 @Composable
-private fun ModeButton(selected: Boolean, image: ImageVector, label: String, onClick: () -> Unit) {
+internal fun ModeButton(selected: Boolean, image: ImageVector, label: String, onClick: () -> Unit, container: Color = MaterialTheme.colorScheme.surfaceContainer) {
     Box(Modifier.size(48.dp)) {
         TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState(), modifier = Modifier.fillMaxSize()) {
-            FilledIconToggleButton(checked = selected, onCheckedChange = { onClick() }, modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(if (selected) 16.dp else 48.dp), colors = IconButtonDefaults.filledIconToggleButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onSurfaceVariant, checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer, checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer)) {
+            FilledIconToggleButton(checked = selected, onCheckedChange = { onClick() }, modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(if (selected) 16.dp else 48.dp), colors = IconButtonDefaults.filledIconToggleButtonColors(containerColor = container, contentColor = MaterialTheme.colorScheme.onSurfaceVariant, checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer, checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer)) {
                 Icon(image, label)
             }
         }
@@ -256,10 +256,10 @@ private fun ModeButton(selected: Boolean, image: ImageVector, label: String, onC
 }
 
 @Composable
-internal fun PlayerIcon(image: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier.size(48.dp), container: Color = MaterialTheme.colorScheme.surfaceContainer) {
+internal fun PlayerIcon(image: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier.size(48.dp), container: Color = MaterialTheme.colorScheme.surfaceContainer, contentColor: Color = contentColorFor(container)) {
     Box(modifier) {
         TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState(), modifier = Modifier.fillMaxSize()) {
-            FilledIconButton(onClick, Modifier.fillMaxSize(), shape = RoundedCornerShape(48.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = container, contentColor = contentColorFor(container))) {
+            FilledIconButton(onClick, Modifier.fillMaxSize(), shape = RoundedCornerShape(48.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = container, contentColor = contentColor)) {
                 Icon(image, label)
             }
         }
@@ -267,7 +267,7 @@ internal fun PlayerIcon(image: ImageVector, label: String, onClick: () -> Unit, 
 }
 
 @Composable
-private fun PlaybackButton(state: PlaybackState, onClick: () -> Unit, modifier: Modifier) {
+internal fun PlaybackButton(state: PlaybackState, onClick: () -> Unit, modifier: Modifier) {
     val label = when (state.phase) {
         PlaybackPhase.Preparing -> "取消准备"
         PlaybackPhase.Refreshing -> "取消获取地址"

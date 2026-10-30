@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-30",
+  "kind": "static_and_web_prototype_only",
+  "approvedBaseline": "cf8e74b",
+  "kotlinSyntaxParser": "tree-sitter-kotlin 1.1.0",
+  "parsedFiles": ["ui/DesktopMiniPlayer.kt", "ui/Player.kt", "App.kt"],
+  "kotlinSyntaxErrors": 0,
+  "webCases": {"widths": [1440, 1150, 900, 800], "themes": ["dark", "light"], "passed": 8, "failed": 0},
+  "webChecks": ["only approved floating layout", "navigation boundary", "control bounds and target height", "volume change", "Escape focus restoration", "queue toggling"],
+  "sourceReview": "No evidenced Critical or Important findings; native runtime remains unverified",
+  "nativeBuildExecuted": false,
+  "nativeTestsExecuted": false,
+  "nativeLaunchExecuted": false,
+  "pendingNativeAcceptance": ["Popup focus", "vertical slider pointer hit testing", "window resizing and DPI"]
+}

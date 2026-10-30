@@ -383,14 +383,13 @@
 
   function transport() {
     const track = current();
-    if (state.device === 'desktop' && ['a','b','c'].includes(product.dataset.transport)) {
-      const floating = product.dataset.transport === 'c';
-      const info = `<button class="now-track" data-action="open-player" aria-label="展开 ${escape(track.title)} 的播放器">${art(track,'mini')}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${escape(track.author)}${floating ? '' : ` · ${track.source}`}</span></span></button>`;
+    if (state.device === 'desktop') {
+      const info = `<button class="now-track" data-action="open-player" aria-label="展开 ${escape(track.title)} 的播放器">${art(track,'mini')}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${escape(track.author)}</span></span></button>`;
       const controls = `<div class="compact-controls" role="group" aria-label="播放操作">${iconButton('shuffle','shuffle','随机播放',`aria-pressed="${state.shuffle}"`)}${iconButton('previous','skip_previous','上一首')}${playButton()}${iconButton('next','skip_next','下一首')}${iconButton('repeat','repeat','列表循环',`aria-pressed="${state.repeat}"`)}</div>`;
       const seek = `<div class="compact-progress">${progress()}</div>`;
-      const volume = floating ? `<div class="volume-control">${iconButton('toggle-volume',state.volume === 0 ? 'volume_off' : 'volume_up','音量', 'aria-expanded="false" aria-controls="transport-volume-popover"')}<section id="transport-volume-popover" class="volume-popover" role="group" aria-label="调整音量" hidden><input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="调整音量" aria-orientation="vertical"><output class="volume-readout">${state.volume}%</output></section></div>` : `<span class="symbol volume-icon" aria-hidden="true">volume_up</span><input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="音量">`;
+      const volume = `<div class="volume-control">${iconButton('toggle-volume',state.volume === 0 ? 'volume_off' : 'volume_up','音量', 'aria-expanded="false" aria-controls="transport-volume-popover"')}<section id="transport-volume-popover" class="volume-popover" role="group" aria-label="调整音量" hidden><input class="volume" type="range" min="0" max="100" value="${state.volume}" style="--progress:${state.volume}%" aria-label="调整音量" aria-orientation="vertical"><output class="volume-readout">${state.volume}%</output></section></div>`;
       const auxiliary = `<div class="transport-right">${volume}${iconButton('open-queue','queue_music','播放队列')}</div>`;
-      return floating ? `${info}${seek}<div class="control-island" role="group" aria-label="播放控制与音量、列表">${controls}${auxiliary}</div>` : `${info}${controls}${seek}${auxiliary}`;
+      return `${info}${seek}<div class="control-island" role="group" aria-label="播放控制与音量、列表">${controls}${auxiliary}</div>`;
     }
     return `<button class="now-track" data-action="open-player" aria-label="展开 ${escape(track.title)} 的播放器">${art(track, 'mini')}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${!state.prepared && state.phase === 'paused' ? '尚未播放' : phaseLabels[state.phase]} · ${track.source}</span></span></button>
       <div class="transport-center"><div class="play-controls">${iconButton('shuffle','shuffle','随机播放',`aria-pressed="${state.shuffle}"`)}${iconButton('previous','skip_previous','上一首')}${playButton()}${iconButton('next','skip_next','下一首')}${iconButton('repeat','repeat','列表循环',`aria-pressed="${state.repeat}"`)}</div>${progress()}</div>
@@ -755,7 +754,7 @@
     });
   }, 1000);
   const review = new URLSearchParams(location.search);
-  if (['a','b','c'].includes(review.get('transport'))) product.dataset.transport = review.get('transport');
+  product.dataset.transport = 'c';
   if (review.has('embed')) document.body.classList.add('transport-embed');
   if (['android','desktop'].includes(review.get('device'))) state.device = review.get('device');
   if (['dark','light'].includes(review.get('theme'))) state.theme = review.get('theme');
