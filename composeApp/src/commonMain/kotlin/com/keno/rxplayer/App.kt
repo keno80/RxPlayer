@@ -24,6 +24,7 @@ fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged
     var queueOpen by remember { mutableStateOf(false) }
     var queryFocused by remember { mutableStateOf(false) }
     val favorites = remember { mutableStateMapOf<String, ContentItem>() }
+    val recent = remember { mutableStateListOf<BilibiliTrack>() }
     val scope = rememberCoroutineScope()
     val source = remember { BilibiliSource() }
     val covers = remember { ArtworkStore() }
@@ -50,7 +51,14 @@ fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged
     fun favorite(item: ContentItem) { if (favorites.remove(item.stableKey) == null) favorites[item.stableKey] = item }
     fun close() { if (queueOpen) queueOpen = false else expanded = false }
     PlayerBackHandler(expanded || queueOpen || browse.selection != null) { if (browse.selection != null) browse.cancelSelection() else close() }
-    SideEffect { onThemeChanged(dark, dark) }
+    SideEffect { onThemeChanged(dark || expanded && !isDesktop && track?.lyrics?.isNotEmpty() == true, dark) }
+    LaunchedEffect(playback.track?.id, playback.isPlaying) {
+        val playing = playback.track as? BilibiliTrack
+        if (playing != null && playback.isPlaying) {
+            recent.removeAll { it.id == playing.id }; recent.add(0, playing)
+            if (recent.size > 30) recent.removeAt(recent.lastIndex)
+        }
+    }
     LaunchedEffect(player) {
         while (isActive) {
             playback.sync()?.let { if (foreground) select(it) }
@@ -77,14 +85,14 @@ fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged
                     }
                 }.focusable()) {
                     if (!expanded || track == null) SourceWorkspace(
-                        workspace, browse, playback, favorites, isDesktop, dark, followArtwork, queueOpen,
+                        workspace, browse, playback, favorites, recent, isDesktop, dark, followArtwork, queueOpen,
                         { queueOpen = false }, ::select, ::favorite, { queryFocused = false; expanded = true }, { queryFocused = it },
                         { dark = it }, { followArtwork = it },
                         queueContent = { PlayerTheme(dark, track, followArtwork) { Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) { DesktopQueuePane(playback, { queueOpen = false }, ::select) } } },
                         transport = {
                             if (displayTrack != null) PlayerTheme(dark, displayTrack, followArtwork) {
                                 if (isDesktop) DesktopMiniPlayer(playback, displayTrack, queueOpen, ::toggle, { step(-1) }, { step(1) }, { if (track != null) expanded = true else queueOpen = true }, { queueOpen = !queueOpen }, miniExpandFocus, miniQueueFocus)
-                                else MiniPlayer(playback, displayTrack, ::toggle, { step(1) }, { if (track != null) expanded = true else queueOpen = true }, { queueOpen = !queueOpen }, miniExpandFocus, miniQueueFocus)
+                                else MiniPlayer(playback, displayTrack, ::toggle, { if (track != null) expanded = true else queueOpen = true }, { queueOpen = !queueOpen }, miniExpandFocus, miniQueueFocus)
                             }
                         },
                     ) else PlayerTheme(dark, track, followArtwork) {
@@ -92,7 +100,7 @@ fun App(isForeground: Boolean = true, isDesktop: Boolean = false, onThemeChanged
                             queueOpen, { queueOpen = !queueOpen }, { queueOpen = false }, { queueOpen = false; expanded = false },
                             { (track as? BilibiliTrack)?.item?.let(::favorite) }, ::toggle, { step(-1) }, { step(1) }, ::select, playback::removeFromQueue)
                     }
-                    browse.selection?.let { PartsDialog(it, playback.track?.id, browse::choose, browse::cancelSelection) }
+                    browse.selection?.let { PartsDialog(it, playback.track?.id, browse::choose, browse::cancelSelection, mobile = !isDesktop) }
                     SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(horizontal = 16.dp).padding(bottom = if (expanded) 112.dp else if (isDesktop) 88.dp else 164.dp).widthIn(max = 560.dp))
                 }
             }
