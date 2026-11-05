@@ -5,6 +5,9 @@ import com.keno.rxplayer.persistence.LibrarySnapshot
 import com.keno.rxplayer.source.*
 import kotlinx.coroutines.test.*
 import kotlinx.coroutines.CompletableDeferred
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.*
+import io.ktor.http.*
 import kotlin.test.*
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -78,6 +81,32 @@ class PlaybackRuntimeTest {
             assertFalse(engine.isPlaying)
             assertFalse(state.playWhenReady)
             assertEquals(PlaybackPhase.Paused, state.phase)
+        } finally { runtime.close() }
+    }
+
+    @Test fun returningToSessionKeepsSearchAndContinuesFromTheNextPage() = runTest {
+        val pages = mutableListOf<Int>()
+        val source = BilibiliSource(HttpClient(MockEngine { request ->
+            val page = request.url.parameters["page"]?.toIntOrNull()
+            if (page != null) pages += page
+            val id = if (page == 2) "BV1Ekub6zE3D" else "BV14u41147YH"
+            respond("""{"code":0,"data":{"numPages":2,"result":[{"bvid":"$id","title":"Result $page","author":"Artist","duration":"00:10"}]}}""", headers = headersOf(HttpHeaders.ContentType, "application/json"))
+        }))
+        val state = PlaybackState(RuntimeEngine(), initialQueue = emptyList())
+        val runtime = PlaybackRuntime(state, LibrarySnapshot(), null, dispatcher = StandardTestDispatcher(testScheduler), browseSourceFactory = { source })
+        try {
+            val entered = runtime.browse
+            entered.query = "甲乙丙丁"
+            entered.submit()!!.join()
+            assertEquals(1, entered.results.size)
+            val returned = runtime.browse
+            assertEquals("甲乙丙丁", returned.query)
+            assertEquals("甲乙丙丁", returned.submitted)
+            assertEquals(entered.results, returned.results)
+            returned.more()!!.join()
+            assertEquals(listOf(1, 2), pages)
+            assertEquals(2, returned.results.size)
+            assertEquals(emptyList(), state.queue)
         } finally { runtime.close() }
     }
 }

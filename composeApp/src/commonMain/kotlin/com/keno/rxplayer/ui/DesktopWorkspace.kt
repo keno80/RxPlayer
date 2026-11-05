@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,12 +37,27 @@ import com.keno.rxplayer.source.*
 internal enum class WorkspaceDestination(val label: String, val icon: ImageVector) {
     Search("搜索", Icons.Outlined.Search), Library("音乐库", Icons.Outlined.LibraryMusic), Settings("设置", Icons.Outlined.Settings),
 }
-internal class WorkspaceState {
-    var destination by mutableStateOf(WorkspaceDestination.Search)
-    var libraryTab by mutableIntStateOf(0)
-    val searchScroll = LazyListState()
-    val libraryScroll = LazyListState()
-    val settingsScroll = LazyListState()
+internal class WorkspaceState(
+    destination: WorkspaceDestination = WorkspaceDestination.Search,
+    libraryTab: Int = 0,
+    val searchScroll: LazyListState = LazyListState(),
+    val libraryScroll: LazyListState = LazyListState(),
+    val settingsScroll: LazyListState = LazyListState(),
+) {
+    var destination by mutableStateOf(destination)
+    var libraryTab by mutableIntStateOf(libraryTab)
+
+    companion object {
+        val Saver = listSaver<WorkspaceState, Any>(
+            save = { listOf(it.destination.name, it.libraryTab,
+                it.searchScroll.firstVisibleItemIndex, it.searchScroll.firstVisibleItemScrollOffset,
+                it.libraryScroll.firstVisibleItemIndex, it.libraryScroll.firstVisibleItemScrollOffset,
+                it.settingsScroll.firstVisibleItemIndex, it.settingsScroll.firstVisibleItemScrollOffset) },
+            restore = { WorkspaceState(WorkspaceDestination.valueOf(it[0] as String), it[1] as Int,
+                LazyListState(it[2] as Int, it[3] as Int), LazyListState(it[4] as Int, it[5] as Int),
+                LazyListState(it[6] as Int, it[7] as Int)) },
+        )
+    }
 }
 
 /** Shared information architecture; Windows keeps the approved rail and three floating islands. */
