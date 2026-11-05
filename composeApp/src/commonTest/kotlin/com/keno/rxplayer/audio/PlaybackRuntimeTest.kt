@@ -2,9 +2,12 @@ package com.keno.rxplayer.audio
 
 import com.keno.rxplayer.*
 import com.keno.rxplayer.persistence.LibrarySnapshot
+import com.keno.rxplayer.library.LocalPlaylist
 import com.keno.rxplayer.source.*
 import kotlinx.coroutines.test.*
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.*
 import io.ktor.http.*
@@ -15,6 +18,54 @@ class PlaybackRuntimeTest {
     private val item = ContentItem(MusicSource.Bilibili, "BV14u41147YH", "视频", "作者", null, 20)
     private val first = BilibiliTrack(item, VideoPart(1, 101, "P1", 10), 2)
     private val second = BilibiliTrack(item, VideoPart(2, 102, "P2", 10), 2)
+
+    @Test fun playingPlaylistCancelsOldResolutionWithoutRestoringOldQueue() = runTest {
+        val pending = CompletableDeferred<AudioStream>()
+        val engine = RuntimeEngine()
+        val newStream = AudioStream("https://sample.bilivideo.com/new", emptyMap(), "audio/mp4", "aac", null)
+        val state = PlaybackState(engine, resolveStream = {
+            if (it.id == second.id) withContext(NonCancellable) { pending.await() } else newStream
+        }, initialQueue = listOf(second))
+        val runtime = PlaybackRuntime(state, LibrarySnapshot(playlists = listOf(LocalPlaylist("list", "通勤", listOf(first)))), null, dispatcher = StandardTestDispatcher(testScheduler))
+        try {
+            val oldSelection = runtime.select(second)
+            assertEquals(PlaybackPhase.Preparing, state.phase)
+            val replacement = runtime.playPlaylist("list")!!
+            pending.complete(AudioStream("https://sample.bilivideo.com/old", emptyMap(), "audio/mp4", "aac", null))
+            oldSelection.join(); replacement.join()
+            assertEquals(listOf(first), state.queue)
+            assertEquals(first.id, state.track?.id)
+            assertEquals(listOf(newStream), engine.loadedStreams)
+            assertTrue(state.isPlaying)
+        } finally { runtime.close() }
+    }
+
+    @Test fun playlistPlaybackUsesSnapshotAndAppendingKeepsCurrentPlayback() = runTest {
+        val engine = RuntimeEngine()
+        val state = PlaybackState(engine, resolveStream = { AudioStream("https://sample.bilivideo.com/audio", emptyMap(), "audio/mp4", "aac", null) }, initialQueue = listOf(second))
+        val runtime = PlaybackRuntime(state, LibrarySnapshot(playlists = listOf(LocalPlaylist("list", "通勤", listOf(first, second)), LocalPlaylist("empty", "空白"))), null, dispatcher = StandardTestDispatcher(testScheduler))
+        try {
+            runtime.select(second).join()
+            state.seek(3000)
+            runtime.appendPlaylist("list")
+            assertEquals(listOf(second, first), state.queue)
+            assertEquals(second.id, state.track?.id)
+            assertEquals(3000, state.positionMs)
+            assertTrue(state.isPlaying)
+            runtime.playPlaylist("empty")?.join()
+            assertEquals(second.id, state.track?.id)
+            state.toggleShuffle()
+            runtime.playPlaylist("list")!!.join()
+            assertEquals(listOf(first, second), state.queue)
+            assertEquals(first.id, state.track?.id)
+            assertFalse(state.shuffle)
+            assertTrue(state.isPlaying)
+            runtime.playlists.remove("list", first.id)
+            assertEquals(listOf(first, second), state.queue)
+            runtime.playlists.delete("list")
+            assertEquals(first.id, state.track?.id)
+        } finally { runtime.close() }
+    }
 
     @Test fun advancesAndRecordsHistoryWithoutAnyAttachedScreen() = runTest {
         val engine = RuntimeEngine()
@@ -112,11 +163,12 @@ class PlaybackRuntimeTest {
 }
 
 private class RuntimeEngine : AudioPlayer {
+    val loadedStreams = mutableListOf<AudioStream>()
     override val durationMs = 10000
     override var positionMs = 0
     override var isPlaying = false
     override suspend fun load(bytes: ByteArray) { positionMs = 0 }
-    override suspend fun load(stream: AudioStream) { positionMs = 0 }
+    override suspend fun load(stream: AudioStream) { loadedStreams += stream; positionMs = 0 }
     override fun play() { isPlaying = true }
     override fun pause() { isPlaying = false }
     override fun seekTo(positionMs: Int) { this.positionMs = positionMs }

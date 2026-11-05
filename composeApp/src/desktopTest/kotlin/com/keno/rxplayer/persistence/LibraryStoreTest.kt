@@ -4,6 +4,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
 import com.keno.rxplayer.*
 import com.keno.rxplayer.audio.PlaybackCheckpoint
+import com.keno.rxplayer.library.LocalPlaylist
 import com.keno.rxplayer.source.*
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
@@ -15,6 +16,42 @@ class LibraryStoreTest {
     private val second = BilibiliTrack(item, VideoPart(2, 102, "第二P", 50), 2)
     private fun snapshot() = LibrarySnapshot(listOf(item), listOf(second, first),
         PlaybackCheckpoint(listOf(first, second), second.id, 3200, true, true, .3f), dark = true, followArtwork = false)
+
+    @Test fun playlistOnlyTracksSurviveReopenAndFailedSaveRollsBack() = runTest {
+        withDatabase { path ->
+            val store = LibraryStore(path)
+            val expected = LibrarySnapshot(playlists = listOf(LocalPlaylist("one", "旅途", listOf(second, first)), LocalPlaylist("two", "旅途")))
+            store.save(expected)
+            assertEquals(expected, LibraryStore(path).load())
+            BundledSQLiteDriver().open(path).use { c ->
+                c.execSQL("CREATE TRIGGER fail_playlist BEFORE INSERT ON playlist_tracks BEGIN SELECT RAISE(ABORT, 'test failure'); END")
+            }
+            assertFails { store.save(expected.copy(playlists = listOf(LocalPlaylist("one", "改名", listOf(first))))) }
+            assertEquals(expected, store.load())
+            store.save(LibrarySnapshot())
+            assertEquals(LibrarySnapshot(), store.load())
+        }
+    }
+
+    @Test fun versionOneMigrationPreservesExistingLibrary() = runTest {
+        withDatabase { path ->
+            val store = LibraryStore(path)
+            store.save(snapshot())
+            // Recreate the actual v1 layout: v2 only adds these two tables.
+            BundledSQLiteDriver().open(path).use { c ->
+                c.execSQL("DROP TABLE playlist_tracks")
+                c.execSQL("DROP TABLE playlists")
+                c.execSQL("PRAGMA user_version = 1")
+            }
+            assertEquals(snapshot(), LibraryStore(path).load())
+            BundledSQLiteDriver().open(path).use { c ->
+                c.prepare("PRAGMA user_version").use { s -> assertTrue(s.step()); assertEquals(2, s.getInt(0)) }
+            }
+            val upgraded = snapshot().copy(playlists = listOf(LocalPlaylist("one", "保留分P", listOf(second, first))))
+            store.save(upgraded)
+            assertEquals(upgraded, LibraryStore(path).load())
+        }
+    }
 
     @Test fun diskReopenRestoresExactPartsOrderAndSettings() = runTest {
         withDatabase { path ->

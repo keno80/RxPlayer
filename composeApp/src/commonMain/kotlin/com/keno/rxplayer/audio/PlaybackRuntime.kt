@@ -10,6 +10,7 @@ import com.keno.rxplayer.source.AudioStream
 import com.keno.rxplayer.source.BilibiliSource
 import com.keno.rxplayer.source.BilibiliBrowseState
 import com.keno.rxplayer.source.ContentAction
+import com.keno.rxplayer.library.PlaylistState
 import kotlinx.coroutines.*
 
 /** Session-owned state; attaching or removing a screen does not own playback lifetime. */
@@ -23,6 +24,7 @@ class PlaybackRuntime(
 ) {
     val favorites = mutableStateMapOf<String, ContentItem>().apply { putAll(initial.favorites.associateBy { it.stableKey }) }
     val recent = mutableStateListOf<BilibiliTrack>().apply { addAll(initial.recent) }
+    val playlists = PlaylistState(initial.playlists)
     var themeOverride by mutableStateOf(initial.dark)
     var followArtwork by mutableStateOf(initial.followArtwork)
     var message: PlaybackMessage? by mutableStateOf(null)
@@ -84,8 +86,18 @@ class PlaybackRuntime(
         return select(target, autoPlay = playback.playWhenReady, resumeAt = positionMs)
     }
     fun favorite(item: ContentItem) { if (favorites.remove(item.stableKey) == null) favorites[item.stableKey] = item }
+    fun playPlaylist(id: String): Job? {
+        val tracks = playlists.lists.firstOrNull { it.id == id }?.tracks ?: return null
+        if (tracks.isEmpty()) { warn("歌单里还没有歌曲"); return null }
+        return scope.launch(start = CoroutineStart.UNDISPATCHED) { playback.playAll(tracks) }
+    }
+    fun appendPlaylist(id: String) {
+        val tracks = playlists.lists.firstOrNull { it.id == id }?.tracks ?: return
+        if (tracks.isEmpty()) { warn("歌单里还没有歌曲"); return }
+        playback.enqueueAll(tracks)
+    }
     fun warn(text: String) { message = PlaybackMessage(++messageId, text) }
-    private fun capture(periodic: Boolean = false) = LibrarySnapshot(favorites.values.toList(), recent.toList(), playback.checkpoint(periodic), themeOverride, followArtwork)
+    private fun capture(periodic: Boolean = false) = LibrarySnapshot(favorites.values.toList(), recent.toList(), playback.checkpoint(periodic), themeOverride, followArtwork, playlists.lists)
     private suspend fun persist(snapshot: LibrarySnapshot) {
         try { store?.save(snapshot) }
         catch (cancelled: CancellationException) { throw cancelled }

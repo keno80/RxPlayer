@@ -10,12 +10,13 @@
 
 ## 顺序与文件
 
-- [ ] 编写歌单编辑 / 去重 / 分 P、队列替换 / 空单 / 追加，以及 SQLite v1 迁移 / 重开 / 回滚的失败测试。
-- [ ] `library/PlaylistState.kt`：歌单不可变快照与可观察编辑状态；`persistence/LibrarySnapshot.kt`、`LibraryStore.kt`：schema 2 和原子保存。
-- [ ] `audio/PlaybackState.kt`、`PlaybackRuntime.kt`：批量队列操作和歌单会话持久化接线，不新增正式 UI。
-- [ ] 运行定向桌面测试，确认失败后实现并转绿；核对迁移不覆盖旧数据。
-- [ ] 更新唯一完整原型，验证新增交互、分 P 去重与取消路径；保留现有播放 / 浮岛。
-- [ ] 更新 progress / development-plan，定向审查，构建共享代码与 Windows，启动 Windows；Android 不连真机、不安装测试包。
-- [ ] 提交推送功能分支；共享逻辑达到检查要求可合并，未经确认的原型仅标提案，不将正式 UI 或 M2 整体标为完成。
+- [x] 编写歌单编辑 / 去重 / 分 P、队列替换 / 空单 / 追加，以及 SQLite v1 迁移 / 重开 / 回滚的失败测试。
+- [x] `library/PlaylistState.kt`：歌单不可变快照与可观察编辑状态；`persistence/LibrarySnapshot.kt`、`LibraryStore.kt`：schema 2 和原子保存。
+- [x] `audio/PlaybackState.kt`、`PlaybackRuntime.kt`：批量队列操作和歌单会话持久化接线，不新增正式 UI。
+- [x] 运行定向桌面测试，确认失败后实现并转绿；核对迁移不覆盖旧数据。
+- [x] 更新唯一完整原型，验证新增交互、分 P 去重与取消路径；保留现有播放 / 浮岛。
+- [x] 更新 progress / development-plan，定向审查，构建共享代码与 Windows，启动 Windows；Android 不连真机、不安装测试包。
+- [x] 提交推送功能分支供审核；本批含未经确认的原型，暂不合并 main，不将正式 UI 或 M2 整体标为完成。
+- [ ] 用户确认歌单原型后，接正式双端入口并完成本批合并交付。
 
 **验证边界：** Windows 单元测试证明共用逻辑与数据库行为；Android 编译仅证明共享代码兼容，不等于真机验证。正式歌单 UI 仍待原型确认与接线。

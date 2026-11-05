@@ -3,6 +3,7 @@ package com.keno.rxplayer.persistence
 import com.keno.rxplayer.BilibiliTrack
 import com.keno.rxplayer.audio.PlaybackCheckpoint
 import com.keno.rxplayer.source.ContentItem
+import com.keno.rxplayer.library.LocalPlaylist
 
 data class LibrarySnapshot(
     val favorites: List<ContentItem> = emptyList(),
@@ -10,4 +11,5 @@ data class LibrarySnapshot(
     val playback: PlaybackCheckpoint = PlaybackCheckpoint(),
     val dark: Boolean? = null,
     val followArtwork: Boolean = true,
+    val playlists: List<LocalPlaylist> = emptyList(),
 )
