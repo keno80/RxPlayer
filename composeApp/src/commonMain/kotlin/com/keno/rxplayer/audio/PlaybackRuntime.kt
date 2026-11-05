@@ -7,6 +7,9 @@ import com.keno.rxplayer.persistence.LibrarySnapshot
 import com.keno.rxplayer.persistence.LibraryStore
 import com.keno.rxplayer.source.ContentItem
 import com.keno.rxplayer.source.AudioStream
+import com.keno.rxplayer.source.BilibiliSource
+import com.keno.rxplayer.source.BilibiliBrowseState
+import com.keno.rxplayer.source.ContentAction
 import kotlinx.coroutines.*
 
 /** Session-owned state; attaching or removing a screen does not own playback lifetime. */
@@ -16,6 +19,7 @@ class PlaybackRuntime(
     private val store: LibraryStore?,
     private val disposeResources: () -> Unit = {},
     dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
+    private val browseSourceFactory: () -> BilibiliSource = { BilibiliSource() },
 ) {
     val favorites = mutableStateMapOf<String, ContentItem>().apply { putAll(initial.favorites.associateBy { it.stableKey }) }
     val recent = mutableStateListOf<BilibiliTrack>().apply { addAll(initial.recent) }
@@ -28,6 +32,16 @@ class PlaybackRuntime(
     private var closed = false
     private var warningShown = false
     private var messageId = 0L
+    private var browsingSource: BilibiliSource? = null
+    val browse: BilibiliBrowseState by lazy {
+        BilibiliBrowseState(browseSourceFactory().also { browsingSource = it }, scope) { track, action ->
+            when (action) {
+                ContentAction.Play -> select(track)
+                ContentAction.Enqueue -> playback.enqueue(track)
+                ContentAction.Next -> playback.enqueue(track, nextInQueue = true)
+            }
+        }
+    }
 
     init {
         scope.launch {
@@ -83,7 +97,8 @@ class PlaybackRuntime(
         closed = true
         playback.pause()
         job.cancelAndJoin()
-        try { withContext(NonCancellable) { persist(capture()) } } finally { disposeResources() }
+        try { withContext(NonCancellable) { persist(capture()) } }
+        finally { try { disposeResources() } finally { browsingSource?.close() } }
     }
 }
 

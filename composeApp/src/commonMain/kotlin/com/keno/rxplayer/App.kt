@@ -5,6 +5,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -32,26 +33,18 @@ private fun AppContent(runtime: PlaybackRuntime, isForeground: Boolean, isDeskto
     val systemDark = isSystemInDarkTheme()
     val dark = runtime.themeOverride ?: systemDark
     val followArtwork = runtime.followArtwork
-    var expanded by remember { mutableStateOf(false) }
-    var queueOpen by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    var queueOpen by rememberSaveable { mutableStateOf(false) }
     var queryFocused by remember { mutableStateOf(false) }
     val favorites = runtime.favorites
     val recent = runtime.recent
-    val scope = rememberCoroutineScope()
-    val source = remember { BilibiliSource() }
     val covers = remember { ArtworkStore() }
-    DisposableEffect(source, covers) { onDispose { source.close(); covers.close() } }
+    DisposableEffect(covers) { onDispose { covers.close() } }
     val playback = runtime.playback
     val foreground by rememberUpdatedState(isForeground)
     fun select(track: PlaybackTrack) { runtime.select(track, autoPlay = foreground) }
-    val browse = remember(source, playback) { BilibiliBrowseState(source, scope) { track, action ->
-        when (action) {
-            ContentAction.Play -> select(track)
-            ContentAction.Enqueue -> playback.enqueue(track)
-            ContentAction.Next -> playback.enqueue(track, nextInQueue = true)
-        }
-    } }
-    val workspace = remember { WorkspaceState() }
+    val browse = runtime.browse
+    val workspace = rememberSaveable(saver = WorkspaceState.Saver) { WorkspaceState() }
     val snackbar = remember { SnackbarHostState() }
     val miniExpandFocus = remember { FocusRequester() }
     val miniQueueFocus = remember { FocusRequester() }
