@@ -189,7 +189,6 @@ internal fun SourceWorkspace(
                                     if (activePlaylist.tracks.isNotEmpty()) item { Text("在曲目的更多操作中移除或调整顺序；修改歌单不会改变当前播放。", Modifier.padding(top = 16.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                                 } else {
                                 item {
-                                    MobileCollectionSummary(favorites.size)
                                     MobileLibraryTabs(workspace.libraryTab) { workspace.libraryTab = it }
                                 }
                                 val recentTab = workspace.libraryTab == 2

@@ -43,22 +43,6 @@ internal fun MobileSearchWaiting(query: String, cancel: () -> Unit) {
 }
 
 @Composable
-internal fun MobileCollectionSummary(count: Int) {
-    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {
-        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.size(48.dp, 64.dp).background(MaterialTheme.colorScheme.tertiaryContainer, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Outlined.Favorite, null, Modifier.size(32.dp), MaterialTheme.colorScheme.onTertiaryContainer)
-            }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("喜欢的声音", fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Medium)
-                Text("$count 首收藏", fontSize = 12.sp, lineHeight = 16.sp)
-            }
-            FilledIconButton({}, Modifier.size(48.dp, 56.dp), enabled = false, shape = RoundedCornerShape(16.dp)) { Icon(Icons.Outlined.PlayArrow, "批量播放暂未开放", Modifier.size(32.dp)) }
-        }
-    }
-}
-
-@Composable
 internal fun MobileLibraryTabs(selected: Int, onSelect: (Int) -> Unit) {
     Column(Modifier.padding(vertical = 20.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
