@@ -6,9 +6,15 @@ import com.keno.rxplayer.source.BilibiliSource
 import kotlinx.coroutines.*
 
 @Composable
-actual fun rememberPlaybackRuntime(): PlaybackRuntime? {
+actual fun rememberPlaybackRuntime(): PlaybackRuntime? = rememberDesktopPlaybackRuntime()
+
+@Composable
+internal fun rememberDesktopPlaybackRuntime(onShutdownReady: (suspend () -> Unit) -> Unit = {}): PlaybackRuntime? {
     val store = rememberLibraryStore()
+    val shutdownReady by rememberUpdatedState(onShutdownReady)
     val runtime by produceState<PlaybackRuntime?>(null, store) {
+        val owner = currentCoroutineContext().job
+        shutdownReady { owner.cancelAndJoin() }
         val engine = DesktopAudioPlayer()
         val source = BilibiliSource()
         var owned: PlaybackRuntime? = null
