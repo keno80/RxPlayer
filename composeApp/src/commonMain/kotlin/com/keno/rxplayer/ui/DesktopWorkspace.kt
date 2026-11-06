@@ -168,6 +168,13 @@ internal fun SourceWorkspace(
                                             ContentRow(item, playback, item.stableKey in favorites, index == 0, index == browse.results.size - 2, narrow,
                                                 browse.partCounts[item.id], browse.selection, { action -> if (mobile) focusManager.clearFocus(); browse.request(item, action) }, { onFavorite(item) }, mobile)
                                         }
+                                        if (browse.hasMore) item(key = "search-pagination") {
+                                            Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
+                                                TextButton(onClick = { if (browse.pageError == null) browse.more() else browse.retryMore() }, enabled = !browse.searching) {
+                                                    Text(if (browse.searching) "加载中…" else if (browse.pageError != null) "重试加载" else "加载更多")
+                                                }
+                                            }
+                                        }
                                         item { Text("来自 Bilibili · 保留原标题与版本信息", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp)) }
                                     }
                                 }

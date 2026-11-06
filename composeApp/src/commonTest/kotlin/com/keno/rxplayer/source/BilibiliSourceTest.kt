@@ -8,6 +8,19 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
 class BilibiliSourceTest {
+    @Test fun searchPageLimitDoesNotOfferAnInvalidPage() = runTest {
+        val source = source("""{"code":0,"data":{"numPages":1001,"result":[]}}""")
+        try { assertFalse(source.search("sample", 1000).hasMore) } finally { source.close() }
+    }
+
+    @Test fun invalidPartIdentityIsAResponseFailureRatherThanUserInputOrEmptyContent() = runTest {
+        for (pages in listOf("[]", """[{"page":1,"cid":0,"part":"invalid"}]""", """[{"page":1,"cid":11},{"page":1,"cid":22}]""")) {
+            val source = source("""{"code":0,"data":{"bvid":"BV14u41147YH","pages":$pages}}""")
+            try { assertEquals(SourceFailureKind.InvalidResponse, assertFailsWith<SourceFailure> { source.details(BilibiliReference("BV14u41147YH")) }.kind) }
+            finally { source.close() }
+        }
+    }
+
     private fun source(body: String, status: HttpStatusCode = HttpStatusCode.OK) = BilibiliSource(HttpClient(MockEngine { request ->
         if (request.url.host == "www.bilibili.com") respond("ok")
         else respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))

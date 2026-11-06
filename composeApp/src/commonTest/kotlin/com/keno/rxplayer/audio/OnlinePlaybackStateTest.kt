@@ -1,11 +1,97 @@
+@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+
 package com.keno.rxplayer.audio
 
 import com.keno.rxplayer.*
 import com.keno.rxplayer.source.*
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlin.test.*
 
 class OnlinePlaybackStateTest {
+    @Test fun transientSourceFailuresStayRetryableAndUseTheExistingSpecificMessages() = runTest {
+        for (kind in listOf(SourceFailureKind.Network, SourceFailureKind.Restricted, SourceFailureKind.RateLimited, SourceFailureKind.InvalidResponse)) {
+            var fail = true
+            val state = PlaybackState(StreamingMemoryPlayer(), resolveStream = { if (fail) throw SourceFailure(kind) else stream() }, initialQueue = listOf(first, second))
+            state.select(first)
+            assertEquals(PlaybackPhase.Failed, state.phase)
+            assertEquals(friendlySourceError(SourceFailure(kind)), state.message?.text)
+            assertEquals(listOf(first, second), state.queue)
+            fail = false; state.activate()
+            assertTrue(state.isPlaying); assertEquals(first, state.track)
+        }
+    }
+
+    @Test fun permanentSourceFailuresKeepTheirReasonAndNeverClaimTheyAreNetworkErrors() = runTest {
+        for (kind in listOf(SourceFailureKind.Unavailable, SourceFailureKind.LoginRequired, SourceFailureKind.UnsupportedAudio)) {
+            var attempts = 0
+            val state = PlaybackState(StreamingMemoryPlayer(), resolveStream = { attempts++; throw SourceFailure(kind) }, initialQueue = listOf(first, second))
+            state.select(first)
+            assertEquals(PlaybackPhase.Unavailable, state.phase)
+            val reason = friendlySourceError(SourceFailure(kind))
+            assertEquals(reason, state.message?.text)
+            state.activate()
+            assertEquals(1, attempts)
+            assertEquals(reason, state.message?.text)
+            assertEquals(listOf(first, second), state.queue)
+        }
+    }
+
+    @Test fun failedAddressRefreshKeepsPausedPositionAndDoesNotSpendAnotherAutomaticAttempt() = runTest {
+        val engine = StreamingMemoryPlayer()
+        var attempts = 0
+        var fail = false
+        val state = PlaybackState(engine, resolveStream = { attempts++; if (fail) throw SourceFailure(SourceFailureKind.Network); stream() }, initialQueue = listOf(first, second))
+        state.select(first); state.seek(3400); state.pause()
+        engine.failure = PlaybackFailure(PlaybackPhase.Expired); state.sync()
+        fail = true; state.activate()
+        assertEquals(PlaybackPhase.Expired, state.phase)
+        assertEquals(3400, state.positionMs); assertFalse(state.playWhenReady)
+        state.recoverExpiredIfPlaying()
+        assertEquals(2, attempts)
+        fail = false; state.activate()
+        assertEquals(PlaybackPhase.Paused, state.phase)
+        assertEquals(3400, state.positionMs); assertEquals(listOf(first, second), state.queue)
+        assertEquals(3, attempts)
+    }
+
+    @Test fun manualRefreshFailureCannotTriggerAnExtraAutomaticLoop() = runTest {
+        val engine = StreamingMemoryPlayer()
+        var attempts = 0
+        val state = PlaybackState(engine, resolveStream = { attempts++; if (attempts > 1) throw SourceFailure(SourceFailureKind.Network); stream() }, initialQueue = listOf(first, second))
+        state.select(first); state.seek(3100)
+        engine.failure = PlaybackFailure(PlaybackPhase.Expired); state.sync()
+        state.activate()
+        repeat(3) { state.recoverExpiredIfPlaying() }
+        assertEquals(2, attempts)
+        assertEquals(PlaybackPhase.Expired, state.phase)
+        assertEquals(3100, state.positionMs)
+    }
+
+    @Test fun cancelledRefreshCannotPlayOrReplaceANewerTrackWhenItsResolverReturnsLate() = runTest {
+        val engine = StreamingMemoryPlayer()
+        val gate = CompletableDeferred<Unit>()
+        var attempts = 0
+        val state = PlaybackState(engine, resolveStream = { track ->
+            if (track.id == first.id && ++attempts > 1) withContext(NonCancellable) { gate.await() }
+            stream()
+        }, initialQueue = listOf(first, second))
+        state.select(first); state.seek(3300)
+        engine.failure = PlaybackFailure(PlaybackPhase.Expired); state.sync()
+        val refreshing = launch { state.activate() }; runCurrent()
+        assertEquals(PlaybackPhase.Refreshing, state.phase)
+        state.cancelPreparation()
+        assertEquals(PlaybackPhase.Expired, state.phase); assertFalse(state.playWhenReady)
+        val selected = launch { state.select(second, autoPlay = false) }
+        runCurrent(); gate.complete(Unit); refreshing.join(); selected.join()
+        assertEquals(second, state.track); assertEquals(PlaybackPhase.Paused, state.phase)
+        assertFalse(engine.isPlaying); assertEquals(listOf(first, second), state.queue)
+    }
+
     private val item = ContentItem(MusicSource.Bilibili, "BV14u41147YH", "Sample", "Creator", null, 90)
     private val first = BilibiliTrack(item, VideoPart(1, 101, "First", 40), 2)
     private val second = BilibiliTrack(item, VideoPart(2, 102, "Second", 50), 2)

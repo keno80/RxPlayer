@@ -25,18 +25,22 @@ class BilibiliSource(private val client: HttpClient = createSourceHttpClient()) 
             val id = row.text("bvid")?.takeIf { Regex("BV[A-Za-z0-9]{10}").matches(it) } ?: return@mapNotNull null
             ContentItem(MusicSource.Bilibili, id, cleanTitle(row.text("title").orEmpty()), row.text("author").orEmpty(), artwork(row.text("pic")), duration(row.text("duration")))
         }
-        return SearchPage(items, page, page < (data.int("numPages") ?: page))
+        return SearchPage(items, page, page < minOf(data.int("numPages") ?: page, 1000))
     }
 
     suspend fun details(reference: BilibiliReference): VideoDetails {
         val canonical = BilibiliReference.parse(reference.id)
         require(reference.part > 0) { "invalid_part" }
         val data = api("/x/web-interface/view", if (canonical.id.startsWith("BV")) mapOf("bvid" to canonical.id) else mapOf("aid" to canonical.id.drop(2)))
-        val id = data.text("bvid") ?: throw SourceFailure(SourceFailureKind.InvalidResponse)
+        val id = data.text("bvid")?.takeIf { Regex("BV[A-Za-z0-9]{10}").matches(it) } ?: throw SourceFailure(SourceFailureKind.InvalidResponse)
         val parts = (data["pages"] as? JsonArray)?.map { element ->
             val row = element as? JsonObject ?: throw SourceFailure(SourceFailureKind.InvalidResponse)
-            VideoPart(row.int("page") ?: throw SourceFailure(SourceFailureKind.InvalidResponse), row.long("cid") ?: throw SourceFailure(SourceFailureKind.InvalidResponse), row.text("part").orEmpty(), row.int("duration") ?: 0)
+            val number = row.int("page")?.takeIf { it > 0 } ?: throw SourceFailure(SourceFailureKind.InvalidResponse)
+            val cid = row.long("cid")?.takeIf { it > 0 } ?: throw SourceFailure(SourceFailureKind.InvalidResponse)
+            val duration = (row.int("duration") ?: 0).takeIf { it >= 0 } ?: throw SourceFailure(SourceFailureKind.InvalidResponse)
+            VideoPart(number, cid, row.text("part").orEmpty(), duration)
         } ?: throw SourceFailure(SourceFailureKind.InvalidResponse)
+        if (parts.isEmpty() || parts.distinctBy { it.number }.size != parts.size || parts.distinctBy { it.cid }.size != parts.size) throw SourceFailure(SourceFailureKind.InvalidResponse)
         val selected = parts.firstOrNull { it.number == reference.part } ?: throw IllegalArgumentException("part_out_of_range")
         val item = ContentItem(MusicSource.Bilibili, id, data.text("title").orEmpty(), (data["owner"] as? JsonObject)?.text("name").orEmpty(), artwork(data.text("pic")), data.int("duration") ?: 0)
         return VideoDetails(item, parts, selected)
