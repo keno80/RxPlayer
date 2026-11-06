@@ -69,14 +69,14 @@ internal val LocalArtworkStore = staticCompositionLocalOf<ArtworkStore> { error(
 
 @Composable
 fun Artwork(track: PlaybackTrack, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(12.dp)) {
-    if (track is DemoTrack) Artwork(track.artwork, modifier, shape) else RemoteArtwork(track.artworkUrl, modifier, shape)
+    if (track is DemoTrack) Artwork(track.artwork, modifier, shape) else RemoteArtwork(track.artworkUrl, modifier, shape, track.fallbackArtworkUrl)
 }
 
 @Composable
-internal fun RemoteArtwork(url: String?, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(12.dp)) {
+internal fun RemoteArtwork(url: String?, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(12.dp), fallbackUrl: String? = null) {
     val store = LocalArtworkStore.current
-    LaunchedEffect(url) { store.load(url) }
-    val image = store.get(url)
+    LaunchedEffect(url, fallbackUrl) { store.load(url); if (store.get(url) == null) store.load(fallbackUrl) }
+    val image = store.get(url) ?: store.get(fallbackUrl)
     if (image != null) Image(image.bitmap, null, modifier.clip(shape), contentScale = ContentScale.Crop)
     else Box(modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceContainerHighest), contentAlignment = Alignment.Center) {
         Icon(Icons.Rounded.MusicNote, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)

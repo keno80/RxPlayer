@@ -14,6 +14,8 @@ import androidx.media3.session.MediaSessionService
 import androidx.core.content.ContextCompat
 import com.keno.rxplayer.persistence.LibraryStore
 import com.keno.rxplayer.source.BilibiliSource
+import com.keno.rxplayer.source.createSourceHttpClient
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +27,7 @@ class RxPlaybackService : MediaSessionService() {
     private lateinit var source: BilibiliSource
     private lateinit var sessionPlayer: AndroidSessionPlayer
     private lateinit var session: MediaSession
+    private lateinit var artworkHttp: HttpClient
     private val uiBinder = UiBinder()
     private val noisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -41,6 +44,7 @@ class RxPlaybackService : MediaSessionService() {
         super.onCreate()
         engine = createAndroidAudioPlayer(this)
         source = BilibiliSource()
+        artworkHttp = createSourceHttpClient()
         sessionPlayer = AndroidSessionPlayer { active.value }
         val builder = MediaSession.Builder(this, sessionPlayer).setCallback(object : MediaSession.Callback {
             override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult =
@@ -62,9 +66,21 @@ class RxPlaybackService : MediaSessionService() {
             active.value = openPlaybackRuntime(engine, LibraryStore(filesDir.resolve("library.db").absolutePath),
                 { source.resolve(it.item.id, it.part.cid) }, { engine.release(); source.close() })
             var previous: Any? = null
+            var coverKey: String? = null
+            var coverJob: Job? = null
             while (isActive) {
                 val p = active.value!!.playback
-                val state = listOf(p.checkpoint(periodic = true), p.phase, p.durationMs, p.playWhenReady, p.canSeek)
+                val display = (p.track ?: p.queue.firstOrNull())?.let(active.value!!.songs::display)
+                val key = systemArtworkKey(display)
+                if (key != coverKey) {
+                    coverKey = key; coverJob?.cancel(); sessionPlayer.setSystemArtwork(key, null)
+                    if (display != null) coverJob = scope.launch {
+                        val image = fetchSystemArtwork(artworkHttp, display.artworkUrl, display.fallbackArtworkUrl)
+                        ensureActive()
+                        if (coverKey == key) sessionPlayer.setSystemArtwork(key, image)
+                    }
+                }
+                val state = listOf(p.checkpoint(periodic = true), p.phase, p.durationMs, p.playWhenReady, p.canSeek, active.value!!.songs.savedRecords)
                 if (state != previous) { sessionPlayer.refresh(); previous = state }
                 delay(100)
             }
@@ -84,6 +100,7 @@ class RxPlaybackService : MediaSessionService() {
         val runtime = active.value
         active.value = null
         scope.cancel()
+        artworkHttp.close()
         unregisterReceiver(noisyReceiver)
         session.release()
         sessionPlayer.release()

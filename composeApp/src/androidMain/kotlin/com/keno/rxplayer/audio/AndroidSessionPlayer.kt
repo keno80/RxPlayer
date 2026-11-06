@@ -9,8 +9,12 @@ import com.google.common.util.concurrent.ListenableFuture
 
 /** System controls project the shared queue; stream URLs never cross the session boundary. */
 class AndroidSessionPlayer(private val runtime: () -> PlaybackRuntime?) : SimpleBasePlayer(Looper.getMainLooper()) {
+    private var artworkKey = ""
+    private var artwork: SystemArtwork? = null
+    internal fun setSystemArtwork(key: String, image: SystemArtwork?) { artworkKey = key; artwork = image; invalidateState() }
     override fun getState(): State {
-        val p = runtime()?.playback ?: return State.Builder().setAvailableCommands(Player.Commands.EMPTY).build()
+        val owner = runtime() ?: return State.Builder().setAvailableCommands(Player.Commands.EMPTY).build()
+        val p = owner.playback
         val queue = p.queueInPlaybackOrder
         val selected = queue.indexOfFirst { it.id == p.track?.id }
         val commands = Player.Commands.Builder().addAll(
@@ -23,9 +27,13 @@ class AndroidSessionPlayer(private val runtime: () -> PlaybackRuntime?) : Simple
         if (queue.isNotEmpty()) commands.add(Player.COMMAND_SEEK_TO_MEDIA_ITEM)
         if (queue.size > 1) commands.addAll(Player.COMMAND_SEEK_TO_NEXT, Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM, Player.COMMAND_SEEK_TO_PREVIOUS, Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
         val playlist = queue.map { track ->
-            val metadata = MediaMetadata.Builder().setTitle(track.title).setArtist(track.artist).setIsPlayable(true)
+            val display = owner.songs.display(track)
+            val image = artwork.takeIf { systemArtworkKey(display) == artworkKey }
+            val metadataBuilder = MediaMetadata.Builder().setTitle(display.title).setArtist(display.artist).setIsPlayable(true)
                 .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
-                .setArtworkUri(track.artworkUrl?.let(Uri::parse)).build()
+                .setArtworkUri((image?.url ?: display.artworkUrl.takeIf { track.id != p.track?.id })?.let(Uri::parse))
+            if (image != null) metadataBuilder.setArtworkData(image.bytes, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+            val metadata = metadataBuilder.build()
             val duration = if (track.id == p.track?.id && p.durationMs > 0) p.durationMs else track.durationMs
             MediaItemData.Builder(track.id).setMediaItem(MediaItem.Builder().setMediaId(track.id).setMediaMetadata(metadata).build())
                 .setMediaMetadata(metadata).setDurationUs(if (duration > 0) duration.toLong() * 1000 else C.TIME_UNSET)

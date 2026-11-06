@@ -12,6 +12,7 @@ import com.keno.rxplayer.source.BilibiliBrowseState
 import com.keno.rxplayer.source.ContentAction
 import com.keno.rxplayer.library.PlaylistState
 import com.keno.rxplayer.library.LocalPlaylist
+import com.keno.rxplayer.metadata.*
 import kotlinx.coroutines.*
 
 /** Session-owned state; attaching or removing a screen does not own playback lifetime. */
@@ -34,6 +35,12 @@ class PlaybackRuntime(
         private set
     private val job = SupervisorJob()
     val scope = CoroutineScope(job + dispatcher)
+    private var metadataSource: SongMetadataSource? = null
+    private var metadataVideoSource: BilibiliSource? = null
+    private fun metadataSource() = metadataSource ?: SongMetadataSource().also { metadataSource = it }
+    val songs = SongMetadataState(scope, initial.songMetadata,
+        details = { track -> (metadataVideoSource ?: browseSourceFactory().also { metadataVideoSource = it }).details(com.keno.rxplayer.source.BilibiliReference(track.item.id, track.part.number)) },
+        searchSongs = { metadataSource().search(it) }, loadSong = { metadataSource().load(it) }, notify = ::warn)
     private var closed = false
     private var warningShown = false
     private var messageId = 0L
@@ -45,6 +52,7 @@ class PlaybackRuntime(
                 ContentAction.Enqueue -> playback.enqueue(track)
                 ContentAction.Next -> playback.enqueue(track, nextInQueue = true)
                 ContentAction.AddToPlaylist -> preparePlaylistCandidate(track)
+                ContentAction.MatchSong -> songs.open(track)
             }
         }
     }
@@ -56,6 +64,7 @@ class PlaybackRuntime(
                 playback.sync()?.let { select(it) }
                 if (playback.phase == PlaybackPhase.Expired) scope.launch(start = CoroutineStart.UNDISPATCHED) { playback.recoverExpiredIfPlaying() }
                 val playing = playback.track as? BilibiliTrack
+                songs.auto(playing)
                 if (playing != null && playback.isPlaying && recent.firstOrNull()?.id != playing.id) {
                     recent.removeAll { it.id == playing.id }; recent.add(0, playing)
                     if (recent.size > 30) recent.removeAt(recent.lastIndex)
@@ -120,7 +129,7 @@ class PlaybackRuntime(
         warn(if (before == playback.queue.size) "歌单中的曲目已在队列中" else "已追加到播放队列")
     }
     fun warn(text: String) { message = PlaybackMessage(++messageId, text) }
-    private fun capture(periodic: Boolean = false) = LibrarySnapshot(favorites.values.toList(), recent.toList(), playback.checkpoint(periodic), themeOverride, followArtwork, playlists.lists)
+    private fun capture(periodic: Boolean = false) = LibrarySnapshot(favorites.values.toList(), recent.toList(), playback.checkpoint(periodic), themeOverride, followArtwork, playlists.lists, songs.savedRecords)
     private suspend fun persist(snapshot: LibrarySnapshot) {
         try { store?.save(snapshot) }
         catch (cancelled: CancellationException) { throw cancelled }
@@ -133,7 +142,7 @@ class PlaybackRuntime(
         playback.pause()
         job.cancelAndJoin()
         try { withContext(NonCancellable) { persist(capture()) } }
-        finally { try { disposeResources() } finally { browsingSource?.close() } }
+        finally { try { disposeResources() } finally { browsingSource?.close(); metadataSource?.close(); metadataVideoSource?.close() } }
     }
 }
 

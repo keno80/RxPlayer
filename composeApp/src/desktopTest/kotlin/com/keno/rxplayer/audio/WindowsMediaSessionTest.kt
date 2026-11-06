@@ -3,6 +3,7 @@ package com.keno.rxplayer.audio
 import com.keno.rxplayer.*
 import com.keno.rxplayer.persistence.LibrarySnapshot
 import com.keno.rxplayer.source.*
+import com.keno.rxplayer.metadata.*
 import kotlinx.coroutines.test.*
 import kotlin.test.*
 
@@ -47,6 +48,19 @@ class WindowsMediaSessionTest {
         assertFalse(state.enabled)
         assertFalse(state.canSkip)
         assertEquals("", state.title)
+    }
+
+    @Test fun metadataDisplayDoesNotReplaceAudioTimelineOrSourceQueue() = runTest {
+        val engine = MediaTestEngine()
+        val playback = PlaybackState(engine, resolveStream = { AudioStream("https://sample.bilivideo.com/audio", emptyMap(), "audio/mp4", "aac", null) }, initialQueue = listOf(first, second))
+        playback.select(first, autoPlay = false)
+        playback.seek(3200)
+        val display = first.copy(songMetadata = SongMatch(SongCandidate(42, "歌曲名", listOf("真正歌手"), "专辑", 8000, "https://p1.music.126.net/a.jpg")))
+        val result = windowsMediaState(playback, display)
+        assertEquals("歌曲名", result.title); assertEquals("真正歌手", result.artist)
+        assertEquals(3200L, result.position); assertEquals(10000L, result.duration)
+        assertEquals(listOf(first, second), playback.queue)
+        assertEquals(first, playback.track); assertFalse(playback.playWhenReady)
     }
 }
 

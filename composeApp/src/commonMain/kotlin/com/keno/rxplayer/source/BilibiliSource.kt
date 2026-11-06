@@ -43,7 +43,7 @@ class BilibiliSource(private val client: HttpClient = createSourceHttpClient()) 
         if (parts.isEmpty() || parts.distinctBy { it.number }.size != parts.size || parts.distinctBy { it.cid }.size != parts.size) throw SourceFailure(SourceFailureKind.InvalidResponse)
         val selected = parts.firstOrNull { it.number == reference.part } ?: throw IllegalArgumentException("part_out_of_range")
         val item = ContentItem(MusicSource.Bilibili, id, data.text("title").orEmpty(), (data["owner"] as? JsonObject)?.text("name").orEmpty(), artwork(data.text("pic")), data.int("duration") ?: 0)
-        return VideoDetails(item, parts, selected)
+        return VideoDetails(item, parts, selected, data.text("desc").orEmpty().take(8000))
     }
 
     suspend fun resolve(bvid: String, cid: Long): AudioStream {

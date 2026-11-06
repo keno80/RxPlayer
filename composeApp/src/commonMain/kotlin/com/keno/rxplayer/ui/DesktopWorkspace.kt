@@ -84,6 +84,7 @@ internal fun SourceWorkspace(
     onSelect: (PlaybackTrack) -> Unit, onFavorite: (ContentItem) -> Unit, onExpand: () -> Unit,
     onQueryFocus: (Boolean) -> Unit, onDarkChange: (Boolean) -> Unit, onArtworkChange: (Boolean) -> Unit,
     playlists: PlaylistState, onPlaylistPlay: (String) -> Unit, onPlaylistAppend: (String) -> Unit, onAddTrack: (BilibiliTrack) -> Unit,
+    onMatchTrack: (BilibiliTrack) -> Unit,
     queueContent: @Composable () -> Unit, transport: @Composable () -> Unit,
 ) {
     val destination = workspace.destination
@@ -189,6 +190,7 @@ internal fun SourceWorkspace(
                                             track.partCount, browse.selection, { action -> when (action) {
                                                 ContentAction.Play -> onSelect(track)
                                                 ContentAction.AddToPlaylist -> onAddTrack(track)
+                                                ContentAction.MatchSong -> onMatchTrack(track)
                                                 ContentAction.Enqueue, ContentAction.Next -> { playback.enqueue(track, action == ContentAction.Next); browse.notify(if (action == ContentAction.Next) "已设为下一首播放" else "已加入播放队列") }
                                             } }, { onFavorite(track.item) }, mobile, track.id, { browse.request(track.item, ContentAction.Play) },
                                             PlaylistRowActions(index, activePlaylist.tracks.size, { target -> playlists.move(activePlaylist.id, track.id, target) }, { playlists.remove(activePlaylist.id, track.id); browse.notify("已从歌单移除") }))
@@ -221,6 +223,7 @@ internal fun SourceWorkspace(
                                             { action -> if (history == null) browse.request(item, action) else when (action) {
                                                 ContentAction.Play -> onSelect(history)
                                                 ContentAction.AddToPlaylist -> onAddTrack(history)
+                                                ContentAction.MatchSong -> onMatchTrack(history)
                                                 ContentAction.Enqueue, ContentAction.Next -> { playback.enqueue(history, action == ContentAction.Next); browse.notify(if (action == ContentAction.Next) "已设为下一首播放" else "已加入播放队列") }
                                             } }, { onFavorite(original) }, mobile, history?.id, { browse.request(original, ContentAction.Play) })
                                     }
@@ -337,13 +340,14 @@ internal fun SourceWorkspace(
     var menu by remember { mutableStateOf(false) }
     Box {
         IconButton({ menu = true }, Modifier.size(48.dp)) { Icon(Icons.Outlined.MoreHoriz, "${item.title} 的更多操作") }
-        if (mobile && menu) MobileContentMenu(item, favorite, { menu = false }, { menu = false; action(it) }, { menu = false; toggleFavorite() }, partCount, { menu = false; if (chooseParts != null) chooseParts() else action(ContentAction.Play) }, playlistActions)
+        if (mobile && menu) MobileContentMenu(item, favorite, { menu = false }, { menu = false; action(it) }, { menu = false; toggleFavorite() }, partCount, { menu = false; if (chooseParts != null) chooseParts() else action(ContentAction.Play) }, playlistActions, partCount == 1 || chooseParts != null)
         if (!mobile) DropdownMenu(menu, { menu = false }) {
             DropdownMenuItem({ Text("立即播放") }, { menu = false; action(ContentAction.Play) })
             DropdownMenuItem({ Text("加入队列") }, { menu = false; action(ContentAction.Enqueue) })
             DropdownMenuItem({ Text("下一首播放") }, { menu = false; action(ContentAction.Next) })
             DropdownMenuItem({ Text(if (favorite) "取消收藏" else "收藏") }, { menu = false; toggleFavorite() })
             DropdownMenuItem({ Text("添加到歌单") }, { menu = false; action(ContentAction.AddToPlaylist) }, leadingIcon = { Icon(Icons.Outlined.PlaylistAdd, null) })
+            if (partCount == 1 || chooseParts != null) DropdownMenuItem({ Text("匹配歌曲信息") }, { menu = false; action(ContentAction.MatchSong) }, leadingIcon = { Icon(PlayerSymbols.Search, null) })
             if (partCount != null && partCount > 1) DropdownMenuItem({ Text("选择分P") }, { menu = false; if (chooseParts != null) chooseParts() else action(ContentAction.Play) })
             playlistActions?.let { edits ->
                 DropdownMenuItem({ Text("上移") }, { menu = false; edits.move(edits.index - 1) }, enabled = edits.index > 0, leadingIcon = { Icon(Icons.Outlined.ArrowUpward, null) })
@@ -382,7 +386,7 @@ internal fun PartsDialog(selection: PartSelection, currentId: String?, choose: (
                     IconButton(cancel, Modifier.size(48.dp)) { Icon(Icons.Outlined.Close, "关闭分P选择") }
                 }
                 Text(selection.details.item.title, maxLines = 2, overflow = TextOverflow.Ellipsis, fontSize = 16.sp, lineHeight = 24.sp, fontWeight = if (mobile) FontWeight.Medium else FontWeight.Normal, modifier = Modifier.padding(vertical = 8.dp))
-                Text(when(selection.action) { ContentAction.Play -> "选择要播放的分P"; ContentAction.Enqueue -> "选择要加入队列的分P"; ContentAction.Next -> "选择下一首播放的分P"; ContentAction.AddToPlaylist -> "选择一集添加到歌单；当前播放和队列保持不变。" }, color = MaterialTheme.colorScheme.onSurfaceVariant, style = if (mobile) MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp) else MaterialTheme.typography.bodyMedium)
+                Text(when(selection.action) { ContentAction.Play -> "选择要播放的分P"; ContentAction.Enqueue -> "选择要加入队列的分P"; ContentAction.Next -> "选择下一首播放的分P"; ContentAction.AddToPlaylist -> "选择一集添加到歌单；当前播放和队列保持不变。"; ContentAction.MatchSong -> "选择要匹配歌曲信息的分P；当前播放和队列保持不变。" }, color = MaterialTheme.colorScheme.onSurfaceVariant, style = if (mobile) MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp) else MaterialTheme.typography.bodyMedium)
                 LazyColumn(Modifier.fillMaxWidth().heightIn(max = 360.dp).padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     itemsIndexed(selection.details.parts, key = { _, part -> part.cid }) { index, part ->
                         val current = currentId == "${selection.details.item.stableKey}:${part.cid}"

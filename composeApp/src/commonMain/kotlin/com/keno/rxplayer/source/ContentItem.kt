@@ -13,7 +13,7 @@ data class ContentItem(
 
 data class SearchPage(val items: List<ContentItem>, val page: Int, val hasMore: Boolean)
 data class VideoPart(val number: Int, val cid: Long, val title: String, val durationSeconds: Int)
-data class VideoDetails(val item: ContentItem, val parts: List<VideoPart>, val selectedPart: VideoPart)
+data class VideoDetails(val item: ContentItem, val parts: List<VideoPart>, val selectedPart: VideoPart, val description: String = "")
 
 // Transient engine input, never persisted as the identity of a library/queue item.
 class AudioStream(val url: String, val headers: Map<String, String>, val mime: String, val codec: String, val expiresAtEpochSeconds: Long?) {

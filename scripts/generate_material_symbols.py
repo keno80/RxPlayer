@@ -27,6 +27,9 @@ GLYPHS = {
     "Close": 0xE14C,
     "Refresh": 0xE5D5,
     "VolumeUp": 0xE050,
+    "MoreHoriz": 0xE5D3,
+    "Search": 0xE8B6,
+    "Check": 0xE5CA,
 }
 
 font = TTFont(SOURCE)

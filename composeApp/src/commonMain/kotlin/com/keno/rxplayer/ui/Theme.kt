@@ -62,8 +62,10 @@ fun PlayerTheme(dark: Boolean, artwork: Int?, content: @Composable () -> Unit) {
 @Composable
 fun PlayerTheme(dark: Boolean, track: PlaybackTrack?, followArtwork: Boolean = true, content: @Composable () -> Unit) {
     val store = LocalArtworkStore.current
-    LaunchedEffect(track?.artworkUrl, followArtwork) { if (followArtwork) store.load(track?.artworkUrl) }
-    val seed = if (followArtwork) store.get(track?.artworkUrl)?.seed else null
+    LaunchedEffect(track?.artworkUrl, track?.fallbackArtworkUrl, followArtwork) {
+        if (followArtwork) { store.load(track?.artworkUrl); if (store.get(track?.artworkUrl) == null) store.load(track?.fallbackArtworkUrl) }
+    }
+    val seed = if (followArtwork) (store.get(track?.artworkUrl) ?: store.get(track?.fallbackArtworkUrl))?.seed else null
     val colors = androidx.compose.runtime.remember(dark, seed, followArtwork, track?.artwork) {
         val base = brandColors(dark)
         when {
