@@ -222,7 +222,6 @@
       content = ids.length ? `<div class="section-head"><h2>${state.libraryTab === 'favorites' ? '喜欢的声音' : '最近听过'}</h2><small>${ids.length} 首</small></div><div class="track-list">${ids.map(trackById).map(row).join('')}</div>` : empty('favorite', '把喜欢的声音留在这里', '在曲目旁点击收藏，就可以随时回来再听。', 'go-search', '去搜索');
     }
     return `<header class="page-head"><div><p class="eyebrow">为喜欢的声音留个位置</p><h1>音乐库</h1></div>${iconButton('new-playlist', 'add', '新建歌单')}</header>
-      <section class="collection-summary"><span class="collection-mark">${symbol('favorite',true)}</span><div><h2>喜欢的声音</h2><p>${state.favorites.length} 首收藏 · 跨音源收纳</p></div><button class="icon-button summary-play" data-action="play-favorites" aria-label="播放收藏" data-tip="播放收藏" disabled title="批量播放尚未接入">${symbol('play_arrow', true)}</button></section>
       <div class="tabs" role="tablist" aria-label="音乐库分类">${tabs.map(([id, label]) => `<button class="tab" role="tab" aria-selected="${state.libraryTab === id}" data-action="library-tab" data-tab="${id}" id="tab-${id}" aria-controls="library-content">${label}</button>`).join('')}</div><section id="library-content" role="tabpanel" aria-labelledby="tab-${state.libraryTab}">${content}</section>`;
   }
 
