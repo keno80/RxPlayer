@@ -11,6 +11,23 @@ import java.nio.file.Files
 import kotlin.test.*
 
 class LibraryStoreTest {
+    @Test fun versionTwoMigrationKeepsTheLibraryAndPersistsTheExactShuffleRound() = runTest {
+        withDatabase { path ->
+            val store = LibraryStore(path)
+            store.save(snapshot())
+            BundledSQLiteDriver().open(path).use { c ->
+                c.execSQL("DROP TABLE queue_play_order")
+                c.execSQL("PRAGMA user_version = 2")
+            }
+            assertEquals(snapshot(), LibraryStore(path).load())
+            val saved = snapshot().copy(playback = snapshot().playback.copy(
+                queue = listOf(second, first), playOrder = listOf(second.id, first.id)))
+            store.save(saved)
+            assertEquals(saved, LibraryStore(path).load())
+            assertFails { store.save(saved.copy(playback = saved.playback.copy(playOrder = listOf(first.id, first.id)))) }
+            assertEquals(saved, store.load())
+        }
+    }
     private val item = ContentItem(MusicSource.Bilibili, "BV14u41147YH", "视频标题", "作者", "https://i0.hdslb.com/cover.jpg", 90)
     private val first = BilibiliTrack(item, VideoPart(1, 101, "第一P", 40), 2)
     private val second = BilibiliTrack(item, VideoPart(2, 102, "第二P", 50), 2)
@@ -41,11 +58,12 @@ class LibraryStoreTest {
             BundledSQLiteDriver().open(path).use { c ->
                 c.execSQL("DROP TABLE playlist_tracks")
                 c.execSQL("DROP TABLE playlists")
+                c.execSQL("DROP TABLE queue_play_order")
                 c.execSQL("PRAGMA user_version = 1")
             }
             assertEquals(snapshot(), LibraryStore(path).load())
             BundledSQLiteDriver().open(path).use { c ->
-                c.prepare("PRAGMA user_version").use { s -> assertTrue(s.step()); assertEquals(2, s.getInt(0)) }
+                c.prepare("PRAGMA user_version").use { s -> assertTrue(s.step()); assertEquals(3, s.getInt(0)) }
             }
             val upgraded = snapshot().copy(playlists = listOf(LocalPlaylist("one", "保留分P", listOf(second, first))))
             store.save(upgraded)

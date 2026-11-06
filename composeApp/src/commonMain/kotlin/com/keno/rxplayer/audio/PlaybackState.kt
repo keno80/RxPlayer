@@ -37,7 +37,7 @@ class PlaybackState(
     private var messageId = 0L
     private var prepared = false
     private var automaticRefreshUsed = false
-    private var shuffleOrder = emptyList<String>()
+    private var shuffleOrder by mutableStateOf(emptyList<String>())
     var track: PlaybackTrack? by mutableStateOf(null)
         private set
     var phase by mutableStateOf(PlaybackPhase.Idle)
@@ -75,14 +75,15 @@ class PlaybackState(
                 durationMs > 0 && positionMs == durationMs -> PlaybackPhase.Ended
                 else -> PlaybackPhase.Paused
             }
-            if (shuffle) shuffleOrder = listOfNotNull(track?.id) + queue.filterNot { it.id == track?.id }.shuffled().map { it.id }
+            if (shuffle) shuffleOrder = if (restored.playOrder.size == queue.size && restored.playOrder.toSet() == queue.map { it.id }.toSet())
+                restored.playOrder.toList() else listOfNotNull(track?.id) + queue.filterNot { it.id == track?.id }.shuffled().map { it.id }
         }
     }
 
     fun checkpoint(periodic: Boolean = false): PlaybackCheckpoint {
         val current = track?.id?.takeIf { id -> queue.any { it.id == id } }
         val position = if (current == null) 0 else positionMs
-        return PlaybackCheckpoint(queue.toList(), current, if (periodic && isPlaying && current != null) checkpointPositionMs else position, shuffle, repeat, volume)
+        return PlaybackCheckpoint(queue.toList(), current, if (periodic && isPlaying && current != null) checkpointPositionMs else position, shuffle, repeat, volume, if (shuffle) shuffleOrder.toList() else emptyList())
     }
 
     val isPlaying get() = phase == PlaybackPhase.Playing
@@ -213,6 +214,17 @@ class PlaybackState(
     val queueInPlaybackOrder: List<PlaybackTrack> get() {
         val tracks = queue.associateBy { it.id }
         return playOrder().mapNotNull { tracks[it] }
+    }
+
+    /** Move in the displayed playback order without touching the active engine or selection job. */
+    fun moveQueue(id: String, target: Int): Boolean {
+        val order = queueInPlaybackOrder
+        val from = order.indexOfFirst { it.id == id }
+        if (from < 0 || target !in order.indices || from == target) return false
+        val next = order.toMutableList().apply { add(target, removeAt(from)) }
+        queue = next
+        if (shuffle) shuffleOrder = next.map { it.id }
+        return true
     }
 
     suspend fun step(offset: Int) { adjacent(offset)?.let { select(it) } }

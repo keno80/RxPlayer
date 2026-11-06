@@ -10,4 +10,5 @@ data class PlaybackCheckpoint(
     val shuffle: Boolean = false,
     val repeat: Boolean = false,
     val volume: Float = .65f,
+    val playOrder: List<String> = emptyList(),
 )

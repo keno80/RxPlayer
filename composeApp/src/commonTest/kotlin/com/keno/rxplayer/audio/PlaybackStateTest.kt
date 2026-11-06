@@ -3,6 +3,9 @@
 package com.keno.rxplayer.audio
 
 import com.keno.rxplayer.demoTracks
+import com.keno.rxplayer.BilibiliTrack
+import com.keno.rxplayer.MusicSource
+import com.keno.rxplayer.source.*
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -11,6 +14,69 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
 class PlaybackStateTest {
+    @Test fun reorderPreservesPlaybackAndAdvancesInTheVisibleOrder() = runTest {
+        val engine = MemoryAudioPlayer()
+        val state = PlaybackState(engine) { byteArrayOf(1) }
+        state.select(demoTracks[0]); state.seek(3200); state.toggleRepeat()
+        val loads = engine.loadCount
+        assertTrue(state.moveQueue(demoTracks[1].id, 2))
+        assertEquals(listOf(demoTracks[0], demoTracks[2], demoTracks[1]), state.queueInPlaybackOrder)
+        assertEquals(demoTracks[0], state.track)
+        assertEquals(3200, state.positionMs)
+        assertTrue(state.isPlaying); assertTrue(state.playWhenReady); assertTrue(state.repeat)
+        assertEquals(loads, engine.loadCount)
+        engine.completed = true; engine.isPlaying = false
+        assertEquals(demoTracks[2], state.sync())
+        assertNull(state.sync())
+    }
+
+    @Test fun reorderDuringPreparationDoesNotCancelOrReloadTheCurrentTrack() = runTest {
+        val gate = CompletableDeferred<ByteArray>()
+        val engine = MemoryAudioPlayer()
+        val state = PlaybackState(engine) { gate.await() }
+        launch { state.select(demoTracks[0]) }
+        runCurrent()
+        assertTrue(state.moveQueue(demoTracks[0].id, 2))
+        assertEquals(PlaybackPhase.Preparing, state.phase)
+        gate.complete(byteArrayOf(1)); advanceUntilIdle()
+        assertEquals(demoTracks[0], state.track)
+        assertTrue(state.isPlaying)
+        assertEquals(1, engine.loadCount)
+    }
+
+    @Test fun shuffledReorderRestoresTheExactRoundWithoutStartingAudio() = runTest {
+        val item = ContentItem(MusicSource.Bilibili, "BV14u41147YH", "视频", "作者", null, 30)
+        val tracks = (1..3).map { BilibiliTrack(item, VideoPart(it, it.toLong(), "P$it", 10), 3) }
+        val stream = AudioStream("https://example.bilivideo.com/audio", emptyMap(), "audio/mp4", "aac", null)
+        val state = PlaybackState(MemoryAudioPlayer(), resolveStream = { stream }, initialQueue = tracks)
+        state.select(tracks[0]); state.seek(2300); state.pause()
+        state.toggleShuffle(); state.toggleRepeat()
+        assertTrue(state.moveQueue(tracks[0].id, 2))
+        val expected = state.queueInPlaybackOrder
+        val checkpoint = state.checkpoint()
+        assertEquals(expected.map { it.id }, checkpoint.playOrder)
+        val engine = MemoryAudioPlayer()
+        val restored = PlaybackState(engine, resolveStream = { stream }, restored = checkpoint)
+        assertEquals(expected, restored.queueInPlaybackOrder)
+        assertEquals(tracks[0], restored.track)
+        assertEquals(2300, restored.positionMs)
+        assertTrue(restored.shuffle); assertTrue(restored.repeat)
+        assertFalse(restored.playWhenReady); assertEquals(0, engine.loadCount)
+        restored.step(1)
+        assertEquals(expected.first(), restored.track)
+    }
+
+    @Test fun invalidOrUnchangedQueueMovesAreNoOps() {
+        val state = PlaybackState(MemoryAudioPlayer()) { byteArrayOf(1) }
+        val before = state.queue
+        assertFalse(state.moveQueue("missing", 1))
+        assertFalse(state.moveQueue(demoTracks[0].id, -1))
+        assertFalse(state.moveQueue(demoTracks[0].id, 3))
+        assertFalse(state.moveQueue(demoTracks[0].id, 0))
+        assertEquals(before, state.queue)
+        assertFalse(PlaybackState(MemoryAudioPlayer(), initialQueue = emptyList()).moveQueue("missing", 0))
+    }
+
     @Test fun cancelledPreparationNeverPlays() = runTest {
         val engine = MemoryAudioPlayer()
         val bytes = CompletableDeferred<ByteArray>()
@@ -163,7 +229,9 @@ private class MemoryAudioPlayer : AudioPlayer {
     var completed = false
     override val isEnded get() = completed || positionMs >= durationMs
     var playCount = 0
-    override suspend fun load(bytes: ByteArray) { positionMs = 0; failure = null; completed = false }
+    var loadCount = 0
+    override suspend fun load(bytes: ByteArray) { loadCount++; positionMs = 0; failure = null; completed = false }
+    override suspend fun load(stream: AudioStream) { load(byteArrayOf(1)) }
     override fun play() { playCount++; isPlaying = true }
     override fun pause() { isPlaying = false }
     override fun seekTo(positionMs: Int) { this.positionMs = positionMs }
