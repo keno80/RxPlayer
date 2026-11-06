@@ -19,8 +19,8 @@ import kotlinx.coroutines.*
 @Composable
 fun App(isForeground: Boolean = true, isDesktop: Boolean = false,
     onPersistenceReady: (suspend () -> Unit) -> Unit = {},
+    runtime: PlaybackRuntime? = rememberPlaybackRuntime(),
     onThemeChanged: (Boolean, Boolean) -> Unit = { _, _ -> }) {
-    val runtime = rememberPlaybackRuntime()
     if (runtime == null) {
         RxTheme(isSystemInDarkTheme()) { Surface(Modifier.fillMaxSize()) {} }
     } else AppContent(runtime, isForeground, isDesktop, onPersistenceReady, onThemeChanged)

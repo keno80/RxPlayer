@@ -36,6 +36,7 @@
     queue: ['0-0:p1'], queueOpen: queueBreakpoint.matches, current: '0-0:p1', playing: false, position: 82,
     phase: 'paused', prepared: true, wantPlay: false,
     libraryTab: 'favorites', playlist: null,
+    windowHidden: false, exited: false,
     playlists: [{name: '通勤路上', ids: ['0-0:p1', '0-0:p2', '0-2'], art: 0}, {name: '安静片刻', ids: [], art: 2}],
     connected: [], artworkColor: true, lyricsLayout: 'auto', repeat: false, shuffle: false, volume: 65,
     history: ['夜航', '午后纯音乐', '城市现场'], overlay: null, menuTrack: null,
@@ -412,6 +413,11 @@
     product.dataset.device = state.device;
     product.dataset.theme = state.theme;
     product.dataset.playing = state.playing;
+    product.classList.toggle('window-hidden', state.windowHidden);
+    $('#window-placeholder').hidden = !state.windowHidden;
+    $('#window-placeholder').innerHTML = state.exited
+      ? `<h2>RxPlayer 已退出</h2><p>播放已停止，队列和位置已保存（模拟）。</p><button class="filled-button" data-action="restore-window">重新打开</button>`
+      : `<h2>已收起到系统托盘</h2><p>${escape(current().title)} · ${state.playing ? '继续播放中' : '保持暂停'}</p><button class="filled-button" data-action="preview-tray">打开托盘菜单</button><button class="text-button" data-action="restore-window">显示 RxPlayer</button>`;
     product.dataset.playbackPhase = state.phase;
     product.dataset.prepared = state.prepared;
     product.dataset.lyricsMode = hasLyrics() ? 'available' : 'none';
@@ -496,6 +502,9 @@
       if (desktop) body = `<div class="desktop-listening-layout"><section class="desktop-player-column" aria-label="当前播放控制">${artwork}${detail}</section>${desktopLyrics()}</div>`;
       else if (hasLyrics()) body = `<div class="mobile-lyrics-player"><section class="mobile-lyrics-stage" aria-labelledby="mobile-lyrics-title"><div class="lyrics-backdrop" aria-hidden="true">${art(track,'lyrics-background')}</div><h3 id="mobile-lyrics-title" class="sr-only">歌词</h3><div class="mobile-lyric-lines" data-active="${activeLyricIndex()}">${lyricButtons(true)}</div></section><div class="mobile-player-meta"><div><h3 class="mobile-track-title">${escape(track.title)}</h3><p>${escape(track.author)} · ${track.source}</p></div><div class="mobile-track-actions">${iconButton('open-queue','queue_music',`播放队列，${state.queue.length} 首`)}${favoriteButton(track)}</div></div>${playerControls()}</div>`;
       else body = `<div class="player-layout">${artwork}${detail}</div>`;
+    } else if (state.overlay === 'tray') {
+      title = 'RxPlayer · 托盘菜单预览';
+      body = `<p class="hint">${escape(current().title)} · ${state.playing ? '正在播放' : '已暂停'}</p><button class="menu-action" data-action="restore-window">${symbol('arrow_back')}打开 RxPlayer</button><button class="menu-action" data-action="toggle-play">${symbol(state.playing ? 'pause' : 'play_arrow')}${state.playing ? '暂停' : '播放'}</button><button class="menu-action" data-action="previous" ${state.queue.length < 2 ? 'disabled' : ''}>${symbol('skip_previous')}上一曲</button><button class="menu-action" data-action="next" ${state.queue.length < 2 ? 'disabled' : ''}>${symbol('skip_next')}下一曲</button><hr><button class="menu-action" data-action="exit-app">${symbol('close')}退出 RxPlayer</button><p class="hint">退出会停止播放、保存位置并释放资源。关闭窗口只收起到托盘。此处演示行为，正式菜单使用 Windows 系统样式。</p>`;
     } else if (state.overlay === 'menu') {
       const track = trackById(state.menuTrack);
       const list = state.route === 'library' && state.playlist !== null ? state.playlists[state.playlist] : null;
@@ -595,6 +604,10 @@
     if (!button || button.disabled) return;
     const {action, id, source} = button.dataset;
     switch (action) {
+      case 'preview-tray': state.device = 'desktop'; render(); openOverlay('tray'); break;
+      case 'close-window': state.windowHidden = true; closeQueue(false); closeOverlay(); render(); toast('已收起到托盘，播放保持不变'); break;
+      case 'restore-window': state.windowHidden = false; state.exited = false; closeOverlay(); render(); break;
+      case 'exit-app': cancelPlayback(); state.wantPlay = false; setPhase('paused'); state.exited = true; state.windowHidden = true; closeQueue(false); closeOverlay(); render(); break;
       case 'navigate': closeOverlay(); state.route = button.dataset.route; state.playlist = null; render(); break;
       case 'source': cancelSearch(); state.queries[state.source] = $('#search-input').value; state.source = source; state.scene = 'results'; render(); break;
       case 'go-search': state.route = 'search'; render(); break;
@@ -841,6 +854,7 @@
     });
   }, 1000);
   const review = new URLSearchParams(location.search);
+  $('#review-tray').addEventListener('click', () => { state.device = 'desktop'; render(); openOverlay('tray'); });
   product.dataset.transport = 'c';
   if (review.has('embed')) document.body.classList.add('transport-embed');
   if (['android','desktop'].includes(review.get('device'))) state.device = review.get('device');
@@ -850,4 +864,5 @@
   if (Object.hasOwn(phaseLabels,review.get('playback'))) previewPhase(review.get('playback'));
   render();
   if (review.get('view') === 'player') openOverlay('player');
+  if (review.get('view') === 'tray') { state.device = 'desktop'; render(); openOverlay('tray'); }
 })();

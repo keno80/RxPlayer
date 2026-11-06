@@ -11,6 +11,16 @@ plugins {
     alias(libs.plugins.android.library)
 }
 
+val windowsMediaResources = layout.buildDirectory.dir("generated/windows-media")
+val buildWindowsMediaBridge by tasks.registering(Exec::class) {
+    inputs.files("src/desktopMain/cpp/windows_media.cpp", "../tools/build-windows-media.ps1")
+    outputs.file(windowsMediaResources.map { it.file("win32-x86-64/rxplayer-media.dll") })
+    onlyIf { System.getProperty("os.name").startsWith("Windows") }
+    commandLine("pwsh.exe", "-NoProfile", "-File", rootProject.file("tools/build-windows-media.ps1").absolutePath,
+        "-SourcePath", file("src/desktopMain/cpp/windows_media.cpp").absolutePath,
+        "-OutputPath", windowsMediaResources.get().file("win32-x86-64/rxplayer-media.dll").asFile.absolutePath)
+}
+
 kotlin {
     androidTarget()
     jvm("desktop")
@@ -43,6 +53,7 @@ kotlin {
             implementation("androidx.media3:media3-datasource-okhttp:1.8.0")
         }
         val desktopMain by getting {
+            resources.srcDir(windowsMediaResources)
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
@@ -53,6 +64,7 @@ kotlin {
         }
     }
 }
+tasks.matching { it.name == "desktopProcessResources" }.configureEach { dependsOn(buildWindowsMediaBridge) }
 
 android {
     namespace = "com.keno.rxplayer.shared"
