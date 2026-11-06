@@ -11,6 +11,7 @@ import com.keno.rxplayer.source.BilibiliSource
 import com.keno.rxplayer.source.BilibiliBrowseState
 import com.keno.rxplayer.source.ContentAction
 import com.keno.rxplayer.library.PlaylistState
+import com.keno.rxplayer.library.LocalPlaylist
 import kotlinx.coroutines.*
 
 /** Session-owned state; attaching or removing a screen does not own playback lifetime. */
@@ -25,6 +26,8 @@ class PlaybackRuntime(
     val favorites = mutableStateMapOf<String, ContentItem>().apply { putAll(initial.favorites.associateBy { it.stableKey }) }
     val recent = mutableStateListOf<BilibiliTrack>().apply { addAll(initial.recent) }
     val playlists = PlaylistState(initial.playlists)
+    var playlistCandidate: BilibiliTrack? by mutableStateOf(null)
+        private set
     var themeOverride by mutableStateOf(initial.dark)
     var followArtwork by mutableStateOf(initial.followArtwork)
     var message: PlaybackMessage? by mutableStateOf(null)
@@ -41,6 +44,7 @@ class PlaybackRuntime(
                 ContentAction.Play -> select(track)
                 ContentAction.Enqueue -> playback.enqueue(track)
                 ContentAction.Next -> playback.enqueue(track, nextInQueue = true)
+                ContentAction.AddToPlaylist -> preparePlaylistCandidate(track)
             }
         }
     }
@@ -86,6 +90,23 @@ class PlaybackRuntime(
         return select(target, autoPlay = playback.playWhenReady, resumeAt = positionMs)
     }
     fun favorite(item: ContentItem) { if (favorites.remove(item.stableKey) == null) favorites[item.stableKey] = item }
+    fun preparePlaylistCandidate(track: BilibiliTrack) { playlistCandidate = track }
+    fun cancelPlaylistCandidate() { playlistCandidate = null }
+    fun createPlaylist(name: String, addCandidate: Boolean = false): LocalPlaylist {
+        val candidate = if (addCandidate) requireNotNull(playlistCandidate) else null
+        val created = playlists.create(name)
+        if (candidate != null) { playlists.add(created.id, listOf(candidate)); playlistCandidate = null }
+        return playlists.lists.first { it.id == created.id }
+    }
+    fun addCandidateToPlaylist(id: String) {
+        val candidate = playlistCandidate ?: return
+        val list = playlists.lists.firstOrNull { it.id == id }
+        if (list == null) { warn("歌单已删除，请重新选择"); return }
+        val duplicate = list.tracks.any { it.id == candidate.id }
+        playlists.add(id, listOf(candidate))
+        playlistCandidate = null
+        warn(if (duplicate) "此分 P 已在歌单中" else "已添加到「${list.name}」")
+    }
     fun playPlaylist(id: String): Job? {
         val tracks = playlists.lists.firstOrNull { it.id == id }?.tracks ?: return null
         if (tracks.isEmpty()) { warn("歌单里还没有歌曲"); return null }
@@ -94,7 +115,9 @@ class PlaybackRuntime(
     fun appendPlaylist(id: String) {
         val tracks = playlists.lists.firstOrNull { it.id == id }?.tracks ?: return
         if (tracks.isEmpty()) { warn("歌单里还没有歌曲"); return }
+        val before = playback.queue.size
         playback.enqueueAll(tracks)
+        warn(if (before == playback.queue.size) "歌单中的曲目已在队列中" else "已追加到播放队列")
     }
     fun warn(text: String) { message = PlaybackMessage(++messageId, text) }
     private fun capture(periodic: Boolean = false) = LibrarySnapshot(favorites.values.toList(), recent.toList(), playback.checkpoint(periodic), themeOverride, followArtwork, playlists.lists)

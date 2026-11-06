@@ -33,6 +33,8 @@ import androidx.compose.ui.window.DialogProperties
 import com.keno.rxplayer.*
 import com.keno.rxplayer.audio.PlaybackState
 import com.keno.rxplayer.source.*
+import com.keno.rxplayer.library.PlaylistState
+import kotlinx.coroutines.launch
 
 internal enum class WorkspaceDestination(val label: String, val icon: ImageVector) {
     Search("搜索", Icons.Outlined.Search), Library("音乐库", Icons.Outlined.LibraryMusic), Settings("设置", Icons.Outlined.Settings),
@@ -43,19 +45,33 @@ internal class WorkspaceState(
     val searchScroll: LazyListState = LazyListState(),
     val libraryScroll: LazyListState = LazyListState(),
     val settingsScroll: LazyListState = LazyListState(),
+    playlistId: String? = null,
+    playlistDialog: String? = null,
+    editingPlaylistId: String? = null,
+    val playlistScroll: LazyListState = LazyListState(),
 ) {
     var destination by mutableStateOf(destination)
     var libraryTab by mutableIntStateOf(libraryTab)
+    var playlistId by mutableStateOf(playlistId)
+    var playlistDialog by mutableStateOf(playlistDialog)
+    var editingPlaylistId by mutableStateOf(editingPlaylistId)
 
     companion object {
         val Saver = listSaver<WorkspaceState, Any>(
             save = { listOf(it.destination.name, it.libraryTab,
                 it.searchScroll.firstVisibleItemIndex, it.searchScroll.firstVisibleItemScrollOffset,
                 it.libraryScroll.firstVisibleItemIndex, it.libraryScroll.firstVisibleItemScrollOffset,
-                it.settingsScroll.firstVisibleItemIndex, it.settingsScroll.firstVisibleItemScrollOffset) },
-            restore = { WorkspaceState(WorkspaceDestination.valueOf(it[0] as String), it[1] as Int,
-                LazyListState(it[2] as Int, it[3] as Int), LazyListState(it[4] as Int, it[5] as Int),
-                LazyListState(it[6] as Int, it[7] as Int)) },
+                it.settingsScroll.firstVisibleItemIndex, it.settingsScroll.firstVisibleItemScrollOffset,
+                it.playlistId.orEmpty(), it.playlistDialog.orEmpty(), it.editingPlaylistId.orEmpty(),
+                it.playlistScroll.firstVisibleItemIndex, it.playlistScroll.firstVisibleItemScrollOffset) },
+            restore = {
+                // The shipped browser-state saver had eight fields before playlists existed.
+                val playlist = if (it.size == 8) listOf("", "", "", 0, 0) else it.drop(8)
+                WorkspaceState(WorkspaceDestination.valueOf(it[0] as String), it[1] as Int,
+                    LazyListState(it[2] as Int, it[3] as Int), LazyListState(it[4] as Int, it[5] as Int),
+                    LazyListState(it[6] as Int, it[7] as Int), (playlist[0] as String).ifEmpty { null },
+                    (playlist[1] as String).ifEmpty { null }, (playlist[2] as String).ifEmpty { null }, LazyListState(playlist[3] as Int, playlist[4] as Int))
+            },
         )
     }
 }
@@ -67,15 +83,19 @@ internal fun SourceWorkspace(
     desktop: Boolean, dark: Boolean, followArtwork: Boolean, queueOpen: Boolean, onQueueClose: () -> Unit,
     onSelect: (PlaybackTrack) -> Unit, onFavorite: (ContentItem) -> Unit, onExpand: () -> Unit,
     onQueryFocus: (Boolean) -> Unit, onDarkChange: (Boolean) -> Unit, onArtworkChange: (Boolean) -> Unit,
+    playlists: PlaylistState, onPlaylistPlay: (String) -> Unit, onPlaylistAppend: (String) -> Unit, onAddTrack: (BilibiliTrack) -> Unit,
     queueContent: @Composable () -> Unit, transport: @Composable () -> Unit,
 ) {
     val destination = workspace.destination
     val mobile = !desktop
+    val activePlaylist = playlists.lists.firstOrNull { it.id == workspace.playlistId }
+    val scope = rememberCoroutineScope()
     var searchFocused by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val searchActive = mobile && destination == WorkspaceDestination.Search && searchFocused
     PlayerBackHandler(searchActive) { focusManager.clearFocus() }
-    val list = when(destination) { WorkspaceDestination.Search -> workspace.searchScroll; WorkspaceDestination.Library -> workspace.libraryScroll; WorkspaceDestination.Settings -> workspace.settingsScroll }
+    PlayerBackHandler(destination == WorkspaceDestination.Library && activePlaylist != null) { workspace.playlistId = null }
+    val list = when(destination) { WorkspaceDestination.Search -> workspace.searchScroll; WorkspaceDestination.Library -> if (activePlaylist != null) workspace.playlistScroll else workspace.libraryScroll; WorkspaceDestination.Settings -> workspace.settingsScroll }
     LaunchedEffect(list, browse.results.size, destination) {
         if (destination == WorkspaceDestination.Search) snapshotFlow { list.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }.collect { last ->
             if (last >= list.layoutInfo.totalItemsCount - 3 && browse.results.isNotEmpty()) browse.more()
@@ -90,7 +110,7 @@ internal fun SourceWorkspace(
                     Text("Rx.", color = MaterialTheme.colorScheme.primary, fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 20.dp))
                     WorkspaceDestination.entries.forEach { item ->
                         val active = item == destination
-                        TextButton({ workspace.destination = item; onQueryFocus(false) }, Modifier.fillMaxWidth().height(72.dp).semantics { selected = active }, contentPadding = PaddingValues(0.dp), shape = RoundedCornerShape(16.dp)) {
+                        TextButton({ workspace.destination = item; workspace.playlistId = null; onQueryFocus(false) }, Modifier.fillMaxWidth().height(72.dp).semantics { selected = active }, contentPadding = PaddingValues(0.dp), shape = RoundedCornerShape(16.dp)) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Box(Modifier.size(if (narrow) 48.dp else 64.dp, 36.dp).background(if (active) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent, RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
                                     Icon(item.icon, null, tint = if (active) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant)
@@ -105,11 +125,13 @@ internal fun SourceWorkspace(
                 Row(Modifier.weight(1f).fillMaxWidth()) {
                     LazyColumn(Modifier.weight(1f).fillMaxHeight(), state = list, contentPadding = PaddingValues(horizontal = if (narrow) 20.dp else 32.dp, vertical = if (mobile) 16.dp else if (narrow) 20.dp else 28.dp)) {
                         item(key = "page-heading") {
-                            if (!searchActive) PageHead(destination.label,
+                            if (destination == WorkspaceDestination.Library && activePlaylist != null) PlaylistDetailHead(activePlaylist, { workspace.playlistId = null }) {
+                                workspace.editingPlaylistId = activePlaylist.id; workspace.playlistDialog = it
+                            } else if (!searchActive) PageHead(destination.label,
                                 when { destination == WorkspaceDestination.Search -> "歌曲、视频，从这里开始听。"; mobile && destination == WorkspaceDestination.Settings -> "外观、音源与播放偏好。"; else -> null },
                                 playback.track?.let { onExpand }, mobile,
-                                if (mobile && destination == WorkspaceDestination.Library) "为喜欢的声音留个位置" else "RxPlayer",
-                                if (mobile && destination == WorkspaceDestination.Library) ({ browse.notify("歌单功能暂未开放") }) else null)
+                                if (destination == WorkspaceDestination.Library) "为喜欢的声音留个位置" else "RxPlayer",
+                                if (destination == WorkspaceDestination.Library) ({ workspace.playlistDialog = "create" }) else null)
                         }
                         when(destination) {
                             WorkspaceDestination.Search -> {
@@ -151,14 +173,38 @@ internal fun SourceWorkspace(
                                 }
                             }
                             WorkspaceDestination.Library -> {
-                                if (mobile) item {
+                                if (activePlaylist != null) {
+                                    item { PlaylistBatchControls(activePlaylist, { onPlaylistPlay(activePlaylist.id) }, { onPlaylistAppend(activePlaylist.id) }) }
+                                    if (activePlaylist.tracks.isEmpty()) item { EmptyContent("留一份属于你的声音", "在搜索结果或曲目的更多操作中选择“添加到歌单”。", mobile, "去搜索") { workspace.destination = WorkspaceDestination.Search } }
+                                    itemsIndexed(activePlaylist.tracks, key = { _, track -> track.id }) { index, track ->
+                                        val display = track.item.copy(title = track.title, durationSeconds = track.part.durationSeconds)
+                                        ContentRow(display, playback, track.item.stableKey in favorites, index == 0, index == activePlaylist.tracks.lastIndex, narrow,
+                                            track.partCount, browse.selection, { action -> when (action) {
+                                                ContentAction.Play -> onSelect(track)
+                                                ContentAction.AddToPlaylist -> onAddTrack(track)
+                                                ContentAction.Enqueue, ContentAction.Next -> { playback.enqueue(track, action == ContentAction.Next); browse.notify(if (action == ContentAction.Next) "已设为下一首播放" else "已加入播放队列") }
+                                            } }, { onFavorite(track.item) }, mobile, track.id, { browse.request(track.item, ContentAction.Play) },
+                                            PlaylistRowActions(index, activePlaylist.tracks.size, { target -> playlists.move(activePlaylist.id, track.id, target) }, { playlists.remove(activePlaylist.id, track.id); browse.notify("已从歌单移除") }))
+                                    }
+                                    if (activePlaylist.tracks.isNotEmpty()) item { Text("在曲目的更多操作中移除或调整顺序；修改歌单不会改变当前播放。", Modifier.padding(top = 16.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                                } else {
+                                item {
                                     MobileCollectionSummary(favorites.size)
                                     MobileLibraryTabs(workspace.libraryTab) { workspace.libraryTab = it }
                                 }
-                                val recentTab = mobile && workspace.libraryTab == 2
-                                val playlistTab = mobile && workspace.libraryTab == 1
+                                val recentTab = workspace.libraryTab == 2
+                                val playlistTab = workspace.libraryTab == 1
                                 val saved = if (recentTab) recent.map { it.item.copy(title = it.title, durationSeconds = it.part.durationSeconds) } else favorites.values.toList()
-                                if (playlistTab) item { EmptyContent("还没有歌单", "歌单功能暂未开放，先收藏喜欢的声音。", true) }
+                                if (playlistTab) {
+                                    item {
+                                        Row(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Text("我的歌单", Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                            TextButton({ workspace.playlistDialog = "create" }) { Icon(Icons.Outlined.Add, null); Text("新建") }
+                                        }
+                                        PlaylistGrid(playlists.lists) { id -> workspace.playlistId = id; scope.launch { workspace.playlistScroll.scrollToItem(0) } }
+                                    }
+                                    if (playlists.lists.isEmpty()) item { EmptyContent("还没有歌单", "新建歌单，把喜欢的声音收在一起。", mobile, "新建歌单") { workspace.playlistDialog = "create" } }
+                                }
                                 else {
                                     item { SectionHead(if (recentTab) "最近听过" else "喜欢的声音", "${saved.size} ${if (mobile) "首" else "个视频"}") }
                                     if (saved.isEmpty()) item { EmptyContent(if (recentTab) "还没有播放记录" else "把喜欢的声音留在这里", if (recentTab) "播放过的内容会出现在这里。" else "在曲目旁点击收藏，就可以随时回来再听。", mobile, "去搜索") { workspace.destination = WorkspaceDestination.Search } }
@@ -168,9 +214,11 @@ internal fun SourceWorkspace(
                                         ContentRow(item, playback, original.stableKey in favorites, index == 0, index == saved.size - 1, narrow, browse.partCounts[original.id], browse.selection,
                                             { action -> if (history == null) browse.request(item, action) else when (action) {
                                                 ContentAction.Play -> onSelect(history)
+                                                ContentAction.AddToPlaylist -> onAddTrack(history)
                                                 ContentAction.Enqueue, ContentAction.Next -> { playback.enqueue(history, action == ContentAction.Next); browse.notify(if (action == ContentAction.Next) "已设为下一首播放" else "已加入播放队列") }
                                             } }, { onFavorite(original) }, mobile, history?.id, { browse.request(original, ContentAction.Play) })
                                     }
+                                }
                                 }
                             }
                             WorkspaceDestination.Settings -> {
@@ -191,7 +239,7 @@ internal fun SourceWorkspace(
                 }
                 if (!searchActive) transport()
                 if (mobile && !searchActive) NavigationBar(Modifier.height(76.dp), containerColor = MaterialTheme.colorScheme.surfaceContainer, windowInsets = WindowInsets(0, 0, 0, 0)) {
-                    WorkspaceDestination.entries.forEach { item -> NavigationBarItem(destination == item, { workspace.destination = item; onQueryFocus(false) }, { Icon(item.icon, null) }, label = { Text(item.label) }) }
+                    WorkspaceDestination.entries.forEach { item -> NavigationBarItem(destination == item, { workspace.destination = item; workspace.playlistId = null; onQueryFocus(false) }, { Icon(item.icon, null) }, label = { Text(item.label) }) }
                 }
             }
         }
@@ -253,7 +301,7 @@ internal fun SourceWorkspace(
         }
     }
 }
-@Composable private fun ContentRow(item: ContentItem, state: PlaybackState, favorite: Boolean, first: Boolean, last: Boolean, narrow: Boolean, partCount: Int?, selection: PartSelection?, action: (ContentAction) -> Unit, toggleFavorite: () -> Unit, mobile: Boolean = false, partIdentity: String? = null, chooseParts: (() -> Unit)? = null) {
+@Composable private fun ContentRow(item: ContentItem, state: PlaybackState, favorite: Boolean, first: Boolean, last: Boolean, narrow: Boolean, partCount: Int?, selection: PartSelection?, action: (ContentAction) -> Unit, toggleFavorite: () -> Unit, mobile: Boolean = false, partIdentity: String? = null, chooseParts: (() -> Unit)? = null, playlistActions: PlaylistRowActions? = null) {
     val focus = remember { FocusRequester() }
     var restore by remember { mutableStateOf(false) }
     var sawSelection by remember { mutableStateOf(false) }
@@ -274,21 +322,28 @@ internal fun SourceWorkspace(
                     Text("${item.author} · 视频${if (partCount != null && partCount > 1) " · $partCount 个分P" else ""}", fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis, color = colors.onSurfaceVariant)
                 }
                 if (!narrow) { Text(formatTime(item.durationSeconds * 1000), style = MaterialTheme.typography.bodySmall); IconToggleButton(favorite, { toggleFavorite() }, Modifier.size(48.dp)) { Icon(if (favorite) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder, "收藏 ${item.title}") } }
-                ContentMenu(item, favorite, ::request, toggleFavorite, mobile, partCount, chooseParts?.let { select -> { restore = true; select() } })
+                ContentMenu(item, favorite, ::request, toggleFavorite, mobile, partCount, chooseParts?.let { select -> { restore = true; select() } }, playlistActions)
             }
         }
     }
 }
-@Composable private fun ContentMenu(item: ContentItem, favorite: Boolean, action: (ContentAction) -> Unit, toggleFavorite: () -> Unit, mobile: Boolean = false, partCount: Int? = null, chooseParts: (() -> Unit)? = null) {
+@Composable private fun ContentMenu(item: ContentItem, favorite: Boolean, action: (ContentAction) -> Unit, toggleFavorite: () -> Unit, mobile: Boolean = false, partCount: Int? = null, chooseParts: (() -> Unit)? = null, playlistActions: PlaylistRowActions? = null) {
     var menu by remember { mutableStateOf(false) }
     Box {
         IconButton({ menu = true }, Modifier.size(48.dp)) { Icon(Icons.Outlined.MoreHoriz, "${item.title} 的更多操作") }
-        if (mobile && menu) MobileContentMenu(item, favorite, { menu = false }, { menu = false; action(it) }, { menu = false; toggleFavorite() }, partCount, { menu = false; if (chooseParts != null) chooseParts() else action(ContentAction.Play) })
+        if (mobile && menu) MobileContentMenu(item, favorite, { menu = false }, { menu = false; action(it) }, { menu = false; toggleFavorite() }, partCount, { menu = false; if (chooseParts != null) chooseParts() else action(ContentAction.Play) }, playlistActions)
         if (!mobile) DropdownMenu(menu, { menu = false }) {
             DropdownMenuItem({ Text("立即播放") }, { menu = false; action(ContentAction.Play) })
             DropdownMenuItem({ Text("加入队列") }, { menu = false; action(ContentAction.Enqueue) })
             DropdownMenuItem({ Text("下一首播放") }, { menu = false; action(ContentAction.Next) })
             DropdownMenuItem({ Text(if (favorite) "取消收藏" else "收藏") }, { menu = false; toggleFavorite() })
+            DropdownMenuItem({ Text("添加到歌单") }, { menu = false; action(ContentAction.AddToPlaylist) }, leadingIcon = { Icon(Icons.Outlined.PlaylistAdd, null) })
+            if (partCount != null && partCount > 1) DropdownMenuItem({ Text("选择分P") }, { menu = false; if (chooseParts != null) chooseParts() else action(ContentAction.Play) })
+            playlistActions?.let { edits ->
+                DropdownMenuItem({ Text("上移") }, { menu = false; edits.move(edits.index - 1) }, enabled = edits.index > 0, leadingIcon = { Icon(Icons.Outlined.ArrowUpward, null) })
+                DropdownMenuItem({ Text("下移") }, { menu = false; edits.move(edits.index + 1) }, enabled = edits.index < edits.count - 1, leadingIcon = { Icon(Icons.Outlined.ArrowDownward, null) })
+                DropdownMenuItem({ Text("从此歌单移除") }, { menu = false; edits.remove() }, leadingIcon = { Icon(Icons.Outlined.RemoveCircleOutline, null) })
+            }
         }
     }
 }
@@ -321,7 +376,7 @@ internal fun PartsDialog(selection: PartSelection, currentId: String?, choose: (
                     IconButton(cancel, Modifier.size(48.dp)) { Icon(Icons.Outlined.Close, "关闭分P选择") }
                 }
                 Text(selection.details.item.title, maxLines = 2, overflow = TextOverflow.Ellipsis, fontSize = 16.sp, lineHeight = 24.sp, fontWeight = if (mobile) FontWeight.Medium else FontWeight.Normal, modifier = Modifier.padding(vertical = 8.dp))
-                Text(when(selection.action) { ContentAction.Play -> "选择要播放的分P"; ContentAction.Enqueue -> "选择要加入队列的分P"; ContentAction.Next -> "选择下一首播放的分P" }, color = MaterialTheme.colorScheme.onSurfaceVariant, style = if (mobile) MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp) else MaterialTheme.typography.bodyMedium)
+                Text(when(selection.action) { ContentAction.Play -> "选择要播放的分P"; ContentAction.Enqueue -> "选择要加入队列的分P"; ContentAction.Next -> "选择下一首播放的分P"; ContentAction.AddToPlaylist -> "选择一集添加到歌单；当前播放和队列保持不变。" }, color = MaterialTheme.colorScheme.onSurfaceVariant, style = if (mobile) MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp) else MaterialTheme.typography.bodyMedium)
                 LazyColumn(Modifier.fillMaxWidth().heightIn(max = 360.dp).padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     itemsIndexed(selection.details.parts, key = { _, part -> part.cid }) { index, part ->
                         val current = currentId == "${selection.details.item.stableKey}:${part.cid}"

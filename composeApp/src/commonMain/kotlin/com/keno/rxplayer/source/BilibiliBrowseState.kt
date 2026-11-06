@@ -4,7 +4,7 @@ import androidx.compose.runtime.*
 import com.keno.rxplayer.BilibiliTrack
 import kotlinx.coroutines.*
 
-enum class ContentAction { Play, Enqueue, Next }
+enum class ContentAction { Play, Enqueue, Next, AddToPlaylist }
 data class PartSelection(val details: VideoDetails, val action: ContentAction)
 
 /** Browsing never mutates playback until a single part has been confirmed. */
@@ -105,7 +105,7 @@ class BilibiliBrowseState(
     fun cancelSelection() { ++detailsGeneration; detailsJob?.cancel(); detailsJob = null; selection = null; readingDetails = false }
     private fun perform(details: VideoDetails, part: VideoPart, action: ContentAction) {
         onAction(BilibiliTrack(details.item, part, details.parts.size), action)
-        if (action != ContentAction.Play) notify(if (action == ContentAction.Next) "已设为下一首播放" else "已加入播放队列")
+        if (action == ContentAction.Next || action == ContentAction.Enqueue) notify(if (action == ContentAction.Next) "已设为下一首播放" else "已加入播放队列")
     }
     fun notify(text: String) { feedback = ++feedbackId to text }
 }

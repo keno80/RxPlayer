@@ -19,6 +19,38 @@ class PlaybackRuntimeTest {
     private val first = BilibiliTrack(item, VideoPart(1, 101, "P1", 10), 2)
     private val second = BilibiliTrack(item, VideoPart(2, 102, "P2", 10), 2)
 
+    @Test fun choosingPartForPlaylistKeepsPlaybackAndCanCancelOrCreateAndAdd() = runTest {
+        val source = BilibiliSource(HttpClient(MockEngine { request ->
+            respond(if (request.url.encodedPath == "/x/web-interface/view") """{"code":0,"data":{"bvid":"BV14u41147YH","title":"视频","owner":{"name":"作者"},"duration":20,"pages":[{"page":1,"cid":101,"part":"P1","duration":10},{"page":2,"cid":102,"part":"P2","duration":10}]}}""" else "{}", headers = headersOf(HttpHeaders.ContentType, "application/json"))
+        }))
+        val state = PlaybackState(RuntimeEngine(), resolveStream = { AudioStream("https://sample.bilivideo.com/audio", emptyMap(), "audio/mp4", "aac", null) }, initialQueue = listOf(first))
+        val runtime = PlaybackRuntime(state, LibrarySnapshot(), null, dispatcher = StandardTestDispatcher(testScheduler), browseSourceFactory = { source })
+        try {
+            runtime.select(first).join()
+            state.seek(3000)
+            runtime.browse.request(item, ContentAction.AddToPlaylist).join()
+            assertNotNull(runtime.browse.selection)
+            runtime.browse.cancelSelection()
+            assertNull(runtime.playlistCandidate)
+            runtime.browse.request(item, ContentAction.AddToPlaylist).join()
+            runtime.browse.choose(runtime.browse.selection!!.details.parts[1])
+            assertEquals(second.id, runtime.playlistCandidate?.id)
+            runtime.cancelPlaylistCandidate()
+            assertNull(runtime.playlistCandidate)
+            runtime.preparePlaylistCandidate(second)
+            val created = runtime.createPlaylist("  旅途  ", addCandidate = true)
+            assertEquals(listOf(second), created.tracks)
+            assertNull(runtime.playlistCandidate)
+            runtime.preparePlaylistCandidate(second)
+            runtime.addCandidateToPlaylist(created.id)
+            assertEquals(listOf(second), runtime.playlists.lists.single().tracks)
+            assertEquals(listOf(first), state.queue)
+            assertEquals(first.id, state.track?.id)
+            assertEquals(3000, state.positionMs)
+            assertTrue(state.isPlaying)
+        } finally { runtime.close() }
+    }
+
     @Test fun playingPlaylistCancelsOldResolutionWithoutRestoringOldQueue() = runTest {
         val pending = CompletableDeferred<AudioStream>()
         val engine = RuntimeEngine()

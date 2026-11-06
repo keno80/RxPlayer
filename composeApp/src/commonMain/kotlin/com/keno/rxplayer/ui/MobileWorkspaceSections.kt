@@ -127,7 +127,7 @@ internal fun MobileSettings(dark: Boolean, changeTheme: (Boolean) -> Unit, follo
 }
 
 @Composable
-internal fun MobileContentMenu(item: ContentItem, favorite: Boolean, close: () -> Unit, action: (ContentAction) -> Unit, toggleFavorite: () -> Unit, partCount: Int?, chooseParts: () -> Unit) {
+internal fun MobileContentMenu(item: ContentItem, favorite: Boolean, close: () -> Unit, action: (ContentAction) -> Unit, toggleFavorite: () -> Unit, partCount: Int?, chooseParts: () -> Unit, playlistActions: PlaylistRowActions? = null) {
     Dialog(close, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.widthIn(max = 480.dp).fillMaxWidth().padding(horizontal = 24.dp), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
             Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp)) {
@@ -136,19 +136,22 @@ internal fun MobileContentMenu(item: ContentItem, favorite: Boolean, close: () -
                     IconButton(close, Modifier.size(48.dp)) { Icon(Icons.Outlined.Close, "关闭内容操作") }
                 }
                 Text("${item.author} · ${item.source.label}", Modifier.padding(top = 20.dp, bottom = 12.dp), fontSize = 12.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (partCount != null && partCount > 1) MobileMenuAction(Icons.Outlined.ViewList, "选择分P", chooseParts)
+                if (partCount != null && partCount > 1) MobileMenuAction(Icons.Outlined.ViewList, "选择分P", click = chooseParts)
                 MobileMenuAction(Icons.Outlined.SkipNext, "下一首播放") { action(ContentAction.Next) }
                 MobileMenuAction(Icons.Outlined.QueueMusic, "加入播放队列") { action(ContentAction.Enqueue) }
-                MobileMenuAction(if (favorite) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder, if (favorite) "取消收藏" else "收藏", toggleFavorite)
-                TextButton({}, Modifier.fillMaxWidth().heightIn(min = 56.dp), enabled = false, shape = RoundedCornerShape(12.dp)) {
-                    Icon(Icons.Outlined.PlaylistAdd, null); Spacer(Modifier.width(16.dp)); Text("添加到歌单（暂未开放）", Modifier.weight(1f), fontSize = 14.sp)
+                MobileMenuAction(if (favorite) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder, if (favorite) "取消收藏" else "收藏", click = toggleFavorite)
+                MobileMenuAction(Icons.Outlined.PlaylistAdd, "添加到歌单") { action(ContentAction.AddToPlaylist) }
+                playlistActions?.let { edits ->
+                    MobileMenuAction(Icons.Outlined.ArrowUpward, "上移", enabled = edits.index > 0) { close(); edits.move(edits.index - 1) }
+                    MobileMenuAction(Icons.Outlined.ArrowDownward, "下移", enabled = edits.index < edits.count - 1) { close(); edits.move(edits.index + 1) }
+                    MobileMenuAction(Icons.Outlined.RemoveCircleOutline, "从此歌单移除") { close(); edits.remove() }
                 }
             }
         }
     }
 }
-@Composable private fun MobileMenuAction(icon: ImageVector, text: String, click: () -> Unit) {
-    TextButton(click, Modifier.fillMaxWidth().heightIn(min = 56.dp), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(12.dp), colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
+@Composable private fun MobileMenuAction(icon: ImageVector, text: String, enabled: Boolean = true, click: () -> Unit) {
+    TextButton(click, Modifier.fillMaxWidth().heightIn(min = 56.dp), enabled = enabled, shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(12.dp), colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
         Icon(icon, null); Spacer(Modifier.width(16.dp)); Text(text, Modifier.weight(1f), fontSize = 14.sp, lineHeight = 21.sp)
     }
 }

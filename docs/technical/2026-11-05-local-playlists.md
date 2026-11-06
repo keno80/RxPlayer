@@ -2,6 +2,8 @@
 
 日期：2026-11-05；分支：`codex/local-playlists`；基点：`cabebdb`。
 
+后续状态（2026-11-06）：用户已确认本记录的歌单原型范围，正式双端接线、构建和 Windows 启动已完成，详见 [后续接线记录](2026-11-06-playlists-ui.md)。下文“待审核”描述为 11 月 5 日历史阶段，不再表示当前设计状态。
+
 ## 已实现范围
 
 - commonMain `library/PlaylistState.kt`：有稳定 UUID 的有序本地歌单；新建、重命名、删除、添加、移除、移动。名称 trim 后 1～40 个 UTF-16 单元，允许同名。以具体 `BilibiliTrack.id` 去重，同视频不同 cid 可独立收纳。
