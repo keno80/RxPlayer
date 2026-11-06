@@ -30,6 +30,7 @@ Bilibili 已接入正式搜索页：关键词分页、BV / AV / HTTPS 视频链�
 
 ## 当前任务与交付
 
+- 2026-11-06 用户明确要求构建并安装双端：`cad7960` 的 `desktopJar` 与 `androidApp:assembleDebug` 构建通过。Windows 已更新开发运行产物并重新启动，日志确认托盘 / SMTC 连接；Android 正式应用 Debug 包已通过 `adb install -r` 覆盖安装到 Mi 10（Success），启动 MainActivity 返回 Status: ok，进程存在。此次包含歌曲资料 / 封面及 QQ → 酷狗 → 网易云 → LRCLIB 歌词代码，保留应用数据；未安装独立测试包、未制作 Windows MSI / EXE 分发安装器，不扩展逐页或听感验收，效果由用户审核。
 - 2026-11-06 `codex/lyrics-sources` 共享接线完成：同步歌词按 QQ 音乐 → 酷狗 → 网易云 → LRCLIB 获取，核对完整标题 / 歌手 / 版本 / ±2 秒并要求唯一候选，无有效同步歌词或接口异常才继续，取消不吞。38 项定向测试通过，含 QQ 正式链路 63 条、注入 QQ 空结果后酷狗真实请求 64 条的时间戳记录；QQ 曾返回 2001 限流而正确回退，冷却后复测成功。定向审查无阻断问题。沿用网易云候选 / 封面及现有缓存，旧资料不强制覆盖，重新应用版本时按新顺序取词。不改 UI / 播放音源，本轮未额外构建、安装或启动双端。见 [接线与验证](technical/2026-11-06-lyrics-sources.md)。
 - 2026-11-06 用户以「确认，按此方案接入双端」确认 `dc7316e` 后，歌曲补全正式源码完成于 `codex/song-metadata`：共享识别 / 网络 / LRC、保守版本回退、选择 / 恢复面板、schema4 缓存及双端系统媒体信息已接线。显示资料独立于原视频 / cid / 队列 / 进度，未知括号或录音限定不自动匹配；恢复后持久停用自动覆盖。99 项定向测试通过，真实 Kotlin 样本在明确选歌后取得 62 条时间戳记录与可解码封面；审查问题已修复复核。Windows 新版本已启动，托盘 / SMTC 连接；Android 本轮未额外打包安装或平台编译，没装测试包，真机 / 原生视觉和听感同步由用户审核。见 [接线记录](technical/2026-11-06-song-metadata-wiring.md) 与 [计划](superpowers/plans/2026-11-06-song-metadata.md)。
 - 2026-11-06 歌曲信息补全可行性及原型提案已完成，分支 `codex/song-metadata`：已匿名读取录音棚、粤语、翻唱三条真实 Bilibili 视频详情；网易云中文搜索 / 详情 / LRC / 图片和 LRCLIB 中英文歌词查询取得响应。唯一完整原型新增匹配入口、版本候选、应用 / 恢复及空结果；Windows / Android 模拟布局定向交互、JS 语法和空白检查通过，位置保持 1:22。本批不修改或构建正式双端，自动提取 / 排名准确性、歌词时间轴仍未验证；新 UI 与自动 / 人工回退规则待用户确认，不合并审核分支。见 [真实请求记录](technical/2026-11-06-song-metadata-feasibility.md) 与 [提案](superpowers/specs/2026-11-06-song-metadata-design.md)。

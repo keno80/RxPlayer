@@ -40,6 +40,8 @@ $env:RXPLAYER_METADATA_LIVE_TEST = '1'
 
 ## 技术资料
 
+后续用户明确要求构建并安装双端，已在 `cad7960` 执行 `:composeApp:desktopJar :androidApp:assembleDebug`，构建通过；Windows `:composeApp:run` 重新启动且托盘 / SMTC 连接，Android `adb install -r` 返回 Success，Mi 10 启动 MainActivity 返回 Status: ok，进程存在。未安装独立测试包。Windows 使用更新后的开发运行产物，未打包 MSI / EXE；原生视觉与听感同步仍由用户审核。
+
 本次匿名探测发现 QQ 旧 Desktop 搜索返回空、酷狗 `/v1/search` 返回非 JSON，因此不把这两个入口接入当前实现。移动搜索及经典歌词入口在本次样本可用。
 
 - [Lyricify QQ 接口维护源码](https://github.com/WXRIW/Lyricify-Lyrics-Helper/blob/master/Lyricify.Lyrics.Helper/Providers/Web/QQMusic/Api.cs)：移动搜索协议和返回结构。
