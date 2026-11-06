@@ -33,7 +33,8 @@
     theme: 'dark', route: 'search', source: 'Bilibili', scene: 'results',
     queries: Object.fromEntries(sources.map(source => [source, '夜航'])),
     favorites: ['0-0:p1'], recent: ['0-0:p1'],
-    queue: ['0-0:p1'], queueOpen: queueBreakpoint.matches, current: '0-0:p1', playing: false, position: 82,
+    queue: ['0-0:p1','0-0:p2','0-2','0-1:p1','0-3'], queueOpen: queueBreakpoint.matches, current: '0-0:p1', playing: false, position: 82,
+    queueSelection: null, queueBeforeShuffle: null,
     phase: 'paused', prepared: true, wantPlay: false,
     libraryTab: 'favorites', playlist: null,
     windowHidden: false, exited: false,
@@ -46,6 +47,7 @@
   let previousFocusData = null;
   let previousFocusRegion = null;
   let queueFocusOrigin = null;
+  let queueDrag = null, suppressQueueClick = false;
   let toastTimer;
   let searchTimer, playbackTimer, searchTicket = 0, playbackTicket = 0;
   const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -57,7 +59,7 @@
   const art = (track, extra = '') => `<span class="art art-${track.art} ${extra}" aria-hidden="true"></span>`;
   const iconButton = (action, name, label, extra = '') => `<button type="button" class="icon-button" data-action="${action}" aria-label="${escape(label)}" data-tip="${escape(label)}" ${extra}>${symbol(name)}</button>`;
   const favoriteButton = track => `<button type="button" class="icon-button favorite-list" data-action="favorite" data-id="${track.id}" aria-label="收藏 ${escape(track.title)}" aria-pressed="${state.favorites.includes(track.id)}" data-tip="收藏">${symbol('favorite')}</button>`;
-  const focusKey = element => Object.fromEntries(['action','id','source','route','tab','index'].filter(key => element.dataset[key] !== undefined).map(key => [key,element.dataset[key]]));
+  const focusKey = element => Object.fromEntries(['action','id','source','route','tab','index','direction'].filter(key => element.dataset[key] !== undefined).map(key => [key,element.dataset[key]]));
   const waitingPhases = ['preparing','buffering','refreshing'];
   const phaseLabels = {paused:'已暂停',playing:'正在播放',preparing:'正在准备音频',buffering:'正在缓冲',failed:'播放失败',unavailable:'内容不可用',expired:'播放地址已失效',refreshing:'正在重新获取地址',ended:'已播放完'};
   const canSeek = () => state.prepared && ['paused','playing'].includes(state.phase);
@@ -237,13 +239,117 @@
   function queueItems() {
     return state.queue.map((id, index) => {
       const track = trackById(id);
-      return `<div class="queue-item${id === state.current ? ' is-current' : ''}"><span class="queue-number" aria-hidden="true">${id === state.current ? symbol(state.playing ? 'graphic_eq' : 'music_note') : index + 1}</span><button class="now-track" data-action="play-track" data-id="${id}" aria-label="播放 ${escape(track.title)}" ${id === state.current ? 'aria-current="true"' : ''}>${art(track)}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${track.source} · ${time(track.duration)}</span></span></button>${iconButton('remove-queue', 'close', `移除 ${track.title}`, `data-id="${id}"`)}</div>`;
+      const drag = `<button type="button" class="icon-button queue-drag" data-action="queue-drag" data-id="${id}" aria-label="拖动 ${escape(track.title)} 调整顺序，点按显示移动操作" aria-describedby="queue-sort-help" aria-expanded="${id === state.queueSelection}" ${state.queue.length < 2 ? 'disabled' : ''}><svg viewBox="0 -960 960 960" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M200-360q-17 0-28.5-11.5T160-400q0-17 11.5-28.5T200-440h560q17 0 28.5 11.5T800-400q0 17-11.5 28.5T760-360H200Zm0-160q-17 0-28.5-11.5T160-560q0-17 11.5-28.5T200-600h560q17 0 28.5 11.5T800-560q0 17-11.5 28.5T760-520H200Z"/></svg></button>`;
+      return `<div class="queue-item${id === state.current ? ' is-current' : ''}${id === state.queueSelection ? ' is-sort-selected' : ''}" data-queue-id="${id}" role="listitem"><span class="queue-number" aria-hidden="true">${id === state.current ? symbol(state.playing ? 'graphic_eq' : 'music_note') : index + 1}</span><button class="now-track" data-action="play-track" data-id="${id}" aria-label="播放 ${escape(track.title)}" ${id === state.current ? 'aria-current="true"' : ''}>${art(track)}<span class="track-info"><span class="track-title">${escape(track.title)}</span><span class="track-sub">${track.source} · ${time(track.duration)}</span></span></button>${iconButton('remove-queue', 'close', `移除 ${track.title}`, `data-id="${id}"`)}${drag}</div>`;
     }).join('') || '<p class="queue-caption">队列还空着，把想听的内容加入进来。</p>';
   }
 
   function supportPane() {
-    return `<header class="support-heading"><div><h2 id="queue-title">播放队列</h2><span class="queue-count">${state.queue.length} 首</span></div>${iconButton('close-queue','close','收起播放队列')}</header><div class="queue-list">${queueItems()}</div>`;
+    const index = state.queue.indexOf(state.queueSelection);
+    const sortTools = index >= 0 && state.queue.length > 1 ? `<div class="queue-sort-tools" role="group" aria-label="移动 ${escape(trackById(state.queueSelection).title)}"><span>移动第 ${index + 1} 首</span>${iconButton('move-queue','arrow_back','将选中曲目上移',`data-id="${state.queueSelection}" data-direction="-1" ${index === 0 ? 'disabled' : ''}`)}${iconButton('move-queue','arrow_back','将选中曲目下移',`data-id="${state.queueSelection}" data-direction="1" ${index >= state.queue.length - 1 ? 'disabled' : ''}`)}${iconButton('close-queue-move','close','收起移动操作')}</div>` : '';
+    return `<header class="support-heading"><div><h2 id="queue-title">播放队列</h2><span class="queue-count">${state.queue.length} 首</span></div>${iconButton('close-queue','close','收起播放队列')}</header><p id="queue-sort-help" class="sr-only">拖动手柄调整顺序；点按显示上移、下移操作，也可用上下方向键。当前播放保持不变。</p>${sortTools}<div class="queue-list" role="list" aria-label="${state.shuffle ? '本轮随机播放顺序' : '播放顺序'}">${queueItems()}</div>`;
   }
+
+  function renderQueue(focus = null) {
+    const pane = $('#support-pane'), scroll = $('.queue-list',pane)?.scrollTop || 0;
+    const key = focus || (pane.contains(document.activeElement) ? focusKey(document.activeElement) : null);
+    pane.innerHTML = supportPane();
+    $('.queue-list',pane).scrollTop = scroll;
+    syncPanels();
+    if (key) ($$('[data-action]',pane).find(element => !element.disabled && Object.entries(key).every(([name,value]) => element.dataset[name] === value)) || $(`[data-action="queue-drag"][data-id="${key.id || state.queueSelection}"]`,pane) || $('[data-action="close-queue"]',pane))?.focus({preventScroll:true});
+  }
+
+  function moveQueue(id, target) {
+    const from = state.queue.indexOf(id);
+    if (from < 0 || target < 0 || target >= state.queue.length || from === target) return false;
+    state.queue.splice(target,0,state.queue.splice(from,1)[0]);
+    if (state.shuffle) state.queueBeforeShuffle = [...state.queue];
+    renderQueue();
+    announce(`${trackById(id).title} 已移到第 ${target + 1} 首，共 ${state.queue.length} 首`);
+    return true;
+  }
+
+  function setShuffle(enabled, preserveCurrent = true) {
+    if (enabled && !state.shuffle) {
+      state.queueBeforeShuffle = [...state.queue];
+      const pinned = preserveCurrent && state.queue.includes(state.current) ? [state.current] : [];
+      const remaining = state.queue.filter(id => !pinned.includes(id));
+      for (let i = remaining.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [remaining[i],remaining[j]] = [remaining[j],remaining[i]]; }
+      state.queue = [...pinned,...remaining];
+    } else if (!enabled && state.shuffle && state.queueBeforeShuffle) {
+      state.queue = [...state.queueBeforeShuffle.filter(id => state.queue.includes(id)),...state.queue.filter(id => !state.queueBeforeShuffle.includes(id))];
+      state.queueBeforeShuffle = null;
+    }
+    state.shuffle = enabled;
+  }
+
+  function updateQueueDrag() {
+    const drag = queueDrag;
+    if (!drag || !drag.moved) return;
+    if (!drag.handle.isConnected) { finishQueueDrag(false); return; }
+    const bounds = drag.list.getBoundingClientRect();
+    drag.inside = drag.x >= bounds.left && drag.x <= bounds.right && drag.y >= bounds.top - 24 && drag.y <= bounds.bottom + 24;
+    $$('.queue-item',drag.list).forEach(row => row.classList.remove('drop-before','drop-after'));
+    if (drag.inside) {
+      const scroll = drag.y < bounds.top + 32 ? -8 : drag.y > bounds.bottom - 32 ? 8 : 0;
+      drag.list.scrollTop += scroll;
+      drag.row.style.transform = `translateY(${drag.y - drag.startY + drag.list.scrollTop - drag.startScroll}px)`;
+      const others = $$('.queue-item',drag.list).filter(row => row !== drag.row);
+      drag.target = others.filter(row => { const rect = row.getBoundingClientRect(); return drag.y > rect.top + rect.height / 2; }).length;
+      (others[drag.target] || others.at(-1))?.classList.add(drag.target === others.length ? 'drop-after' : 'drop-before');
+    }
+    drag.frame = requestAnimationFrame(updateQueueDrag);
+  }
+
+  function finishQueueDrag(commit) {
+    const drag = queueDrag;
+    if (!drag) return;
+    queueDrag = null;
+    cancelAnimationFrame(drag.frame);
+    if (drag.handle.hasPointerCapture(drag.pointerId)) drag.handle.releasePointerCapture(drag.pointerId);
+    drag.row.style.transform = '';
+    $$('.queue-item',drag.list).forEach(row => row.classList.remove('is-dragging','drop-before','drop-after'));
+    if (drag.moved) { suppressQueueClick = true; setTimeout(() => { suppressQueueClick = false; },0); }
+    if (commit && !drag.moved) {
+      state.queueSelection = state.queueSelection === drag.id ? null : drag.id;
+      renderQueue({action:'queue-drag',id:drag.id});
+    } else if (commit) {
+      state.queueSelection = null;
+      const moved = drag.moved && drag.inside && moveQueue(drag.id,drag.target);
+      if (!moved) renderQueue({action:'queue-drag',id:drag.id});
+    }
+  }
+
+  document.addEventListener('pointerdown', event => {
+    const handle = event.target.closest('[data-action="queue-drag"]');
+    if (!handle || handle.disabled || event.button !== 0 || queueDrag) return;
+    event.preventDefault();
+    const list = handle.closest('.queue-list'), row = handle.closest('.queue-item');
+    $$('.queue-item',list).forEach(item => item.classList.toggle('is-sort-selected',item === row));
+    handle.focus({preventScroll:true});
+    handle.setPointerCapture(event.pointerId);
+    queueDrag = {id:handle.dataset.id,pointerId:event.pointerId,handle,row,list,startY:event.clientY,startScroll:list.scrollTop,x:event.clientX,y:event.clientY,target:state.queue.indexOf(handle.dataset.id),inside:true,moved:false,frame:0};
+  });
+  document.addEventListener('pointermove', event => {
+    if (!queueDrag || event.pointerId !== queueDrag.pointerId) return;
+    queueDrag.x = event.clientX; queueDrag.y = event.clientY;
+    if (!queueDrag.moved && Math.abs(event.clientY - queueDrag.startY) >= 6) {
+      queueDrag.moved = true; queueDrag.row.classList.add('is-dragging'); updateQueueDrag();
+    }
+  });
+  document.addEventListener('pointerup', event => {
+    if (queueDrag?.pointerId !== event.pointerId) return;
+    queueDrag.x = event.clientX; queueDrag.y = event.clientY;
+    if (queueDrag.moved) updateQueueDrag();
+    finishQueueDrag(true);
+  });
+  function cancelQueuePointer(event) {
+    if (queueDrag?.pointerId !== event.pointerId) return;
+    const id = queueDrag.id;
+    finishQueueDrag(false); renderQueue({action:'queue-drag',id}); announce('已取消拖动，队列顺序保持不变');
+  }
+  document.addEventListener('pointercancel',cancelQueuePointer);
+  document.addEventListener('lostpointercapture',cancelQueuePointer);
 
   function queueDocked() {
     return state.device === 'desktop' && queueBreakpoint.matches;
@@ -288,6 +394,9 @@
 
   function closeQueue(restoreFocus = true) {
     if (!state.queueOpen) return;
+    finishQueueDrag(false);
+    state.queueSelection = null;
+    $('#support-pane').innerHTML = supportPane();
     state.queueOpen = false;
     syncPanels();
     if (!restoreFocus) return;
@@ -406,6 +515,8 @@
   }
 
   function render() {
+    finishQueueDrag(false);
+    if (state.queue.length < 2 || !state.queue.includes(state.queueSelection)) state.queueSelection = null;
     const active = document.activeElement;
     const searchFocus = active.id === 'search-input' ? {start:active.selectionStart,end:active.selectionEnd} : null;
     const queueFocus = $('#support-pane').contains(active) ? focusKey(active) : null;
@@ -581,9 +692,7 @@
   function step(offset) {
     if (!state.queue.length) return;
     const index = state.queue.indexOf(state.current);
-    const nextIndex = state.shuffle && state.queue.length > 1
-      ? (index + 1 + Math.floor(Math.random() * (state.queue.length - 1))) % state.queue.length
-      : (index + offset + state.queue.length) % state.queue.length;
+    const nextIndex = (index + offset + state.queue.length) % state.queue.length;
     playTrack(state.queue[nextIndex]);
   }
 
@@ -603,6 +712,7 @@
     const button = event.target.closest('[data-action]');
     if (!button || button.disabled) return;
     const {action, id, source} = button.dataset;
+    if (suppressQueueClick && action === 'queue-drag') return;
     switch (action) {
       case 'preview-tray': state.device = 'desktop'; render(); openOverlay('tray'); break;
       case 'close-window': state.windowHidden = true; closeQueue(false); closeOverlay(); render(); toast('已收起到托盘，播放保持不变'); break;
@@ -641,6 +751,9 @@
       case 'open-player': openOverlay('player'); break;
       case 'open-queue': toggleQueue(); break;
       case 'close-queue': closeQueue(); break;
+      case 'queue-drag': state.queueSelection = state.queueSelection === id ? null : id; renderQueue(); break;
+      case 'close-queue-move': { const id = state.queueSelection; state.queueSelection = null; renderQueue({action:'queue-drag',id}); break; }
+      case 'move-queue': moveQueue(id,state.queue.indexOf(id) + Number(button.dataset.direction)); break;
       case 'close-overlay': closeOverlay(); break;
       case 'enqueue': case 'enqueue-next': {
         if (trackById(id).parts) openParts(id,action);
@@ -655,7 +768,7 @@
         }
         render(); break;
       }
-      case 'shuffle': state.shuffle = !state.shuffle; render(); toast(state.shuffle ? '已开启随机播放' : '已关闭随机播放'); break;
+      case 'shuffle': setShuffle(!state.shuffle); render(); toast(state.shuffle ? '已开启随机播放，队列显示本轮顺序' : '已关闭随机播放'); break;
       case 'repeat': state.repeat = !state.repeat; render(); toast(state.repeat ? '已切换为列表循环' : '已切换为顺序播放'); break;
       case 'library-tab': state.libraryTab = button.dataset.tab; render(); break;
       case 'new-playlist': state.addAfterCreate = false; openOverlay('new-playlist'); break;
@@ -696,12 +809,12 @@
       }
       case 'shuffle-favorites': {
         if (!state.favorites.length) break;
-        state.queue = [...state.favorites]; state.shuffle = true;
-        playTrack(state.queue[Math.floor(Math.random() * state.queue.length)]); break;
+        state.queue = [...state.favorites]; state.shuffle = false; setShuffle(true,false);
+        playTrack(state.queue[0]); break;
       }
       case 'shuffle-playlist': {
         state.queue = [...state.playlists[state.playlist].ids];
-        if (state.queue.length) { state.shuffle = true; playTrack(state.queue[Math.floor(Math.random() * state.queue.length)]); }
+        if (state.queue.length) { state.shuffle = false; setShuffle(true,false); playTrack(state.queue[0]); }
         else toast('先向歌单添加一些声音');
         break;
       }
@@ -798,7 +911,15 @@
   });
 
   document.addEventListener('keydown', event => {
+    const dragHandle = event.target.closest?.('[data-action="queue-drag"]');
+    if (dragHandle && ['ArrowUp','ArrowDown'].includes(event.key)) {
+      event.preventDefault();
+      moveQueue(dragHandle.dataset.id,state.queue.indexOf(dragHandle.dataset.id) + (event.key === 'ArrowUp' ? -1 : 1));
+      return;
+    }
     if (event.key === 'Escape') {
+      if (queueDrag) { event.preventDefault(); const id = queueDrag.id; finishQueueDrag(false); renderQueue({action:'queue-drag',id}); announce('已取消拖动'); return; }
+      if (state.queueSelection && $('#support-pane').contains(document.activeElement)) { event.preventDefault(); const id = state.queueSelection; state.queueSelection = null; renderQueue({action:'queue-drag',id}); return; }
       if ($('#transport-volume-popover') && !$('#transport-volume-popover').hidden) { event.preventDefault(); closeVolume(true); return; }
       if (state.queueOpen && (queueModal() || $('#support-pane').contains(document.activeElement))) { event.preventDefault(); closeQueue(); }
       else if (state.overlay) { event.preventDefault(); closeOverlay(); }
@@ -827,6 +948,7 @@
 
   $('#review-theme').addEventListener('click', () => { state.theme = state.theme === 'light' ? 'dark' : 'light'; render(); });
   $('#review-player').addEventListener('click', () => openOverlay('player'));
+  $('#review-queue').addEventListener('click', () => { if (!state.queueOpen) toggleQueue(); });
   $('#review-complete').addEventListener('click', () => {
     if (state.overlay === 'player' && waitingPhases.includes(state.phase)) finishPlayback();
     else if (state.scene === 'loading') finishSearch();
@@ -865,4 +987,5 @@
   render();
   if (review.get('view') === 'player') openOverlay('player');
   if (review.get('view') === 'tray') { state.device = 'desktop'; render(); openOverlay('tray'); }
+  if (review.get('view') === 'queue') { state.queueOpen = true; syncPanels(); }
 })();
