@@ -18,6 +18,8 @@ class WindowsMediaSessionTest {
         try {
             dispatchWindowsMediaCommand(runtime, 1)?.join()
             assertTrue(state.isPlaying)
+            dispatchWindowsMediaCommand(runtime, 1)?.join()
+            assertTrue(state.isPlaying, "A stale Play command must not pause playback")
             val playing = windowsMediaState(state)
             assertEquals(first.title, playing.title)
             assertEquals(item.author, playing.artist)
@@ -26,6 +28,8 @@ class WindowsMediaSessionTest {
             assertEquals(3, playing.status)
             dispatchWindowsMediaCommand(runtime, 2)?.join()
             assertFalse(state.playWhenReady)
+            dispatchWindowsMediaCommand(runtime, 2)?.join()
+            assertFalse(state.playWhenReady, "A stale Pause command must not resume playback")
             assertEquals(4, windowsMediaState(state).status)
             dispatchWindowsMediaCommand(runtime, 4)?.join()
             assertEquals(second.id, state.track?.id)
