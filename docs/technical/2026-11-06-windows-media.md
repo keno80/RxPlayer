@@ -39,3 +39,11 @@
 签名修复后 12 项复测通过，静态复查无剩余 Critical / Important。随后直接启动已编译产物，编译任务均为 UP-TO-DATE，日志确认 `Windows tray connected` 与 `Windows media session connected`；只确认启动和连接，没有继续逐页或硬件交互回归。
 
 托盘 API 依据：[Oracle SystemTray](https://docs.oracle.com/en/java/javase/17/docs/api/java.desktop/java/awt/SystemTray.html)、[Oracle TrayIcon](https://docs.oracle.com/en/java/javase/17/docs/api/java.desktop/java/awt/TrayIcon.html)。菜单使用系统外观，品牌状态图标由现有青绿色和音频条生成，不新增 UI 方案。
+
+## 托盘中文方框修复
+
+用户随后截图发现中文均显示方框、Latin 正常。此前 PopupMenu 没有指定字体（探测 getFont 为 null）；JDK Windows 菜单默认使用 SansSerif，而本机 win.menu.font 为 Microsoft YaHei UI。已在创建子项前显式设置系统菜单字体，子项继承；属性不可用时使用逻辑 Dialog 字体。此处恢复既有中文文案，不改变原型或交互。
+
+使用 Unicode 转义避免命令管道编码影响，探测打开、播放、暂停、上一曲、下一曲及退出共 6 种标签，全部继承系统字体，canDisplayUpTo 均为 -1；DesktopTrayTest 2 项通过，Git 空白检查、定向审查通过。该证据只确认字体 / 字形及状态逻辑，原生菜单实际显示仍待用户审核。
+
+依据：[OpenJDK Windows 默认菜单字体](https://raw.githubusercontent.com/openjdk/jdk17u/master/src/java.desktop/windows/classes/sun/awt/windows/awtLocalization.properties)、[Oracle MenuComponent 字体继承](https://docs.oracle.com/en/java/javase/17/docs/api/java.desktop/java/awt/MenuComponent.html)。

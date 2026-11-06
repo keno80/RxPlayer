@@ -2,10 +2,12 @@ package com.keno.rxplayer
 
 import java.awt.AWTException
 import java.awt.Color
+import java.awt.Font
 import java.awt.MenuItem
 import java.awt.PopupMenu
 import java.awt.RenderingHints
 import java.awt.SystemTray
+import java.awt.Toolkit
 import java.awt.TrayIcon
 import java.awt.image.BufferedImage
 
@@ -50,7 +52,11 @@ internal class DesktopTray private constructor(
             try {
                 if (!SystemTray.isSupported()) return null
                 val system = SystemTray.getSystemTray()
-                val menu = PopupMenu()
+                // AWT's default menu font does not reliably fall back for CJK on Windows.
+                val menu = PopupMenu().apply {
+                    font = Toolkit.getDefaultToolkit().getDesktopProperty("win.menu.font") as? Font
+                        ?: Font(Font.DIALOG, Font.PLAIN, 12)
+                }
                 fun item(label: String, action: () -> Unit) = MenuItem(label).also { it.addActionListener { action() }; menu.add(it) }
                 val open = item("打开 RxPlayer", onOpen)
                 menu.addSeparator()
