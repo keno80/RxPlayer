@@ -144,7 +144,7 @@ class DesktopAudioPlayer : AudioPlayer {
         init {
             val executable = System.getProperty("rxplayer.mpv.path") ?: System.getenv("RXPLAYER_MPV_PATH") ?: error("Validated desktop engine not configured")
             require(File(executable).isFile)
-            process = ProcessBuilder(executable, "--no-config", "--load-scripts=no", "--terminal=no", "--no-video", "--idle=yes", "--ytdl=no", "--ao=wasapi", "--input-ipc-server=$name")
+            process = ProcessBuilder(executable, "--no-config", "--load-scripts=no", "--terminal=no", "--no-video", "--idle=yes", "--ytdl=no", "--media-controls=no", "--input-media-keys=no", "--ao=wasapi", "--input-ipc-server=$name")
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD).start()
             var connected: Pointer? = null
             val until = System.nanoTime() + 5_000_000_000L

@@ -12,12 +12,14 @@ actual fun rememberPlaybackRuntime(): PlaybackRuntime? {
         val engine = DesktopAudioPlayer()
         val source = BilibiliSource()
         var owned: PlaybackRuntime? = null
+        var media: Job? = null
         try {
             owned = openPlaybackRuntime(engine, store, { source.resolve(it.item.id, it.part.cid) }, { engine.release(); source.close() })
             value = owned
+            media = launch { runWindowsMediaSession(owned) }
             awaitCancellation()
         } finally {
-            withContext(NonCancellable) { if (owned != null) owned.close() else { engine.release(); source.close() } }
+            withContext(NonCancellable) { media?.cancelAndJoin(); if (owned != null) owned.close() else { engine.release(); source.close() } }
         }
     }
     return runtime
