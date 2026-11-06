@@ -111,7 +111,7 @@ internal fun MobileSettings(dark: Boolean, changeTheme: (Boolean) -> Unit, follo
 }
 
 @Composable
-internal fun MobileContentMenu(item: ContentItem, favorite: Boolean, close: () -> Unit, action: (ContentAction) -> Unit, toggleFavorite: () -> Unit, partCount: Int?, chooseParts: () -> Unit, playlistActions: PlaylistRowActions? = null) {
+internal fun MobileContentMenu(item: ContentItem, favorite: Boolean, close: () -> Unit, action: (ContentAction) -> Unit, toggleFavorite: () -> Unit, partCount: Int?, chooseParts: () -> Unit, playlistActions: PlaylistRowActions? = null, canMatch: Boolean = false) {
     Dialog(close, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.widthIn(max = 480.dp).fillMaxWidth().padding(horizontal = 24.dp), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
             Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp)) {
@@ -125,6 +125,7 @@ internal fun MobileContentMenu(item: ContentItem, favorite: Boolean, close: () -
                 MobileMenuAction(Icons.Outlined.QueueMusic, "加入播放队列") { action(ContentAction.Enqueue) }
                 MobileMenuAction(if (favorite) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder, if (favorite) "取消收藏" else "收藏", click = toggleFavorite)
                 MobileMenuAction(Icons.Outlined.PlaylistAdd, "添加到歌单") { action(ContentAction.AddToPlaylist) }
+                if (canMatch) MobileMenuAction(PlayerSymbols.Search, "匹配歌曲信息") { action(ContentAction.MatchSong) }
                 playlistActions?.let { edits ->
                     MobileMenuAction(Icons.Outlined.ArrowUpward, "上移", enabled = edits.index > 0) { close(); edits.move(edits.index - 1) }
                     MobileMenuAction(Icons.Outlined.ArrowDownward, "下移", enabled = edits.index < edits.count - 1) { close(); edits.move(edits.index + 1) }

@@ -4,7 +4,7 @@ import androidx.compose.runtime.*
 import com.keno.rxplayer.BilibiliTrack
 import kotlinx.coroutines.*
 
-enum class ContentAction { Play, Enqueue, Next, AddToPlaylist }
+enum class ContentAction { Play, Enqueue, Next, AddToPlaylist, MatchSong }
 data class PartSelection(val details: VideoDetails, val action: ContentAction)
 
 /** Browsing never mutates playback until a single part has been confirmed. */

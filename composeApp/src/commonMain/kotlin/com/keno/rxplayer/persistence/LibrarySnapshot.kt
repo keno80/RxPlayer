@@ -4,6 +4,7 @@ import com.keno.rxplayer.BilibiliTrack
 import com.keno.rxplayer.audio.PlaybackCheckpoint
 import com.keno.rxplayer.source.ContentItem
 import com.keno.rxplayer.library.LocalPlaylist
+import com.keno.rxplayer.metadata.SongMetadataRecord
 
 data class LibrarySnapshot(
     val favorites: List<ContentItem> = emptyList(),
@@ -12,4 +13,5 @@ data class LibrarySnapshot(
     val dark: Boolean? = null,
     val followArtwork: Boolean = true,
     val playlists: List<LocalPlaylist> = emptyList(),
+    val songMetadata: List<SongMetadataRecord> = emptyList(),
 )

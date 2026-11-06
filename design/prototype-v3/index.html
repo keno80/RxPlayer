@@ -7,14 +7,14 @@
   <title>RxPlayer · 完整交互原型</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="colors.css">
-  <link rel="stylesheet" href="prototype.css?revision=bilibili-retry-confirmed-20261106">
+  <link rel="stylesheet" href="prototype.css?revision=song-metadata-confirmed-20261106">
   <link rel="stylesheet" href="transport-options.css?revision=unified-20261030">
   <script defer src="cover-palettes.js"></script>
-  <script defer src="prototype.js?revision=bilibili-retry-confirmed-20261106"></script>
+  <script defer src="prototype.js?revision=song-metadata-confirmed-20261106"></script>
 </head>
 <body>
   <header class="review-tools">
-    <div class="review-title"><strong>RxPlayer</strong><span>完整原型</span><span class="review-badge">分页重试入口已确认</span></div>
+    <div class="review-title"><strong>RxPlayer</strong><span>完整原型</span><span class="review-badge">歌曲信息匹配已确认</span></div>
     <div class="review-controls">
       <div class="device-picker" role="group" aria-label="预览平台">
         <button data-device-choice="android" aria-pressed="false">Android</button>
@@ -24,6 +24,7 @@
       <label class="scene-picker">播放场景<select id="playback-select" aria-label="预览播放状态"><option value="paused">就绪 / 暂停</option><option value="playing">播放中</option><option value="preparing">准备音频</option><option value="buffering">缓冲中</option><option value="failed">播放失败</option><option value="unavailable">内容不可用</option><option value="expired">地址失效</option><option value="refreshing">重新获取地址</option><option value="ended">播放结束</option></select></label>
       <label class="scene-picker">歌词状态<select id="lyrics-layout-select" aria-label="预览歌词状态"><option value="auto">跟随曲目</option><option value="none">无歌词</option><option value="available">有歌词</option></select></label>
       <button id="review-player" class="review-button">查看播放页</button>
+      <button id="review-metadata" class="review-button">歌曲信息匹配</button>
       <button id="review-queue" class="review-button">查看播放队列</button>
       <button id="review-tray" class="review-button">预览托盘 / 退出</button>
       <button id="review-complete" class="review-button" hidden>模拟等待成功</button>
@@ -53,6 +54,6 @@
       <p id="live-feedback" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
     </section>
   </main>
-  <footer class="review-caption"><span>统一完整原型 · 分页入口已确认并接线：失败只用 toast 提示，已有结果、播放和队列保留；点击“重试加载”继续失败页，等待时禁用按钮，成功后追加结果。顶部“搜索场景”可切换分页失败 / 等待。此页仍为模拟数据，无真实网络请求；原生交互待用户审核。</span></footer>
+  <footer class="review-caption"><span>统一完整原型 · 歌曲信息匹配已确认并接入双端共用源码：从播放页右上角“歌曲信息”或具体分 P 更多菜单选择对应版本，可恢复视频原信息，保留播放、位置与队列。正式实现明确时自动补全，未知括号 / 录音版本保留原信息并允许手选；此网页的候选、封面和歌词仍为原创演示，不联网。原生界面及实际歌词同步待用户审核。</span></footer>
 </body>
 </html>

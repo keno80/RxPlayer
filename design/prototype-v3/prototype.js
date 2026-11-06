@@ -46,7 +46,13 @@
     playlists: [{name: '通勤路上', ids: ['0-0:p1', '0-0:p2', '0-2'], art: 0}, {name: '安静片刻', ids: [], art: 2}],
     connected: [], artworkColor: true, lyricsLayout: 'auto', repeat: false, shuffle: false, volume: 65,
     history: ['夜航', '午后纯音乐', '城市现场'], overlay: null, menuTrack: null,
+    songMatches: {}, matchQuery: '', matchReturn: null,
   });
+  // Authored product fixtures: no real lyrics, covers or automatic recognition are fetched here.
+  const songCandidates = [
+    {id:'studio',title:'夜航',author:'拾音计划',album:'夜航',version:'录音室版',duration:222,art:3,hasLyrics:true,lyricArt:0},
+    {id:'live',title:'夜航（城市现场）',author:'落日工作室',album:'城市现场',version:'现场版',duration:264,art:1,hasLyrics:false},
+  ];
   let state = initial();
   let previousFocus = null;
   let previousFocusData = null;
@@ -57,7 +63,10 @@
   let searchTimer, playbackTimer, searchTicket = 0, playbackTicket = 0;
   const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const trackById = id => tracks.find(track => track.id === id);
-  const current = () => trackById(state.current);
+  const current = () => {
+    const original = trackById(state.current), match = songCandidates.find(item => item.id === state.songMatches[state.current]);
+    return match ? {...original,title:match.title,author:match.author,art:match.art,hasLyrics:match.hasLyrics,lyricArt:match.lyricArt} : original;
+  };
   const time = value => `${Math.floor(value / 60)}:${String(Math.floor(value % 60)).padStart(2, '0')}`;
   const stateIcons = new Set(['check_circle','hourglass_top','link_off','lock','refresh','replay','sync','wifi_off']);
   const symbol = (name, filled = false) => `<span class="symbol${stateIcons.has(name) ? ' state-symbol' : ''}${filled ? ' filled' : ''}" aria-hidden="true">${name}</span>`;
@@ -484,7 +493,7 @@
 
   function lyricLines() {
     // The review toolbar can force the available state for a song without demo lyrics.
-    const lines = demoLyrics[current().art].length ? demoLyrics[current().art] : demoLyrics[0];
+    const lines = demoLyrics[current().lyricArt ?? current().art].length ? demoLyrics[current().lyricArt ?? current().art] : demoLyrics[0];
     return lines.map((text,index) => ({text,at:Math.floor(index * current().duration / lines.length)}));
   }
 
@@ -613,6 +622,12 @@
 
   function closeOverlay() {
     if (!state.overlay) return;
+    if (state.overlay === 'song-match' && state.matchReturn === 'player') {
+      state.matchReturn = null;
+      state.overlay = 'player'; render();
+      requestAnimationFrame(() => $('#dialog [data-action="song-match"]')?.focus({preventScroll:true}));
+      return;
+    }
     if (queueModal()) closeQueue(false);
     state.overlay = null;
     syncPanels();
@@ -638,6 +653,12 @@
       if (desktop) body = `<div class="desktop-listening-layout"><section class="desktop-player-column" aria-label="当前播放控制">${artwork}${detail}</section>${desktopLyrics()}</div>`;
       else if (hasLyrics()) body = `<div class="mobile-lyrics-player"><section class="mobile-lyrics-stage" aria-labelledby="mobile-lyrics-title"><div class="lyrics-backdrop" aria-hidden="true">${art(track,'lyrics-background')}</div><h3 id="mobile-lyrics-title" class="sr-only">歌词</h3><div class="mobile-lyric-lines" data-active="${activeLyricIndex()}">${lyricButtons(true)}</div></section><div class="mobile-player-meta"><div><h3 class="mobile-track-title">${escape(track.title)}</h3><p>${escape(track.author)} · ${track.source}</p></div><div class="mobile-track-actions">${iconButton('open-queue','queue_music',`播放队列，${state.queue.length} 首`)}${favoriteButton(track)}</div></div>${playerControls()}</div>`;
       else body = `<div class="player-layout">${artwork}${detail}</div>`;
+    } else if (state.overlay === 'song-match') {
+      const original = trackById(state.menuTrack), applied = songCandidates.find(item => item.id === state.songMatches[original.id]);
+      const words = state.matchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+      const candidates = songCandidates.filter(item => words.every(word => `${item.title} ${item.author} ${item.album} ${item.version}`.toLowerCase().includes(word)));
+      title = '匹配歌曲信息';
+      body = `<p class="hint">当前视频 · ${escape(original.title)}<br>UP 主：${escape(original.author)} · ${time(original.duration)}</p><p class="hint">${applied ? `已选：${escape(applied.title)} · ${escape(applied.author)}` : '选择对应的歌曲版本，补充封面和歌词。'}</p><form id="song-match-form"><label for="song-match-query">歌名 / 歌手</label><div class="song-match-search"><input class="dialog-input" id="song-match-query" value="${escape(state.matchQuery)}" maxlength="200" placeholder="输入歌名或歌手" required><button class="filled-button" type="submit">搜索</button></div></form><p class="hint">以下为原创演示候选，不连接真实歌曲库。</p><div class="parts-list">${candidates.map(item => `<button class="part-option song-candidate" data-action="apply-song-match" data-id="${item.id}" ${applied?.id === item.id ? 'aria-current="true"' : ''}>${art(item)}<span class="part-copy"><strong>${escape(item.title)}</strong><small>${escape(item.author)} · ${item.version} · ${time(item.duration)}</small><small>${applied?.id === item.id ? item.hasLyrics ? '同步歌词 · 专辑封面' : '暂无同步歌词 · 专辑封面' : '歌词待查询'}</small></span>${applied?.id === item.id ? symbol('check') : ''}</button>`).join('') || '<p class="hint" role="status">没有找到匹配歌曲，试试修改歌名或歌手。</p>'}</div><p class="hint">现场、翻唱或语言版本不同，不自动套用原版时间轴。匹配不改变正在播放的视频。</p><div class="dialog-actions">${applied ? '<button class="text-button" data-action="reset-song-match">使用视频原信息</button>' : ''}<button class="text-button" data-action="close-overlay">取消</button></div>`;
     } else if (state.overlay === 'tray') {
       title = 'RxPlayer · 托盘菜单预览';
       body = `<p class="hint">${escape(current().title)} · ${state.playing ? '正在播放' : '已暂停'}</p><button class="menu-action" data-action="restore-window">${symbol('arrow_back')}打开 RxPlayer</button><button class="menu-action" data-action="toggle-play">${symbol(state.playing ? 'pause' : 'play_arrow')}${state.playing ? '暂停' : '播放'}</button><button class="menu-action" data-action="previous" ${state.queue.length < 2 ? 'disabled' : ''}>${symbol('skip_previous')}上一曲</button><button class="menu-action" data-action="next" ${state.queue.length < 2 ? 'disabled' : ''}>${symbol('skip_next')}下一曲</button><hr><button class="menu-action" data-action="exit-app">${symbol('close')}退出 RxPlayer</button><p class="hint">退出会停止播放、保存位置并释放资源。关闭窗口只收起到托盘。此处演示行为，正式菜单使用 Windows 系统样式。</p>`;
@@ -652,6 +673,7 @@
         <button class="menu-action" data-action="enqueue" data-id="${track.id}">${symbol('queue_music')}加入播放队列</button>
         <button class="menu-action" data-action="favorite" data-id="${track.id}">${symbol('favorite', state.favorites.includes(track.id))}${state.favorites.includes(track.id) ? '取消收藏' : '收藏'}</button>
         <button class="menu-action" data-action="choose-playlist" data-id="${track.id}">${symbol('playlist_add')}添加到歌单</button>
+        ${track.source === 'Bilibili' && !track.parts ? `<button class="menu-action" data-action="song-match" data-id="${track.id}">${symbol('search')}匹配歌曲信息</button>` : ''}
         ${index < 0 ? '' : `<button class="menu-action" data-action="move-playlist-track" data-id="${track.id}" data-direction="-1" ${index === 0 ? 'disabled' : ''}>${symbol('arrow_upward')}上移</button><button class="menu-action" data-action="move-playlist-track" data-id="${track.id}" data-direction="1" ${index === list.ids.length - 1 ? 'disabled' : ''}>${symbol('arrow_downward')}下移</button><button class="menu-action" data-action="remove-playlist-track" data-id="${track.id}">${symbol('remove_circle_outline')}从此歌单移除</button>`}`;
     } else if (state.overlay === 'parts') {
       const track = trackById(state.menuTrack);
@@ -675,7 +697,7 @@
       body = `<p class="hint">${escape(trackById(state.menuTrack).title)} · 相同分 P 不会重复添加。</p>` + state.playlists.map((playlist, index) => `<button class="menu-action" data-action="add-to-playlist" data-index="${index}">${symbol(playlist.ids.includes(state.menuTrack) ? 'check' : 'album')}${escape(playlist.name)}${playlist.ids.includes(state.menuTrack) ? ' · 已添加' : ''}</button>`).join('') + `<button class="menu-action" data-action="create-and-add">${symbol('add')}新建歌单并添加</button>`;
     }
     const heading = state.overlay === 'player'
-      ? `<header class="sheet-head player-head">${iconButton('close-overlay','arrow_back','返回')}<h2 id="dialog-title" class="sr-only">播放器</h2>${state.device === 'android' && hasLyrics() ? '' : `<button class="queue-pill" data-action="open-queue" aria-label="播放队列，${state.queue.length} 首">${symbol('queue_music')}<span>队列 · ${state.queue.length}</span></button>`}</header>`
+      ? `<header class="sheet-head player-head">${iconButton('close-overlay','arrow_back','返回')}<h2 id="dialog-title" class="sr-only">播放器</h2><div class="player-head-actions">${iconButton('song-match','more_horiz','歌曲信息',`data-id="${state.current}"`)}${state.device === 'android' && hasLyrics() ? '' : `<button class="queue-pill" data-action="open-queue" aria-label="播放队列，${state.queue.length} 首">${symbol('queue_music')}<span>队列 · ${state.queue.length}</span></button>`}</div></header>`
       : `<header class="sheet-head"><h2 id="dialog-title">${escape(title)}</h2>${iconButton('close-overlay','close','关闭')}</header>`;
     dialog.innerHTML = `${heading}${body}`;
     if (wasInDialog) requestAnimationFrame(() => {
@@ -774,6 +796,19 @@
       case 'seek-lyric': seekTo(lyricLines()[Number(button.dataset.index)].at); break;
       case 'favorite': state.favorites = state.favorites.includes(id) ? state.favorites.filter(item => item !== id) : [...state.favorites, id]; render(); toast(state.favorites.includes(id) ? '已收藏' : '已取消收藏'); break;
       case 'track-menu': openOverlay('menu', id); break;
+      case 'song-match': {
+        state.matchReturn = state.overlay === 'player' ? 'player' : null;
+        state.matchQuery = '夜航';
+        openOverlay('song-match',id || state.current); break;
+      }
+      case 'apply-song-match': {
+        state.songMatches[state.menuTrack] = id;
+        closeOverlay(); render(); toast('已更新歌曲信息，播放与队列保持不变'); break;
+      }
+      case 'reset-song-match': {
+        delete state.songMatches[state.menuTrack];
+        closeOverlay(); render(); toast('已恢复视频封面和原信息'); break;
+      }
       case 'open-player': openOverlay('player'); break;
       case 'open-queue': toggleQueue(); break;
       case 'close-queue': closeQueue(); break;
@@ -866,6 +901,13 @@
   });
 
   document.addEventListener('submit', event => {
+    if (event.target.id === 'song-match-form') {
+      event.preventDefault();
+      state.matchQuery = $('#song-match-query').value.trim();
+      renderOverlay();
+      requestAnimationFrame(() => $('#song-match-query')?.focus({preventScroll:true}));
+      return;
+    }
     if (event.target.id === 'search-form') {
       event.preventDefault();
       const query = $('#search-input').value.trim();
@@ -1004,6 +1046,10 @@
   }, 1000);
   const review = new URLSearchParams(location.search);
   $('#review-tray').addEventListener('click', () => { state.device = 'desktop'; render(); openOverlay('tray'); });
+  $('#review-metadata').addEventListener('click', () => {
+    state.matchReturn = 'player'; state.matchQuery = '夜航';
+    openOverlay('song-match',state.current);
+  });
   product.dataset.transport = 'c';
   if (review.has('embed')) document.body.classList.add('transport-embed');
   if (['android','desktop'].includes(review.get('device'))) state.device = review.get('device');

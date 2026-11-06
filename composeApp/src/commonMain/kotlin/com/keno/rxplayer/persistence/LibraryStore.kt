@@ -10,6 +10,8 @@ import com.keno.rxplayer.audio.PlaybackCheckpoint
 import com.keno.rxplayer.source.ContentItem
 import com.keno.rxplayer.source.VideoPart
 import com.keno.rxplayer.library.LocalPlaylist
+import com.keno.rxplayer.metadata.decodeSongRecord
+import com.keno.rxplayer.metadata.encodeSongRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -46,9 +48,12 @@ class LibraryStore(private val path: String, private val prepareDirectory: () ->
             val playlists = c.prepare("SELECT playlist_id, name FROM playlists ORDER BY position").use { s ->
                 buildList { while (s.step()) add(LocalPlaylist(s.getText(0), s.getText(1), members[s.getText(0)]?.toList().orEmpty())) }
             }
+            val songMetadata = c.prepare("SELECT track_id, payload FROM song_metadata ORDER BY track_id").use { s ->
+                buildList { while (s.step()) add(decodeSongRecord(s.getText(0), s.getText(1))) }
+            }
             c.prepare("SELECT dark, follow_artwork, shuffle, repeat_mode, volume, current_id, position_ms FROM app_state WHERE id = 1").use { s ->
-                if (!s.step()) LibrarySnapshot(favorites, recent, PlaybackCheckpoint(queue, playOrder = playOrder), playlists = playlists)
-                else LibrarySnapshot(favorites, recent, PlaybackCheckpoint(queue, s.nullableText(5), s.getInt(6), s.getInt(2) == 1, s.getInt(3) == 1, s.getDouble(4).toFloat(), playOrder), if (s.isNull(0)) null else s.getInt(0) == 1, s.getInt(1) == 1, playlists)
+                if (!s.step()) LibrarySnapshot(favorites, recent, PlaybackCheckpoint(queue, playOrder = playOrder), playlists = playlists, songMetadata = songMetadata)
+                else LibrarySnapshot(favorites, recent, PlaybackCheckpoint(queue, s.nullableText(5), s.getInt(6), s.getInt(2) == 1, s.getInt(3) == 1, s.getDouble(4).toFloat(), playOrder), if (s.isNull(0)) null else s.getInt(0) == 1, s.getInt(1) == 1, playlists, songMetadata)
             }
         }
     }
@@ -62,7 +67,7 @@ class LibraryStore(private val path: String, private val prepareDirectory: () ->
         val items = (snapshot.favorites + tracks.values.map { it.item }).associateBy { it.stableKey }
         c.transaction {
             // Delete dependents first. Any failed insert rolls the whole snapshot back.
-            listOf("app_state", "queue_play_order", "queue", "recent", "favorites", "playlist_tracks", "playlists", "tracks", "items").forEach { c.execSQL("DELETE FROM $it") }
+            listOf("app_state", "song_metadata", "queue_play_order", "queue", "recent", "favorites", "playlist_tracks", "playlists", "tracks", "items").forEach { c.execSQL("DELETE FROM $it") }
             c.prepare("INSERT INTO items VALUES (?, ?, ?, ?, ?, ?, ?)").use { s ->
                 items.values.forEach { item ->
                     s.bindText(1, item.stableKey); s.bindText(2, item.source.name); s.bindText(3, item.id)
@@ -81,6 +86,12 @@ class LibraryStore(private val path: String, private val prepareDirectory: () ->
             c.writeOrder("recent", snapshot.recent.map { it.id })
             c.writeOrder("queue", playback.queue.map { it.id })
             c.writeOrder("queue_play_order", playback.playOrder)
+            c.prepare("INSERT INTO song_metadata (track_id, payload) VALUES (?, ?)").use { s ->
+                snapshot.songMetadata.forEach { record ->
+                    s.bindText(1, record.trackId); s.bindText(2, encodeSongRecord(record))
+                    s.step(); s.reset(); s.clearBindings()
+                }
+            }
             c.prepare("INSERT INTO playlists (playlist_id, position, name) VALUES (?, ?, ?)").use { s ->
                 snapshot.playlists.forEachIndexed { index, playlist ->
                     s.bindText(1, playlist.id); s.bindInt(2, index); s.bindText(3, playlist.name)
@@ -111,7 +122,7 @@ class LibraryStore(private val path: String, private val prepareDirectory: () ->
                 c.execSQL("PRAGMA foreign_keys = ON")
                 c.execSQL("PRAGMA busy_timeout = 3000")
                 val version = c.prepare("PRAGMA user_version").use { s -> check(s.step()); s.getInt(0) }
-                check(version in 0..3) { "Unsupported library database version: $version" }
+                check(version in 0..4) { "Unsupported library database version: $version" }
                 if (version == 0) c.transaction {
                     c.prepare("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").use { s ->
                         check(s.step() && s.getInt(0) == 0) { "Unversioned database is not empty" }
@@ -131,6 +142,10 @@ class LibraryStore(private val path: String, private val prepareDirectory: () ->
                 if (version <= 2) c.transaction {
                     c.execSQL("CREATE TABLE queue_play_order (position INTEGER PRIMARY KEY, track_id TEXT NOT NULL UNIQUE REFERENCES tracks(track_id))")
                     c.execSQL("PRAGMA user_version = 3")
+                }
+                if (version <= 3) c.transaction {
+                    c.execSQL("CREATE TABLE song_metadata (track_id TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL)")
+                    c.execSQL("PRAGMA user_version = 4")
                 }
                 block(c)
             }

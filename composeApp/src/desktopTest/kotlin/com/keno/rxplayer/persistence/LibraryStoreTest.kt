@@ -6,17 +6,32 @@ import com.keno.rxplayer.*
 import com.keno.rxplayer.audio.PlaybackCheckpoint
 import com.keno.rxplayer.library.LocalPlaylist
 import com.keno.rxplayer.source.*
+import com.keno.rxplayer.metadata.*
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
 import kotlin.test.*
 
 class LibraryStoreTest {
+    @Test fun versionThreeMigrationPreservesSourceAndRestoresMatchesAndOptOuts() = runTest {
+        withDatabase { path ->
+            val store = LibraryStore(path)
+            store.save(snapshot())
+            BundledSQLiteDriver().open(path).use { c -> c.execSQL("DROP TABLE song_metadata"); c.execSQL("PRAGMA user_version = 3") }
+            assertEquals(snapshot(), store.load())
+            val metadata = listOf(SongMetadataRecord(first.id, SongMatch(SongCandidate(42, "歌名", listOf("歌手"), "专辑", 40000, "https://p1.music.126.net/a.jpg"), listOf(LyricLine(1000,"原创测试")), "网易云")), SongMetadataRecord(second.id, automaticDisabled = true))
+            val expected = snapshot().copy(songMetadata = metadata)
+            store.save(expected)
+            assertEquals(expected, LibraryStore(path).load())
+            assertEquals(item, store.load().favorites.single())
+        }
+    }
     @Test fun versionTwoMigrationKeepsTheLibraryAndPersistsTheExactShuffleRound() = runTest {
         withDatabase { path ->
             val store = LibraryStore(path)
             store.save(snapshot())
             BundledSQLiteDriver().open(path).use { c ->
                 c.execSQL("DROP TABLE queue_play_order")
+                c.execSQL("DROP TABLE song_metadata")
                 c.execSQL("PRAGMA user_version = 2")
             }
             assertEquals(snapshot(), LibraryStore(path).load())
@@ -59,11 +74,12 @@ class LibraryStoreTest {
                 c.execSQL("DROP TABLE playlist_tracks")
                 c.execSQL("DROP TABLE playlists")
                 c.execSQL("DROP TABLE queue_play_order")
+                c.execSQL("DROP TABLE song_metadata")
                 c.execSQL("PRAGMA user_version = 1")
             }
             assertEquals(snapshot(), LibraryStore(path).load())
             BundledSQLiteDriver().open(path).use { c ->
-                c.prepare("PRAGMA user_version").use { s -> assertTrue(s.step()); assertEquals(3, s.getInt(0)) }
+                c.prepare("PRAGMA user_version").use { s -> assertTrue(s.step()); assertEquals(4, s.getInt(0)) }
             }
             val upgraded = snapshot().copy(playlists = listOf(LocalPlaylist("one", "保留分P", listOf(second, first))))
             store.save(upgraded)

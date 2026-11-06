@@ -1,22 +1,18 @@
 package com.keno.rxplayer.audio
 
 import androidx.compose.ui.awt.ComposeWindow
+import com.keno.rxplayer.PlaybackTrack
 import com.keno.rxplayer.source.createSourceHttpClient
 import com.sun.jna.*
 import com.sun.jna.ptr.PointerByReference
-import io.ktor.client.request.prepareGet
-import io.ktor.client.statement.bodyAsChannel
-import io.ktor.utils.io.readRemaining
-import kotlinx.io.readByteArray
 import kotlinx.coroutines.*
 import java.awt.Window
 import java.util.concurrent.Executors
 
 internal data class WindowsMediaState(val key: String, val title: String, val artist: String, val artwork: String?,
-    val enabled: Boolean, val canSkip: Boolean, val status: Int, val position: Long, val duration: Long)
+    val enabled: Boolean, val canSkip: Boolean, val status: Int, val position: Long, val duration: Long, val fallbackArtwork: String? = null)
 
-internal fun windowsMediaState(state: PlaybackState): WindowsMediaState {
-    val track = state.track ?: state.queue.firstOrNull()
+internal fun windowsMediaState(state: PlaybackState, track: PlaybackTrack? = state.track ?: state.queue.firstOrNull()): WindowsMediaState {
     val title = track?.title.orEmpty()
     val artist = track?.artist.orEmpty()
     val artwork = track?.artworkUrl
@@ -26,10 +22,10 @@ internal fun windowsMediaState(state: PlaybackState): WindowsMediaState {
         PlaybackPhase.Idle, PlaybackPhase.Ended -> 2
         else -> 4
     }
-    return WindowsMediaState(listOf(track?.id.orEmpty(), title, artist, artwork.orEmpty()).joinToString("\u0001"), title, artist, artwork,
+    return WindowsMediaState(listOf(track?.id.orEmpty(), title, artist, artwork.orEmpty(), track?.fallbackArtworkUrl.orEmpty()).joinToString("\u0001"), title, artist, artwork,
         track != null, state.queue.size > 1, status,
         (if (state.isPlaying) state.positionMs / 1000 * 1000 else state.positionMs).toLong(),
-        (if (state.track == null) track?.durationMs ?: 0 else state.durationMs).toLong())
+        (if (state.track == null) track?.durationMs ?: 0 else state.durationMs).toLong(), track?.fallbackArtworkUrl)
 }
 
 internal fun dispatchWindowsMediaCommand(runtime: PlaybackRuntime, command: Int): Job? {
@@ -92,7 +88,7 @@ internal suspend fun runWindowsMediaSession(runtime: PlaybackRuntime) = coroutin
         println("RxPlayer: Windows media session connected")
         var previous: WindowsMediaState? = null
         while (isActive) {
-            val state = windowsMediaState(runtime.playback)
+            val state = windowsMediaState(runtime.playback, (runtime.playback.track ?: runtime.playback.queue.firstOrNull())?.let(runtime.songs::display))
             if (state != previous) {
                 withContext(worker) {
                     check(api.rx_update(handle, WString(state.key), WString(state.title), WString(state.artist), if (state.enabled) 1 else 0,
@@ -102,11 +98,8 @@ internal suspend fun runWindowsMediaSession(runtime: PlaybackRuntime) = coroutin
                     cover?.cancel()
                     cover = state.artwork?.let { url -> launch {
                         try {
-                            val bytes = http.prepareGet(url).execute { response ->
-                                check(response.status.value in 200..299)
-                                response.bodyAsChannel().readRemaining(4L * 1024 * 1024 + 1).readByteArray().also { check(it.size <= 4 * 1024 * 1024) }
-                            }
-                            withContext(worker) { api.rx_cover(handle, WString(state.key), bytes, bytes.size) }
+                            val image = fetchSystemArtwork(http, url, state.fallbackArtwork)
+                            if (image != null) withContext(worker) { api.rx_cover(handle, WString(state.key), image.bytes, image.bytes.size) }
                         } catch (cancelled: CancellationException) { throw cancelled }
                         catch (_: Exception) { /* Keep metadata with a blank cover when artwork is unavailable. */ }
                     } }

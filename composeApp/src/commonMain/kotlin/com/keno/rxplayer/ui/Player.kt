@@ -64,6 +64,7 @@ fun PlayerScreen(
     queueOpen: Boolean, onQueue: () -> Unit, onCloseQueue: () -> Unit, onClose: () -> Unit,
     onFavorite: () -> Unit, onToggle: () -> Unit, onPrevious: () -> Unit, onNext: () -> Unit,
     onSelect: (PlaybackTrack) -> Unit, onRemove: (String) -> Unit,
+    onSongInformation: (() -> Unit)? = null,
 ) {
     val queueFocus = remember { FocusRequester() }
     val backFocus = remember { FocusRequester() }
@@ -79,7 +80,7 @@ fun PlayerScreen(
             val dockQueue = isDesktop && availableWidth > 1100.dp
             if (isDesktop) {
                 Column(Modifier.fillMaxSize().safeDrawingPadding().padding(if (availableWidth < 1000.dp) 24.dp else 32.dp)) {
-                    PlayerHeader(onClose, { QueueButton(state.queue.size, queueOpen, onQueue, Modifier.focusRequester(queueFocus)) }, Modifier.focusRequester(backFocus))
+                    PlayerHeader(onClose, { onSongInformation?.let { SongInformationButton(it) }; QueueButton(state.queue.size, queueOpen, onQueue, Modifier.focusRequester(queueFocus)) }, Modifier.focusRequester(backFocus))
                     Spacer(Modifier.height(24.dp))
                     if (availableWidth > 760.dp) {
                         Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (availableWidth < 1000.dp) 32.dp else 48.dp)) {
@@ -128,7 +129,7 @@ fun PlayerScreen(
                         // The image fills the status area; foreground consumes real system insets.
                         PlayerTheme(dark = true, track = track) {
                             Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)).padding(horizontal = 24.dp)) {
-                                PlayerHeader(onClose, backModifier = Modifier.focusRequester(backFocus), height = 48.dp)
+                                PlayerHeader(onClose, trailing = { onSongInformation?.let { SongInformationButton(it) } }, backModifier = Modifier.focusRequester(backFocus), height = 48.dp)
                                 Box(Modifier.fillMaxWidth().heightIn(min = (stageHeight - 48.dp - topInset).coerceAtLeast(0.dp)).padding(bottom = 96.dp), contentAlignment = Alignment.Center) {
                                     LyricsLines(state, track, windowed = true)
                                 }
@@ -151,7 +152,7 @@ fun PlayerScreen(
                 // Reserve the confirmed controls and two title lines before sizing the cover.
                 val coverSize = (maxHeight - insets.calculateTopPadding() - insets.calculateBottomPadding() - 540.dp).coerceIn(160.dp, 280.dp)
                 Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    PlayerHeader(onClose, { QueueButton(state.queue.size, queueOpen, onQueue, Modifier.focusRequester(queueFocus)) }, Modifier.focusRequester(backFocus), height = 48.dp)
+                    PlayerHeader(onClose, { onSongInformation?.let { SongInformationButton(it) }; QueueButton(state.queue.size, queueOpen, onQueue, Modifier.focusRequester(queueFocus)) }, Modifier.focusRequester(backFocus), height = 48.dp)
                     Spacer(Modifier.height(20.dp))
                     CoverCard(track, Modifier.width(coverSize))
                     Spacer(Modifier.height(20.dp))
@@ -165,6 +166,9 @@ fun PlayerScreen(
         }
     }
 }
+
+@Composable
+private fun SongInformationButton(onClick: () -> Unit) = PlayerIcon(PlayerSymbols.MoreHoriz, "歌曲信息", onClick, Modifier.size(48.dp), Color.Transparent)
 
 @Composable
 private fun PlayerHeader(onClose: () -> Unit, trailing: (@Composable () -> Unit)? = null, backModifier: Modifier = Modifier, height: Dp = 64.dp) {
@@ -355,7 +359,7 @@ private fun SeekBar(state: PlaybackState, modifier: Modifier = Modifier, compact
 @Composable
 private fun LyricsPane(state: PlaybackState, track: PlaybackTrack, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)) {
-        Text("歌词 · 本地演示", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text((track as? com.keno.rxplayer.BilibiliTrack)?.songMetadata?.lyricsSource?.let { "歌词 · $it" } ?: "歌词", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Box(Modifier.fillMaxWidth().heightIn(min = 400.dp).padding(vertical = 48.dp), contentAlignment = Alignment.Center) {
             if (track.lyrics.isEmpty()) Text("暂无歌词", color = MaterialTheme.colorScheme.onSurfaceVariant)
             else LyricsLines(state, track, windowed = false)
