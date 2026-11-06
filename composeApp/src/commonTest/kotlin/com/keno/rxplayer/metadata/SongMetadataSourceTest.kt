@@ -90,7 +90,7 @@ class SongMetadataSourceTest {
             assertEquals("网易云音乐", result.lyricsSource)
             assertEquals("42", paths.first().parameters["id"])
             assertEquals("[42]", paths.first().parameters["ids"])
-            assertEquals(2, paths.size)
+            assertEquals(listOf("music.163.com", "u.y.qq.com", "lyrics.kugou.com", "music.163.com"), paths.map { it.host })
         } finally { source.close() }
     }
 
