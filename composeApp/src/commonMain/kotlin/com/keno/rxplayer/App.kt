@@ -53,8 +53,15 @@ private fun AppContent(runtime: PlaybackRuntime, isForeground: Boolean, isDeskto
     fun toggle() { if (foreground) runtime.toggle() }
     fun step(offset: Int) { if (foreground) runtime.step(offset) }
     fun favorite(item: ContentItem) = runtime.favorite(item)
-    fun close() { if (queueOpen) queueOpen = false else expanded = false }
-    PlayerBackHandler(expanded || queueOpen || browse.selection != null) { if (browse.selection != null) browse.cancelSelection() else close() }
+    val playlistOverlay = workspace.playlistDialog != null || runtime.playlistCandidate != null
+    fun close() {
+        when {
+            playlistOverlay -> { workspace.playlistDialog = null; workspace.editingPlaylistId = null; runtime.cancelPlaylistCandidate() }
+            queueOpen -> queueOpen = false
+            else -> expanded = false
+        }
+    }
+    PlayerBackHandler(expanded || queueOpen || browse.selection != null || playlistOverlay) { if (browse.selection != null) browse.cancelSelection() else close() }
     SideEffect { onThemeChanged(dark || expanded && !isDesktop && track?.lyrics?.isNotEmpty() == true, dark) }
     suspend fun showMessage(text: String) = coroutineScope {
         snackbar.currentSnackbarData?.dismiss()
@@ -70,8 +77,8 @@ private fun AppContent(runtime: PlaybackRuntime, isForeground: Boolean, isDeskto
             Surface(Modifier.fillMaxSize()) {
                 Box(Modifier.fillMaxSize().onKeyEvent { event ->
                     when {
-                        event.type == KeyEventType.KeyDown && event.key == Key.Escape && (expanded || queueOpen) -> { close(); true }
-                        event.type == KeyEventType.KeyUp && event.key == Key.Spacebar && !queryFocused && !queueOpen && browse.selection == null && !event.isCtrlPressed && !event.isAltPressed -> { toggle(); true }
+                        event.type == KeyEventType.KeyDown && event.key == Key.Escape && (expanded || queueOpen || playlistOverlay) -> { close(); true }
+                        event.type == KeyEventType.KeyUp && event.key == Key.Spacebar && !queryFocused && !queueOpen && !playlistOverlay && browse.selection == null && !event.isCtrlPressed && !event.isAltPressed -> { toggle(); true }
                         else -> false
                     }
                 }.focusable()) {
@@ -79,6 +86,8 @@ private fun AppContent(runtime: PlaybackRuntime, isForeground: Boolean, isDeskto
                         workspace, browse, playback, favorites, recent, isDesktop, dark, followArtwork, queueOpen,
                         { queueOpen = false }, ::select, ::favorite, { queryFocused = false; expanded = true }, { queryFocused = it },
                         { runtime.themeOverride = it }, { runtime.followArtwork = it },
+                        playlists = runtime.playlists, onPlaylistPlay = { runtime.playPlaylist(it) },
+                        onPlaylistAppend = runtime::appendPlaylist, onAddTrack = runtime::preparePlaylistCandidate,
                         queueContent = { PlayerTheme(dark, track, followArtwork) { Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) { DesktopQueuePane(playback, { queueOpen = false }, ::select) } } },
                         transport = {
                             if (displayTrack != null) PlayerTheme(dark, displayTrack, followArtwork) {
@@ -92,6 +101,7 @@ private fun AppContent(runtime: PlaybackRuntime, isForeground: Boolean, isDeskto
                             { (track as? BilibiliTrack)?.item?.let(::favorite) }, ::toggle, { step(-1) }, { step(1) }, ::select, playback::removeFromQueue)
                     }
                     browse.selection?.let { PartsDialog(it, playback.track?.id, browse::choose, browse::cancelSelection, mobile = !isDesktop) }
+                    PlaylistDialogs(runtime, workspace)
                     SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(horizontal = 16.dp).padding(bottom = if (expanded) 112.dp else if (isDesktop) 88.dp else 164.dp).widthIn(max = 560.dp))
                 }
             }

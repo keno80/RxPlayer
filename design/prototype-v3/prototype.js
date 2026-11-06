@@ -36,7 +36,7 @@
     queue: ['0-0:p1'], queueOpen: queueBreakpoint.matches, current: '0-0:p1', playing: false, position: 82,
     phase: 'paused', prepared: true, wantPlay: false,
     libraryTab: 'favorites', playlist: null,
-    playlists: [{name: '通勤路上', ids: ['0-0', '1-2', '2-1'], art: 0}, {name: '安静片刻', ids: ['1-0', '2-2'], art: 2}],
+    playlists: [{name: '通勤路上', ids: ['0-0:p1', '0-0:p2', '0-2'], art: 0}, {name: '安静片刻', ids: [], art: 2}],
     connected: [], artworkColor: true, lyricsLayout: 'auto', repeat: false, shuffle: false, volume: 65,
     history: ['夜航', '午后纯音乐', '城市现场'], overlay: null, menuTrack: null,
   });
@@ -211,8 +211,8 @@
 
   function libraryPage() {
     const playlist = state.playlist === null ? null : state.playlists[state.playlist];
-    if (playlist) return `<header class="page-head"><div><p class="eyebrow">本地歌单</p><h1>${escape(playlist.name)}</h1></div>${iconButton('library-back', 'arrow_back', '返回音乐库')}</header>
-      <p class="page-caption">${playlist.ids.length} 首 · 混合音源</p><div class="paired-actions"><button class="filled-button" data-action="play-playlist" disabled title="批量播放尚未接入">${symbol('play_arrow', true)}播放全部</button><button class="icon-button tonal-action" data-action="shuffle-playlist" aria-label="随机播放歌单" data-tip="随机播放" disabled title="批量播放尚未接入">${symbol('shuffle')}</button></div><div class="track-list">${playlist.ids.map(trackById).map(row).join('')}</div>`;
+    if (playlist) return `<header class="page-head">${iconButton('library-back', 'arrow_back', '返回音乐库')}<div class="playlist-heading"><p class="eyebrow">本地歌单 · ${playlist.ids.length} 首</p><h1>${escape(playlist.name)}</h1></div>${iconButton('playlist-menu', 'more_horiz', '管理歌单')}</header>
+      <p class="page-caption">按分 P 收藏，按自己的顺序听。</p><div class="paired-actions"><button class="filled-button" data-action="play-playlist" ${playlist.ids.length ? '' : 'disabled'}>${symbol('play_arrow', true)}播放全部</button><button class="text-button" data-action="append-playlist" ${playlist.ids.length ? '' : 'disabled'}>${symbol('queue_music')}加入队列</button></div>${playlist.ids.length ? `<div class="track-list">${playlist.ids.map(trackById).map(row).join('')}</div><p class="hint">在曲目的更多操作中移除或调整顺序；修改歌单不会改变当前播放。</p>` : empty('library_music', '留一份属于你的声音', '在搜索结果或播放曲目的更多操作里，选择“添加到歌单”。', 'go-search', '去搜索')}`;
     const tabs = [['favorites', '收藏'], ['playlists', '歌单'], ['recent', '最近播放']];
     let content;
     if (state.libraryTab === 'playlists') {
@@ -499,26 +499,36 @@
       else body = `<div class="player-layout">${artwork}${detail}</div>`;
     } else if (state.overlay === 'menu') {
       const track = trackById(state.menuTrack);
+      const list = state.route === 'library' && state.playlist !== null ? state.playlists[state.playlist] : null;
+      const index = list ? list.ids.indexOf(track.id) : -1;
       title = track.title;
       body = `<p class="hint">${escape(track.author)} · ${track.source}</p>
         ${(track.parts || track.partBaseId) ? `<button class="menu-action" data-action="choose-parts" data-id="${track.partBaseId || track.id}">${symbol('view_list')}选择分P</button>` : ''}
         <button class="menu-action" data-action="enqueue-next" data-id="${track.id}">${symbol('skip_next')}下一首播放</button>
         <button class="menu-action" data-action="enqueue" data-id="${track.id}">${symbol('queue_music')}加入播放队列</button>
         <button class="menu-action" data-action="favorite" data-id="${track.id}">${symbol('favorite', state.favorites.includes(track.id))}${state.favorites.includes(track.id) ? '取消收藏' : '收藏'}</button>
-        <button class="menu-action" data-action="choose-playlist" data-id="${track.id}">${symbol('playlist_add')}添加到歌单</button>`;
+        <button class="menu-action" data-action="choose-playlist" data-id="${track.id}">${symbol('playlist_add')}添加到歌单</button>
+        ${index < 0 ? '' : `<button class="menu-action" data-action="move-playlist-track" data-id="${track.id}" data-direction="-1" ${index === 0 ? 'disabled' : ''}>${symbol('arrow_upward')}上移</button><button class="menu-action" data-action="move-playlist-track" data-id="${track.id}" data-direction="1" ${index === list.ids.length - 1 ? 'disabled' : ''}>${symbol('arrow_downward')}下移</button><button class="menu-action" data-action="remove-playlist-track" data-id="${track.id}">${symbol('remove_circle_outline')}从此歌单移除</button>`}`;
     } else if (state.overlay === 'parts') {
       const track = trackById(state.menuTrack);
       title = '选择分P';
-      body = `<p class="part-context">${escape(track.title)}</p><p class="hint">${state.partIntent === 'play' ? '选择一集开始播放；取消会继续保留当前播放。' : state.partIntent === 'enqueue-next' ? '选择一集，安排在当前曲目之后。' : '选择一集加入队列，当前播放保持不变。'}</p><div class="parts-list">${track.parts.map(part => `<button class="part-option" data-action="select-part" data-id="${part.id}" ${state.current === part.id ? 'aria-current="true"' : ''}><span class="part-number">${part.number}</span><span class="part-copy"><strong>${escape(part.title)}</strong><small>P${part.number} · ${time(part.duration)}</small></span>${state.current === part.id ? symbol('graphic_eq') : symbol(state.partIntent === 'play' ? 'play_arrow' : 'add')}</button>`).join('')}</div><div class="dialog-actions"><button class="text-button" data-action="close-overlay">取消</button></div>`;
-    } else if (state.overlay === 'new-playlist') {
-      title = '新建歌单';
-      body = '<form id="playlist-form"><label for="playlist-name">歌单名称</label><input class="dialog-input" id="playlist-name" placeholder="给这段旅程起个名字" required maxlength="40"><div class="dialog-actions"><button class="text-button" type="button" data-action="close-overlay">取消</button><button class="filled-button" type="submit">创建</button></div></form>';
+      body = `<p class="part-context">${escape(track.title)}</p><p class="hint">${state.partIntent === 'play' ? '选择一集开始播放；取消会继续保留当前播放。' : state.partIntent === 'playlist' ? '选择一集添加到歌单；当前播放和队列保持不变。' : state.partIntent === 'enqueue-next' ? '选择一集，安排在当前曲目之后。' : '选择一集加入队列，当前播放保持不变。'}</p><div class="parts-list">${track.parts.map(part => `<button class="part-option" data-action="select-part" data-id="${part.id}" ${state.current === part.id ? 'aria-current="true"' : ''}><span class="part-number">${part.number}</span><span class="part-copy"><strong>${escape(part.title)}</strong><small>P${part.number} · ${time(part.duration)}</small></span>${state.current === part.id ? symbol('graphic_eq') : symbol(state.partIntent === 'play' ? 'play_arrow' : 'add')}</button>`).join('')}</div><div class="dialog-actions"><button class="text-button" data-action="close-overlay">取消</button></div>`;
+    } else if (state.overlay === 'new-playlist' || state.overlay === 'rename-playlist') {
+      const renaming = state.overlay === 'rename-playlist';
+      title = renaming ? '重命名歌单' : '新建歌单';
+      body = `<form id="playlist-form"><label for="playlist-name">歌单名称</label><input class="dialog-input" id="playlist-name" placeholder="给这段旅程起个名字" value="${renaming ? escape(state.playlists[state.playlist].name) : ''}" required maxlength="40"><p class="hint">最多 40 个字符，保存在本机。</p><div class="dialog-actions"><button class="text-button" type="button" data-action="close-overlay">取消</button><button class="filled-button" type="submit">${renaming ? '保存' : state.addAfterCreate ? '创建并添加' : '创建'}</button></div></form>`;
+    } else if (state.overlay === 'playlist-menu') {
+      title = state.playlists[state.playlist].name;
+      body = `<button class="menu-action" data-action="rename-playlist">${symbol('edit')}重命名</button><button class="menu-action" data-action="delete-playlist">${symbol('delete')}删除歌单</button>`;
+    } else if (state.overlay === 'delete-playlist') {
+      title = '删除歌单？';
+      body = `<p>将删除「${escape(state.playlists[state.playlist].name)}」及其中的收纳记录，当前播放队列和收藏会保留。</p><div class="dialog-actions"><button class="text-button" data-action="close-overlay">取消</button><button class="filled-button" data-action="confirm-delete-playlist">删除</button></div>`;
     } else if (state.overlay === 'link') {
       title = state.linkSource ? `识别到 ${state.linkSource} 链接` : '暂不支持这个链接';
       body = `<p class="hint">${escape(state.queries[state.source])}</p><p>暂时无法读取内容信息。请检查链接，或返回关键词搜索。</p><div class="dialog-actions"><button class="filled-button" data-action="close-overlay">返回搜索</button></div>`;
     } else if (state.overlay === 'choose-playlist') {
       title = '添加到歌单';
-      body = state.playlists.map((playlist, index) => `<button class="menu-action" data-action="add-to-playlist" data-index="${index}">${symbol('album')}${escape(playlist.name)}</button>`).join('');
+      body = `<p class="hint">${escape(trackById(state.menuTrack).title)} · 相同分 P 不会重复添加。</p>` + state.playlists.map((playlist, index) => `<button class="menu-action" data-action="add-to-playlist" data-index="${index}">${symbol(playlist.ids.includes(state.menuTrack) ? 'check' : 'album')}${escape(playlist.name)}${playlist.ids.includes(state.menuTrack) ? ' · 已添加' : ''}</button>`).join('') + `<button class="menu-action" data-action="create-and-add">${symbol('add')}新建歌单并添加</button>`;
     }
     const heading = state.overlay === 'player'
       ? `<header class="sheet-head player-head">${iconButton('close-overlay','arrow_back','返回')}<h2 id="dialog-title" class="sr-only">播放器</h2>${state.device === 'android' && hasLyrics() ? '' : `<button class="queue-pill" data-action="open-queue" aria-label="播放队列，${state.queue.length} 首">${symbol('queue_music')}<span>队列 · ${state.queue.length}</span></button>`}</header>`
@@ -600,6 +610,7 @@
       case 'select-part': {
         const intent = state.partIntent;
         if (intent === 'play') { closeOverlay(); playTrack(id); }
+        else if (intent === 'playlist') { state.menuTrack = id; openOverlay('choose-playlist', id); }
         else enqueueTrack(id,intent === 'enqueue-next');
         break;
       }
@@ -635,15 +646,37 @@
       case 'shuffle': state.shuffle = !state.shuffle; render(); toast(state.shuffle ? '已开启随机播放' : '已关闭随机播放'); break;
       case 'repeat': state.repeat = !state.repeat; render(); toast(state.repeat ? '已切换为列表循环' : '已切换为顺序播放'); break;
       case 'library-tab': state.libraryTab = button.dataset.tab; render(); break;
-      case 'new-playlist': openOverlay('new-playlist'); break;
+      case 'new-playlist': state.addAfterCreate = false; openOverlay('new-playlist'); break;
+      case 'create-and-add': state.addAfterCreate = true; openOverlay('new-playlist'); break;
+      case 'playlist-menu': openOverlay('playlist-menu'); break;
+      case 'rename-playlist': openOverlay('rename-playlist'); break;
+      case 'delete-playlist': openOverlay('delete-playlist'); break;
+      case 'confirm-delete-playlist': state.playlists.splice(state.playlist, 1); state.playlist = null; closeOverlay(); render(); toast('歌单已删除，当前播放保持不变'); break;
+      case 'remove-playlist-track': {
+        const list = state.playlists[state.playlist];
+        list.ids = list.ids.filter(item => item !== id);
+        closeOverlay(); render(); toast('已从歌单移除'); break;
+      }
+      case 'move-playlist-track': {
+        const list = state.playlists[state.playlist], index = list.ids.indexOf(id), target = index + Number(button.dataset.direction);
+        if (index >= 0 && target >= 0 && target < list.ids.length) list.ids.splice(target, 0, list.ids.splice(index, 1)[0]);
+        closeOverlay(); render(); toast('已调整歌单顺序'); break;
+      }
       case 'open-playlist': state.playlist = Number(button.dataset.index); render(); break;
       case 'library-back': state.playlist = null; render(); break;
       case 'play-playlist': {
-        state.queue = [...state.playlists[state.playlist].ids];
+        const ids = state.playlists[state.playlist].ids;
+        if (!ids.length) { toast('先向歌单添加一些声音'); break; }
+        state.queue = [...ids];
         state.shuffle = false;
         if (state.queue.length) playTrack(state.queue[0]);
         else toast('先向歌单添加一些声音');
         break;
+      }
+      case 'append-playlist': {
+        const before = state.queue.length;
+        state.queue = [...new Set([...state.queue, ...state.playlists[state.playlist].ids])];
+        render(); toast(state.queue.length === before ? '歌单中的曲目已在队列中' : '已追加到播放队列'); break;
       }
       case 'play-favorites': {
         if (!state.favorites.length) break;
@@ -660,15 +693,25 @@
         else toast('先向歌单添加一些声音');
         break;
       }
-      case 'choose-playlist': state.menuTrack = id; openOverlay('choose-playlist'); break;
+      case 'choose-playlist': {
+        if (trackById(id).source !== 'Bilibili') { toast('该音源尚未接入'); break; }
+        if (trackById(id).parts) openParts(id, 'playlist');
+        else openOverlay('choose-playlist', id);
+        break;
+      }
       case 'add-to-playlist': {
         const list = state.playlists[Number(button.dataset.index)];
-        if (!list.ids.includes(state.menuTrack)) list.ids.push(state.menuTrack);
-        closeOverlay(); render(); toast(`已添加到「${list.name}」`); break;
+        const duplicate = list.ids.includes(state.menuTrack);
+        if (!duplicate) list.ids.push(state.menuTrack);
+        closeOverlay(); render(); toast(duplicate ? '此分 P 已在歌单中' : `已添加到「${list.name}」`); break;
       }
       case 'account-settings': state.route = 'settings'; render(); break;
       case 'connect': state.connected = state.connected.includes(source) ? state.connected.filter(item => item !== source) : [...state.connected, source]; render(); toast(`${source} ${state.connected.includes(source) ? '已连接' : '已断开'}（原型演示）`); break;
     }
+  });
+
+  document.addEventListener('input', event => {
+    if (event.target.id === 'playlist-name') event.target.setCustomValidity('');
   });
 
   document.addEventListener('submit', event => {
@@ -693,10 +736,14 @@
     if (event.target.id === 'playlist-form') {
       event.preventDefault();
       const name = $('#playlist-name').value.trim();
-      if (!name) return;
-      state.playlists.push({name, ids: [], art: state.playlists.length % 4});
+      if (!name || name.length > 40) { $('#playlist-name').setCustomValidity('请输入 1～40 个字符的歌单名称'); $('#playlist-name').reportValidity(); return; }
+      if (state.overlay === 'rename-playlist') {
+        state.playlists[state.playlist].name = name;
+        closeOverlay(); render(); toast('歌单名称已更新'); return;
+      }
+      state.playlists.push({name, ids: state.addAfterCreate ? [state.menuTrack] : [], art: state.playlists.length % 4});
       state.route = 'library'; state.libraryTab = 'playlists'; state.playlist = null;
-      closeOverlay(); render(); toast('歌单已创建');
+      closeOverlay(); render(); toast(state.addAfterCreate ? '歌单已创建，曲目已添加' : '歌单已创建'); state.addAfterCreate = false;
     }
   });
 
@@ -799,6 +846,7 @@
   if (review.has('embed')) document.body.classList.add('transport-embed');
   if (['android','desktop'].includes(review.get('device'))) state.device = review.get('device');
   if (['dark','light'].includes(review.get('theme'))) state.theme = review.get('theme');
+  if (review.get('view') === 'playlists') { state.route = 'library'; state.libraryTab = 'playlists'; }
   if (['results','idle','loading','empty','error','expired'].includes(review.get('scene'))) state.scene = review.get('scene');
   if (Object.hasOwn(phaseLabels,review.get('playback'))) previewPhase(review.get('playback'));
   render();

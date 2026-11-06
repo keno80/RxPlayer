@@ -227,6 +227,19 @@ class PlaybackState(
         }
     }
 
+    /** Replace from a snapshot; subsequent playlist edits cannot mutate this queue. */
+    suspend fun playAll(tracks: List<PlaybackTrack>) {
+        val next = tracks.distinctBy { it.id }
+        if (next.isEmpty()) return
+        pause()
+        queue = next
+        shuffle = false
+        shuffleOrder = emptyList()
+        select(next.first())
+    }
+
+    fun enqueueAll(tracks: List<PlaybackTrack>) { tracks.forEach { enqueue(it) } }
+
     suspend fun recoverExpiredIfPlaying() {
         if (phase != PlaybackPhase.Expired || !playWhenReady || automaticRefreshUsed) return
         val selected = track ?: return

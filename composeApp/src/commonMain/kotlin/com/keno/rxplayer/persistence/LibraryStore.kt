@@ -9,6 +9,7 @@ import com.keno.rxplayer.MusicSource
 import com.keno.rxplayer.audio.PlaybackCheckpoint
 import com.keno.rxplayer.source.ContentItem
 import com.keno.rxplayer.source.VideoPart
+import com.keno.rxplayer.library.LocalPlaylist
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -37,9 +38,16 @@ class LibraryStore(private val path: String, private val prepareDirectory: () ->
             val favorites = c.orderedKeys("favorites", "item_key").map { items.getValue(it) }
             val recent = c.orderedKeys("recent", "track_id").map { tracks.getValue(it) }
             val queue = c.orderedKeys("queue", "track_id").map { tracks.getValue(it) }
+            val members = linkedMapOf<String, MutableList<BilibiliTrack>>()
+            c.prepare("SELECT playlist_id, track_id FROM playlist_tracks ORDER BY playlist_id, position").use { s ->
+                while (s.step()) members.getOrPut(s.getText(0)) { mutableListOf() }.add(tracks.getValue(s.getText(1)))
+            }
+            val playlists = c.prepare("SELECT playlist_id, name FROM playlists ORDER BY position").use { s ->
+                buildList { while (s.step()) add(LocalPlaylist(s.getText(0), s.getText(1), members[s.getText(0)]?.toList().orEmpty())) }
+            }
             c.prepare("SELECT dark, follow_artwork, shuffle, repeat_mode, volume, current_id, position_ms FROM app_state WHERE id = 1").use { s ->
-                if (!s.step()) LibrarySnapshot(favorites, recent, PlaybackCheckpoint(queue))
-                else LibrarySnapshot(favorites, recent, PlaybackCheckpoint(queue, s.nullableText(5), s.getInt(6), s.getInt(2) == 1, s.getInt(3) == 1, s.getDouble(4).toFloat()), if (s.isNull(0)) null else s.getInt(0) == 1, s.getInt(1) == 1)
+                if (!s.step()) LibrarySnapshot(favorites, recent, PlaybackCheckpoint(queue), playlists = playlists)
+                else LibrarySnapshot(favorites, recent, PlaybackCheckpoint(queue, s.nullableText(5), s.getInt(6), s.getInt(2) == 1, s.getInt(3) == 1, s.getDouble(4).toFloat()), if (s.isNull(0)) null else s.getInt(0) == 1, s.getInt(1) == 1, playlists)
             }
         }
     }
@@ -48,11 +56,11 @@ class LibraryStore(private val path: String, private val prepareDirectory: () ->
         val playback = snapshot.playback
         require(playback.queue.all { it is BilibiliTrack }) { "Only real Bilibili tracks are persisted" }
         require(playback.volume.isFinite())
-        val tracks = (playback.queue.filterIsInstance<BilibiliTrack>() + snapshot.recent).associateBy { it.id }
+        val tracks = (playback.queue.filterIsInstance<BilibiliTrack>() + snapshot.recent + snapshot.playlists.flatMap { it.tracks }).associateBy { it.id }
         val items = (snapshot.favorites + tracks.values.map { it.item }).associateBy { it.stableKey }
         c.transaction {
             // Delete dependents first. Any failed insert rolls the whole snapshot back.
-            listOf("app_state", "queue", "recent", "favorites", "tracks", "items").forEach { c.execSQL("DELETE FROM $it") }
+            listOf("app_state", "queue", "recent", "favorites", "playlist_tracks", "playlists", "tracks", "items").forEach { c.execSQL("DELETE FROM $it") }
             c.prepare("INSERT INTO items VALUES (?, ?, ?, ?, ?, ?, ?)").use { s ->
                 items.values.forEach { item ->
                     s.bindText(1, item.stableKey); s.bindText(2, item.source.name); s.bindText(3, item.id)
@@ -70,6 +78,18 @@ class LibraryStore(private val path: String, private val prepareDirectory: () ->
             c.writeOrder("favorites", snapshot.favorites.map { it.stableKey })
             c.writeOrder("recent", snapshot.recent.map { it.id })
             c.writeOrder("queue", playback.queue.map { it.id })
+            c.prepare("INSERT INTO playlists (playlist_id, position, name) VALUES (?, ?, ?)").use { s ->
+                snapshot.playlists.forEachIndexed { index, playlist ->
+                    s.bindText(1, playlist.id); s.bindInt(2, index); s.bindText(3, playlist.name)
+                    s.step(); s.reset(); s.clearBindings()
+                }
+            }
+            c.prepare("INSERT INTO playlist_tracks (playlist_id, position, track_id) VALUES (?, ?, ?)").use { s ->
+                snapshot.playlists.forEach { playlist -> playlist.tracks.forEachIndexed { index, track ->
+                    s.bindText(1, playlist.id); s.bindInt(2, index); s.bindText(3, track.id)
+                    s.step(); s.reset(); s.clearBindings()
+                } }
+            }
             c.prepare("INSERT INTO app_state VALUES (1, ?, ?, ?, ?, ?, ?, ?)").use { s ->
                 if (snapshot.dark == null) s.bindNull(1) else s.bindInt(1, if (snapshot.dark) 1 else 0)
                 s.bindInt(2, if (snapshot.followArtwork) 1 else 0); s.bindInt(3, if (playback.shuffle) 1 else 0)
@@ -88,7 +108,7 @@ class LibraryStore(private val path: String, private val prepareDirectory: () ->
                 c.execSQL("PRAGMA foreign_keys = ON")
                 c.execSQL("PRAGMA busy_timeout = 3000")
                 val version = c.prepare("PRAGMA user_version").use { s -> check(s.step()); s.getInt(0) }
-                check(version in 0..1) { "Unsupported library database version: $version" }
+                check(version in 0..2) { "Unsupported library database version: $version" }
                 if (version == 0) c.transaction {
                     c.prepare("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").use { s ->
                         check(s.step() && s.getInt(0) == 0) { "Unversioned database is not empty" }
@@ -99,6 +119,11 @@ class LibraryStore(private val path: String, private val prepareDirectory: () ->
                     listOf("recent", "queue").forEach { c.execSQL("CREATE TABLE $it (position INTEGER PRIMARY KEY, track_id TEXT NOT NULL UNIQUE REFERENCES tracks(track_id))") }
                     c.execSQL("CREATE TABLE app_state (id INTEGER PRIMARY KEY CHECK(id = 1), dark INTEGER, follow_artwork INTEGER NOT NULL, shuffle INTEGER NOT NULL, repeat_mode INTEGER NOT NULL, volume REAL NOT NULL CHECK(volume BETWEEN 0 AND 1), current_id TEXT REFERENCES tracks(track_id), position_ms INTEGER NOT NULL CHECK(position_ms >= 0))")
                     c.execSQL("PRAGMA user_version = 1")
+                }
+                if (version <= 1) c.transaction {
+                    c.execSQL("CREATE TABLE playlists (playlist_id TEXT PRIMARY KEY NOT NULL, position INTEGER NOT NULL UNIQUE, name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 40))")
+                    c.execSQL("CREATE TABLE playlist_tracks (playlist_id TEXT NOT NULL REFERENCES playlists(playlist_id), position INTEGER NOT NULL, track_id TEXT NOT NULL REFERENCES tracks(track_id), PRIMARY KEY (playlist_id, track_id), UNIQUE (playlist_id, position))")
+                    c.execSQL("PRAGMA user_version = 2")
                 }
                 block(c)
             }
