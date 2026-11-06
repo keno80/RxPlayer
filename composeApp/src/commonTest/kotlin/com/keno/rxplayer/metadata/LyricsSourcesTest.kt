@@ -11,7 +11,7 @@ import kotlin.io.encoding.Base64
 import kotlin.test.*
 
 class LyricsSourcesTest {
-    private val song = SongCandidate(42, "晴天", listOf("周杰伦"), "叶惠美", 269_000)
+    private val song = SongCandidate(42, "晴天", listOf("周杰伦"), "叶惠美", 269_000, "https://p1.music.126.net/cover.jpg")
     private val emptyQq = qqSearch("")
     private fun qqRow(title: String = "晴天", artist: String = "周杰伦", seconds: Int = 269, subtitle: String = "") =
         """{"mid":"testMID","name":"$title","subtitle":"$subtitle","interval":$seconds,"singer":[{"name":"$artist"}]}"""

@@ -41,20 +41,37 @@ class SongMetadataState(
 
     fun auto(track: BilibiliTrack?): Job? {
         if (activeId != track?.id) { ++automaticTicket; automaticJob?.cancel(); activeId = track?.id }
-        if (track == null || track.id in records || target?.id == track.id || !attempted.add(track.id)) return null
+        if (track == null) return null
+        val cached = records[track.id]
+        val existing = cached?.match
+        if ((cached != null && (existing == null || existing.lyrics.isNotEmpty())) ||
+            target?.id == track.id || !attempted.add(track.id)) return null
         // Avoid speculative network queries for arbitrary videos without any song-shaped title.
         val title = if (track.partCount > 1) track.part.title else track.item.title
-        if (songHint(track) == null && !Regex("[《〈「]").containsMatchIn(title)) return null
+        if (cached == null && songHint(track) == null && !Regex("[《〈「]").containsMatchIn(title)) return null
         val ticket = ++automaticTicket
         return scope.launch {
             try {
                 val description = readDescription(track) ?: return@launch
-                val hint = songHint(track, description) ?: return@launch
-                val candidate = autoMatch(hint, track, searchSongs("${hint.title} ${hint.artist}")) ?: return@launch
+                val hint = songHint(track, description)
+                val candidate = if (existing != null) {
+                    if (!lyricsFit(track, existing.song, description)) return@launch
+                    existing.song
+                } else {
+                    hint ?: return@launch
+                    autoMatch(hint, track, searchSongs("${hint.title} ${hint.artist}")) ?: return@launch
+                }
                 val match = loadSong(candidate); ensureActive()
-                if (autoMatch(hint, track, listOf(match.song))?.id != candidate.id) return@launch
-                if (ticket == automaticTicket && activeId == track.id && track.id !in records) {
-                    records[track.id] = SongMetadataRecord(track.id, compatible(track, match))
+                if (existing == null) {
+                    if (autoMatch(hint!!, track, listOf(match.song))?.key != candidate.key) return@launch
+                } else if (match.song.key != candidate.key || songKey(match.song.title) != songKey(candidate.title) ||
+                    match.song.artists.map(::songKey).toSet() != candidate.artists.map(::songKey).toSet() ||
+                    !lyricsFit(track, match.song, description)) return@launch
+                val verified = compatible(track, match)
+                if (ticket == automaticTicket && activeId == track.id && records[track.id] == cached) {
+                    // Retry missing lyrics once per session without changing the user's selected recording or opt-out.
+                    records[track.id] = cached?.copy(match = existing!!.copy(lyrics = verified.lyrics, lyricsSource = verified.lyricsSource))
+                        ?: SongMetadataRecord(track.id, verified)
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { /* Optional metadata never interrupts playback or emits background toasts. */ }
@@ -89,7 +106,7 @@ class SongMetadataState(
 
     fun apply(candidate: SongCandidate): Job? {
         val track = target ?: return null
-        if (searching || applying || candidates.none { it.id == candidate.id }) return null
+        if (searching || applying || candidates.none { it.key == candidate.key }) return null
         val ticket = ++requestTicket
         applying = true
         return scope.launch {

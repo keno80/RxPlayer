@@ -12,6 +12,23 @@ import java.nio.file.Files
 import kotlin.test.*
 
 class LibraryStoreTest {
+    @Test fun versionFourKeepsOldMatchesAndPersistsProviderQualifiedSelections() = runTest {
+        withDatabase { path ->
+            val store = LibraryStore(path)
+            val old = snapshot().copy(songMetadata = listOf(SongMetadataRecord(first.id, SongMatch(SongCandidate(42, "歌名", listOf("歌手"), "专辑", 40000)))))
+            store.save(old)
+            BundledSQLiteDriver().open(path).use { c ->
+                c.execSQL("UPDATE song_metadata SET payload = '{\"disabled\":false,\"id\":42,\"title\":\"歌名\",\"artists\":[\"歌手\"],\"album\":\"专辑\",\"duration\":40000,\"lyrics\":[]}'")
+                c.execSQL("PRAGMA user_version = 4")
+            }
+            assertEquals(old, LibraryStore(path).load())
+            val selected = old.songMetadata.single().match!!.song.copy(provider = SongProvider.QQ, providerId = "QQMID42")
+            val next = old.copy(songMetadata = listOf(SongMetadataRecord(first.id, SongMatch(selected))))
+            store.save(next)
+            assertEquals(next, LibraryStore(path).load())
+            BundledSQLiteDriver().open(path).use { c -> c.prepare("PRAGMA user_version").use { s -> assertTrue(s.step()); assertEquals(5, s.getInt(0)) } }
+        }
+    }
     @Test fun versionThreeMigrationPreservesSourceAndRestoresMatchesAndOptOuts() = runTest {
         withDatabase { path ->
             val store = LibraryStore(path)
@@ -79,7 +96,7 @@ class LibraryStoreTest {
             }
             assertEquals(snapshot(), LibraryStore(path).load())
             BundledSQLiteDriver().open(path).use { c ->
-                c.prepare("PRAGMA user_version").use { s -> assertTrue(s.step()); assertEquals(4, s.getInt(0)) }
+                c.prepare("PRAGMA user_version").use { s -> assertTrue(s.step()); assertEquals(5, s.getInt(0)) }
             }
             val upgraded = snapshot().copy(playlists = listOf(LocalPlaylist("one", "保留分P", listOf(second, first))))
             store.save(upgraded)

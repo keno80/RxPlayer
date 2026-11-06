@@ -122,7 +122,7 @@ class LibraryStore(private val path: String, private val prepareDirectory: () ->
                 c.execSQL("PRAGMA foreign_keys = ON")
                 c.execSQL("PRAGMA busy_timeout = 3000")
                 val version = c.prepare("PRAGMA user_version").use { s -> check(s.step()); s.getInt(0) }
-                check(version in 0..4) { "Unsupported library database version: $version" }
+                check(version in 0..5) { "Unsupported library database version: $version" }
                 if (version == 0) c.transaction {
                     c.prepare("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").use { s ->
                         check(s.step() && s.getInt(0) == 0) { "Unversioned database is not empty" }
@@ -147,6 +147,8 @@ class LibraryStore(private val path: String, private val prepareDirectory: () ->
                     c.execSQL("CREATE TABLE song_metadata (track_id TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL)")
                     c.execSQL("PRAGMA user_version = 4")
                 }
+                // The payload now contains provider-qualified IDs; older apps must not treat them as NetEase IDs.
+                if (version <= 4) c.transaction { c.execSQL("PRAGMA user_version = 5") }
                 block(c)
             }
         }
