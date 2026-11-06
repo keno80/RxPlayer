@@ -10,7 +10,7 @@
 
 Bilibili 已接入正式搜索页：关键词分页、BV / AV / HTTPS 视频链接、分 P 播放 / 入队 / 下一首、独立 cid 队列项；取消选择保留原上下文。Windows mpv 与 Android Media3 的真实两 P 播放、暂停、拖动、队列去重通过；Windows 另测自然结束与引擎重建。
 
-双端使用确认的搜索 / 分 P 结构及现有播放页；Windows 保留第三种浮岛。封面加载真实图片，播放配色由封面提取并生成 Material 颜色角色。收藏、最近播放、队列 / 分 P、当前项 / 位置、模式、音量及外观设置已接 SQLite。Android 已接 MediaSessionService 与标准系统媒体通知；本地歌单共享逻辑、schema 2 与已确认正式界面已接线，Windows 已启动供用户审核，Android 新正式包待连接后安装。Windows 系统媒体 / 托盘尚未实现，网易云和 YouTube 正式入口保持禁用。集中视觉 / 多 DPI / 无障碍回归仍留到阶段验收。
+双端使用确认的搜索 / 分 P 结构及现有播放页；Windows 保留第三种浮岛。封面加载真实图片，播放配色由封面提取并生成 Material 颜色角色。收藏、最近播放、队列 / 分 P、当前项 / 位置、模式、音量及外观设置已接 SQLite。Android 已接 MediaSessionService 与标准系统媒体通知；本地歌单共享逻辑、schema 2 与已确认正式界面已接线，Windows 已启动供用户审核，Android 新正式包已覆盖安装并启动。Windows 系统媒体 / 托盘尚未实现，网易云和 YouTube 正式入口保持禁用。集中视觉 / 多 DPI / 无障碍回归仍留到阶段验收。
 
 ## 已完成
 
