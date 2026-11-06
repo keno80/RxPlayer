@@ -1,11 +1,14 @@
 package com.keno.rxplayer.metadata
 
+import com.keno.rxplayer.LyricLine
 import com.keno.rxplayer.source.sourceHttpEngine
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.request.prepareGet
+import io.ktor.client.request.prepareRequest
+import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.*
+import io.ktor.http.content.TextContent
 import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.readRemaining
 import kotlinx.coroutines.CancellationException
@@ -15,6 +18,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.io.readByteArray
 import kotlinx.serialization.json.*
 import kotlin.math.abs
+import kotlin.io.encoding.Base64
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeMark
@@ -53,6 +57,10 @@ class SongMetadataSource(private val client: HttpClient = HttpClient(sourceHttpE
                 it.copy(album = it.album.ifBlank { original.album }, artworkUrl = it.artworkUrl ?: original.artworkUrl)
             }
         } ?: original
+        val qq = optional { qqLyrics(song) }.orEmpty()
+        if (qq.isNotEmpty()) return SongMatch(song, qq, "QQ音乐")
+        val kugou = optional { kugouLyrics(song) }.orEmpty()
+        if (kugou.isNotEmpty()) return SongMatch(song, kugou, "酷狗音乐")
         val primary = optional {
             val root = netease("/api/song/lyric", listOf("id" to song.id.toString(), "lv" to "-1", "kv" to "-1", "tv" to "-1"))
             parseLrc((root["lrc"] as? JsonObject)?.text("lyric").orEmpty())
@@ -61,6 +69,81 @@ class SongMetadataSource(private val client: HttpClient = HttpClient(sourceHttpE
         val fallback = optional { fallbackLyrics(song) }.orEmpty()
         return SongMatch(song, fallback, if (fallback.isEmpty()) null else "LRCLIB")
     }
+
+    private suspend fun qqLyrics(song: SongCandidate): List<LyricLine> {
+        // The Desktop method currently returns empty results anonymously. Mobile requires v without cv.
+        val payload = buildJsonObject {
+            putJsonObject("comm") {
+                put("ct", "11"); put("v", "20080508"); put("tmeLoginType", "0"); put("tmeLoginMethod", "0")
+            }
+            putJsonObject("req") {
+                put("module", "music.search.SearchCgiService"); put("method", "DoSearchForQQMusicMobile")
+                putJsonObject("param") {
+                    put("query", "${song.artists.joinToString(" / ")} - ${song.title}")
+                    put("highlight", 1); put("searchid", ""); put("sub_searchid", 0); put("search_type", 0)
+                    put("nqc_flag", 0); put("sin", 0); put("ein", 30); put("page_num", 1); put("num_per_page", 10)
+                    put("cat", 2); put("grp", 1); put("remoteplace", ""); put("from", ""); put("multi_zhida", 1)
+                    put("sem", 0); put("related_data", ""); put("ambi_data", "")
+                }
+            }
+        }
+        val root = request("https://u.y.qq.com/cgi-bin/musicu.fcg", emptyList(), qq = true, body = payload.toString()) as? JsonObject
+            ?: throw SongMetadataException()
+        val req = root["req"] as? JsonObject ?: throw SongMetadataException()
+        if (root.number("code") != 0L || req.number("code") != 0L) throw SongMetadataException()
+        val rows = ((req["data"] as? JsonObject)?.get("body") as? JsonObject)?.get("item_song") as? JsonArray
+            ?: throw SongMetadataException()
+        val match = rows.mapNotNull { it as? JsonObject }.filter { row ->
+            val title = row.text("name")?.withoutHighlights() ?: return@filter false
+            val singers = (row["singer"] as? JsonArray)?.takeIf { it.size in 1..30 }?.map {
+                (it as? JsonObject)?.text("name")?.withoutHighlights() ?: return@filter false
+            } ?: return@filter false
+            val seconds = row.number("interval")?.takeIf { it in 1..86_400 } ?: return@filter false
+            val mid = row.text("mid") ?: return@filter false
+            mid.matches(Regex("[A-Za-z0-9]{1,64}")) && singers.all { it.isNotBlank() } &&
+                singers.map(::songKey).toSet() == song.artists.map(::songKey).toSet() &&
+                sameRecording(song, title, seconds * 1000.0,
+                    "$title ${row.text("subtitle")?.withoutHighlights().orEmpty()}")
+        }.singleOrNull() ?: return emptyList()
+        val lyric = request("https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg", listOf(
+            "songmid" to match.text("mid")!!, "format" to "json", "nobase64" to "1", "g_tk" to "5381"), qq = true) as? JsonObject
+            ?: throw SongMetadataException()
+        if (lyric.number("code") != 0L) throw SongMetadataException()
+        return parseLrc(lyric.text("lyric").orEmpty())
+    }
+
+    private suspend fun kugouLyrics(song: SongCandidate): List<LyricLine> {
+        val root = request("https://lyrics.kugou.com/search", listOf("ver" to "1", "client" to "pc", "man" to "yes",
+            "keyword" to "${song.artists.joinToString(" / ")} - ${song.title}", "duration" to song.durationMs.toString())) as? JsonObject
+            ?: throw SongMetadataException()
+        if (root.number("status") != 200L) throw SongMetadataException()
+        val rows = root["candidates"] as? JsonArray ?: throw SongMetadataException()
+        val match = rows.mapNotNull { it as? JsonObject }.filter { row ->
+            val title = row.text("song") ?: return@filter false
+            val artist = row.text("singer") ?: return@filter false
+            val duration = row.number("duration") ?: return@filter false
+            val id = row.text("id") ?: return@filter false
+            val accessKey = row.text("accesskey") ?: return@filter false
+            id.matches(Regex("[0-9]{1,30}")) && accessKey.matches(Regex("[A-Za-z0-9_-]{1,128}")) &&
+                artistsMatch(artist, song.artists) && sameRecording(song, title, duration.toDouble())
+        }.singleOrNull() ?: return emptyList()
+        val lyric = request("https://lyrics.kugou.com/download", listOf("ver" to "1", "client" to "pc",
+            "id" to match.text("id")!!, "accesskey" to match.text("accesskey")!!, "fmt" to "lrc", "charset" to "utf8")) as? JsonObject
+            ?: throw SongMetadataException()
+        if (lyric.number("status") != 200L) throw SongMetadataException()
+        val content = lyric.text("content") ?: return emptyList()
+        val decoded = try { Base64.decode(content).decodeToString(throwOnInvalidSequence = true) }
+            catch (_: IllegalArgumentException) { throw SongMetadataException() }
+            catch (_: CharacterCodingException) { throw SongMetadataException() }
+        return parseLrc(decoded)
+    }
+
+    private fun sameRecording(song: SongCandidate, title: String, durationMs: Double, versionTitle: String = title): Boolean =
+        songKey(title) == songKey(song.title) && songVersions(versionTitle) == songVersions(song.title) &&
+            durationMs.isFinite() && durationMs > 0 &&
+            durationMs <= 86_400_000 && song.durationMs > 0 && abs(durationMs - song.durationMs) <= 2000
+
+    private fun String.withoutHighlights() = replace("<em>", "").replace("</em>", "")
 
     private suspend fun netease(path: String, parameters: List<Pair<String, String>>): JsonObject {
         val root = request("https://music.163.com$path", parameters) as? JsonObject ?: throw SongMetadataException()
@@ -92,12 +175,16 @@ class SongMetadataSource(private val client: HttpClient = HttpClient(sourceHttpE
         }
     }
 
-    private suspend fun request(address: String, parameters: List<Pair<String, String>>, isFallback: Boolean = false): JsonElement {
+    private suspend fun request(address: String, parameters: List<Pair<String, String>>, isFallback: Boolean = false,
+        qq: Boolean = false, body: String? = null): JsonElement {
         try {
-            return client.prepareGet(address) {
+            return client.prepareRequest(address) {
+                method = if (body == null) HttpMethod.Get else HttpMethod.Post
+                if (body != null) setBody(TextContent(body, ContentType.Application.FormUrlEncoded))
                 url { parameters.forEach { (key, value) -> this.parameters.append(key, value) } }
                 headers.remove(HttpHeaders.Referrer)
-                headers[HttpHeaders.UserAgent] = if (isFallback) LRCLIB_USER_AGENT else "RxPlayer/0.1"
+                if (qq) headers[HttpHeaders.Referrer] = "https://y.qq.com/"
+                headers[HttpHeaders.UserAgent] = when { isFallback -> LRCLIB_USER_AGENT; qq -> "QQMusic 20080508(android)"; else -> "RxPlayer/0.1" }
             }.execute { response ->
                 if (isFallback && response.status.value == 429) {
                     val retry = response.headers[HttpHeaders.RetryAfter]?.trim()
