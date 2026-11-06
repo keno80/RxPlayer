@@ -2,21 +2,22 @@ package com.keno.rxplayer
 
 import java.awt.AWTException
 import java.awt.Color
-import java.awt.Font
-import java.awt.MenuItem
-import java.awt.PopupMenu
 import java.awt.RenderingHints
 import java.awt.SystemTray
-import java.awt.Toolkit
 import java.awt.TrayIcon
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import java.awt.event.MouseListener
 import java.awt.image.BufferedImage
 
-internal data class DesktopTrayState(val tooltip: String, val playLabel: String, val canPlay: Boolean, val canSkip: Boolean)
+internal data class DesktopTrayState(val tooltip: String, val pauseAction: Boolean, val canPlay: Boolean, val canSkip: Boolean) {
+    val playLabel: String get() = if (pauseAction) "暂停" else "播放"
+}
 
 internal fun desktopTrayState(title: String, playing: Boolean, waiting: Boolean, playWhenReady: Boolean,
     hasTrack: Boolean, queueSize: Int, closing: Boolean) = DesktopTrayState(
     if (title.isBlank()) "RxPlayer" else "RxPlayer · $title".take(120),
-    if (playing || waiting && playWhenReady) "暂停" else "播放",
+    playing || waiting && playWhenReady,
     !closing && (hasTrack || queueSize > 0),
     !closing && queueSize > 1,
 )
@@ -25,46 +26,31 @@ internal fun desktopTrayState(title: String, playing: Boolean, waiting: Boolean,
 internal class DesktopTray private constructor(
     private val system: SystemTray,
     private val icon: TrayIcon,
-    private val open: MenuItem,
-    private val play: MenuItem,
-    private val previous: MenuItem,
-    private val next: MenuItem,
-    private val quit: MenuItem,
+    private val menuListener: MouseListener,
+    private val popup: WindowsTrayMenu,
 ) : AutoCloseable {
+    private var state = desktopTrayState("", false, false, false, false, 0, false)
+    private var closing = false
+
     fun update(state: DesktopTrayState, closing: Boolean) {
+        this.state = state
+        this.closing = closing
         icon.toolTip = state.tooltip
-        play.label = state.playLabel
-        play.isEnabled = state.canPlay
-        previous.isEnabled = state.canSkip
-        next.isEnabled = state.canSkip
-        open.isEnabled = !closing
-        quit.isEnabled = !closing
     }
 
     override fun close() {
         system.remove(icon)
         icon.actionListeners.forEach(icon::removeActionListener)
-        listOf(open, play, previous, next, quit).forEach { item -> item.actionListeners.forEach(item::removeActionListener) }
+        icon.removeMouseListener(menuListener)
+        popup.close()
     }
 
     companion object {
-        fun install(onOpen: () -> Unit, onPlay: () -> Unit, onPrevious: () -> Unit, onNext: () -> Unit, onQuit: () -> Unit): DesktopTray? {
+        fun install(onOpen: () -> Unit, onPlaybackAction: (pause: Boolean) -> Unit, onPrevious: () -> Unit, onNext: () -> Unit, onQuit: () -> Unit): DesktopTray? {
             try {
-                if (!SystemTray.isSupported()) return null
+                if (!System.getProperty("os.name").startsWith("Windows") || !SystemTray.isSupported()) return null
+                WindowsTrayMenu.api // Load the native library before offering close-to-tray.
                 val system = SystemTray.getSystemTray()
-                // AWT's default menu font does not reliably fall back for CJK on Windows.
-                val menu = PopupMenu().apply {
-                    font = Toolkit.getDefaultToolkit().getDesktopProperty("win.menu.font") as? Font
-                        ?: Font(Font.DIALOG, Font.PLAIN, 12)
-                }
-                fun item(label: String, action: () -> Unit) = MenuItem(label).also { it.addActionListener { action() }; menu.add(it) }
-                val open = item("打开 RxPlayer", onOpen)
-                menu.addSeparator()
-                val play = item("播放", onPlay).apply { isEnabled = false }
-                val previous = item("上一曲", onPrevious).apply { isEnabled = false }
-                val next = item("下一曲", onNext).apply { isEnabled = false }
-                menu.addSeparator()
-                val quit = item("退出 RxPlayer", onQuit)
                 val image = BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB)
                 image.createGraphics().apply {
                     setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
@@ -74,18 +60,39 @@ internal class DesktopTray private constructor(
                     listOf(10, 20, 26, 16, 8).forEachIndexed { index, height -> fillRoundRect(5 + index * 5, (32 - height) / 2, 3, height, 3, 3) }
                     dispose()
                 }
-                val icon = TrayIcon(image, "RxPlayer", menu).apply {
+                val icon = TrayIcon(image, "RxPlayer").apply {
                     isImageAutoSize = true
                     addActionListener { onOpen() }
                 }
-                system.add(icon)
-                println("RxPlayer: Windows tray connected")
-                return DesktopTray(system, icon, open, play, previous, next, quit)
+                lateinit var tray: DesktopTray
+                val popup = WindowsTrayMenu()
+                val listener = object : MouseAdapter() {
+                    override fun mouseReleased(event: MouseEvent) {
+                        if (event.button != MouseEvent.BUTTON3 || tray.closing) return
+                        val snapshot = tray.state
+                        popup.show(snapshot, tray.closing) { command ->
+                            when (command) {
+                                1 -> onOpen()
+                                2 -> onPlaybackAction(snapshot.pauseAction)
+                                3 -> onPrevious()
+                                4 -> onNext()
+                                5 -> onQuit()
+                            }
+                        }
+                    }
+                }
+                tray = DesktopTray(system, icon, listener, popup)
+                icon.addMouseListener(listener)
+                try { system.add(icon) } catch (error: Throwable) { tray.close(); throw error }
+                println("RxPlayer: Windows tray connected (system Unicode menu)")
+                return tray
             } catch (error: AWTException) {
                 System.err.println("RxPlayer: tray unavailable; closing will exit (${error.javaClass.simpleName})")
             } catch (error: UnsupportedOperationException) {
                 System.err.println("RxPlayer: tray unavailable; closing will exit (${error.javaClass.simpleName})")
             } catch (error: SecurityException) {
+                System.err.println("RxPlayer: tray unavailable; closing will exit (${error.javaClass.simpleName})")
+            } catch (error: LinkageError) {
                 System.err.println("RxPlayer: tray unavailable; closing will exit (${error.javaClass.simpleName})")
             }
             return null

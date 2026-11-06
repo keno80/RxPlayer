@@ -47,3 +47,15 @@
 使用 Unicode 转义避免命令管道编码影响，探测打开、播放、暂停、上一曲、下一曲及退出共 6 种标签，全部继承系统字体，canDisplayUpTo 均为 -1；DesktopTrayTest 2 项通过，Git 空白检查、定向审查通过。该证据只确认字体 / 字形及状态逻辑，原生菜单实际显示仍待用户审核。
 
 依据：[OpenJDK Windows 默认菜单字体](https://raw.githubusercontent.com/openjdk/jdk17u/master/src/java.desktop/windows/classes/sun/awt/windows/awtLocalization.properties)、[Oracle MenuComponent 字体继承](https://docs.oracle.com/en/java/javase/17/docs/api/java.desktop/java/awt/MenuComponent.html)。
+
+### 后续纠正：绕过 AWT 菜单绘制
+
+用户再次截图确认上述字体设置未解决实际方框，上一轮字形检查不能视为显示验收。临时诊断实际运行进程：标签“打开”的码点为 6253 / 5f00，菜单字体确为 Microsoft YaHei UI，canDisplayUpTo 为 -1；Windows GDI 的同字体 GetGlyphIndicesW 也成功返回全部 14 个中文字形。因此输入内容及 Windows 字形存在，失败局限在 AWT 菜单绘制路径；未宣称已定位某个具体 JDK 缺陷。
+
+正式菜单改为现有 JNA 调用 CreatePopupMenu / AppendMenuW，使用 WString 和系统绘制字符串，不设置 MF_OWNERDRAW；保留 AWT TrayIcon 及所有既有操作。专属 worker 创建隐藏 owner 和阻塞菜单循环，应用 EDT 继续处理播放轮询、SMTC 和保存，选择结果回 EDT 分派；关闭时取消菜单并禁止晚到命令，HMENU / owner 在 finally 释放。播放 / 暂停命令取打开菜单时的明确意图，避免菜单展开期间系统状态变化后 toggle 反向操作。
+
+新增原生菜单测试实际读回全部中文文案，检查禁用状态和没有 owner-draw 标志；既有媒体测试增加重复 Play / Pause 幂等断言。定向静态审查修复了主线程阻塞和标签 / toggle 竞争，复查无剩余 Critical / Important。本轮仅针对菜单，不扩 Android 或完整回归。
+
+尝试通过 computer-use 的窗口状态检查最小 AWT 对照窗口，但激活失败、截图只取得背景，未取得可用的菜单视觉证据。临时探针及日志已移除，原生显示、外部点击取消及隐藏后恢复仍由用户审核，不把字形 / 原生数据测试写成视觉已通过。
+
+依据：[Microsoft AppendMenuW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-appendmenuw)、[TrackPopupMenu](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-trackpopupmenu)、[OpenJDK AWT 菜单 owner-draw 链路](https://raw.githubusercontent.com/openjdk/jdk17u/master/src/java.desktop/windows/native/libawt/windows/awt_MenuItem.cpp)。

@@ -33,7 +33,7 @@ fun main() = application {
     DisposableEffect(Unit) {
         val installed = DesktopTray.install(
             onOpen = { restore() },
-            onPlay = { if (!closing) currentRuntime?.toggle() },
+            onPlaybackAction = { pause -> if (!closing) currentRuntime?.let { dispatchWindowsMediaCommand(it, if (pause) 2 else 1) } },
             onPrevious = { if (!closing) currentRuntime?.let { dispatchWindowsMediaCommand(it, 5) } },
             onNext = { if (!closing) currentRuntime?.let { dispatchWindowsMediaCommand(it, 4) } },
             onQuit = { currentQuit() },
