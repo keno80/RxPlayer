@@ -50,8 +50,10 @@
   });
   // Authored product fixtures: no real lyrics, covers or automatic recognition are fetched here.
   const songCandidates = [
-    {id:'studio',title:'夜航',author:'拾音计划',album:'夜航',version:'录音室版',duration:222,art:3,hasLyrics:true,lyricArt:0},
-    {id:'live',title:'夜航（城市现场）',author:'落日工作室',album:'城市现场',version:'现场版',duration:264,art:1,hasLyrics:false},
+    {id:'studio',provider:'QQ音乐',title:'夜航',author:'拾音计划',album:'夜航',version:'录音室版',duration:222,art:3,hasLyrics:true,lyricArt:0},
+    {id:'kugou-studio',provider:'酷狗音乐',title:'夜航',author:'拾音计划',album:'夜航',version:'录音室版',duration:222,art:3,hasLyrics:true,lyricArt:0},
+    {id:'live',provider:'网易云音乐',title:'夜航（城市现场）',author:'落日工作室',album:'城市现场',version:'现场版',duration:264,art:1,hasLyrics:false},
+    {id:'lrclib-studio',provider:'LRCLIB',title:'夜航',author:'拾音计划',album:'夜航',version:'录音室版',duration:222,art:0,hasLyrics:true,lyricArt:0},
   ];
   let state = initial();
   let previousFocus = null;
@@ -530,6 +532,19 @@
       if (selected) line.setAttribute('aria-current','true');
       else line.removeAttribute('aria-current');
     });
+    const pane = $('.desktop-lyrics .lyrics-lines');
+    const line = pane?.querySelector('[aria-current="true"]');
+    if (line && pane.clientHeight) {
+      pane.style.paddingBlock = `${pane.clientHeight / 2}px`;
+      const signature = `${active}:${pane.clientHeight}:${pane.clientWidth}:${line.offsetHeight}`;
+      if (pane.dataset.centered !== signature) {
+        const box = pane.getBoundingClientRect(), target = line.getBoundingClientRect();
+        const top = pane.scrollTop + target.top + target.height / 2 - box.top - box.height / 2;
+        const instant = !pane.dataset.centered || matchMedia('(prefers-reduced-motion:reduce)').matches;
+        pane.dataset.centered = signature;
+        pane.scrollTo({top,behavior:instant ? 'instant' : 'smooth'});
+      }
+    }
   }
 
   function transport() {
@@ -658,7 +673,7 @@
       const words = state.matchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
       const candidates = songCandidates.filter(item => words.every(word => `${item.title} ${item.author} ${item.album} ${item.version}`.toLowerCase().includes(word)));
       title = '匹配歌曲信息';
-      body = `<p class="hint">当前视频 · ${escape(original.title)}<br>UP 主：${escape(original.author)} · ${time(original.duration)}</p><p class="hint">${applied ? `已选：${escape(applied.title)} · ${escape(applied.author)}` : '选择对应的歌曲版本，补充封面和歌词。'}</p><form id="song-match-form"><label for="song-match-query">歌名 / 歌手</label><div class="song-match-search"><input class="dialog-input" id="song-match-query" value="${escape(state.matchQuery)}" maxlength="200" placeholder="输入歌名或歌手" required><button class="filled-button" type="submit">搜索</button></div></form><p class="hint">以下为原创演示候选，不连接真实歌曲库。</p><div class="parts-list">${candidates.map(item => `<button class="part-option song-candidate" data-action="apply-song-match" data-id="${item.id}" ${applied?.id === item.id ? 'aria-current="true"' : ''}>${art(item)}<span class="part-copy"><strong>${escape(item.title)}</strong><small>${escape(item.author)} · ${item.version} · ${time(item.duration)}</small><small>${applied?.id === item.id ? item.hasLyrics ? '同步歌词 · 专辑封面' : '暂无同步歌词 · 专辑封面' : '歌词待查询'}</small></span>${applied?.id === item.id ? symbol('check') : ''}</button>`).join('') || '<p class="hint" role="status">没有找到匹配歌曲，试试修改歌名或歌手。</p>'}</div><p class="hint">现场、翻唱或语言版本不同，不自动套用原版时间轴。匹配不改变正在播放的视频。</p><div class="dialog-actions">${applied ? '<button class="text-button" data-action="reset-song-match">使用视频原信息</button>' : ''}<button class="text-button" data-action="close-overlay">取消</button></div>`;
+      body = `<p class="hint">当前视频 · ${escape(original.title)}<br>UP 主：${escape(original.author)} · ${time(original.duration)}</p><p class="hint">${applied ? `已选：${escape(applied.title)} · ${escape(applied.author)}` : '选择对应的歌曲版本，补充封面和歌词。'}</p><form id="song-match-form"><label for="song-match-query">歌名 / 歌手</label><div class="song-match-search"><input class="dialog-input" id="song-match-query" value="${escape(state.matchQuery)}" maxlength="200" placeholder="输入歌名或歌手" required><button class="filled-button" type="submit">搜索</button></div></form><p class="hint">歌曲候选 · QQ音乐 → 酷狗 → 网易云 → LRCLIB<br>以下为原创演示候选，不连接真实歌曲库。</p><div class="parts-list">${candidates.map(item => `<button class="part-option song-candidate" data-action="apply-song-match" data-id="${item.id}" ${applied?.id === item.id ? 'aria-current="true"' : ''}>${art(item)}<span class="part-copy"><strong>${escape(item.title)}</strong><small>${escape(item.author)} · ${item.version} · ${time(item.duration)}</small><small>${escape(item.provider)} · ${applied?.id === item.id ? item.hasLyrics ? '同步歌词' : '暂无同步歌词' : '歌词待查询'}</small></span>${applied?.id === item.id ? symbol('check') : ''}</button>`).join('') || '<p class="hint" role="status">没有找到匹配歌曲，试试修改歌名或歌手。</p>'}</div><p class="hint">现场、翻唱或语言版本不同，不自动套用原版时间轴。匹配不改变正在播放的视频。</p><div class="dialog-actions">${applied ? '<button class="text-button" data-action="reset-song-match">使用视频原信息</button>' : ''}<button class="text-button" data-action="close-overlay">取消</button></div>`;
     } else if (state.overlay === 'tray') {
       title = 'RxPlayer · 托盘菜单预览';
       body = `<p class="hint">${escape(current().title)} · ${state.playing ? '正在播放' : '已暂停'}</p><button class="menu-action" data-action="restore-window">${symbol('arrow_back')}打开 RxPlayer</button><button class="menu-action" data-action="toggle-play">${symbol(state.playing ? 'pause' : 'play_arrow')}${state.playing ? '暂停' : '播放'}</button><button class="menu-action" data-action="previous" ${state.queue.length < 2 ? 'disabled' : ''}>${symbol('skip_previous')}上一曲</button><button class="menu-action" data-action="next" ${state.queue.length < 2 ? 'disabled' : ''}>${symbol('skip_next')}下一曲</button><hr><button class="menu-action" data-action="exit-app">${symbol('close')}退出 RxPlayer</button><p class="hint">退出会停止播放、保存位置并释放资源。关闭窗口只收起到托盘。此处演示行为，正式菜单使用 Windows 系统样式。</p>`;
@@ -700,6 +715,7 @@
       ? `<header class="sheet-head player-head">${iconButton('close-overlay','arrow_back','返回')}<h2 id="dialog-title" class="sr-only">播放器</h2><div class="player-head-actions">${iconButton('song-match','more_horiz','歌曲信息',`data-id="${state.current}"`)}${state.device === 'android' && hasLyrics() ? '' : `<button class="queue-pill" data-action="open-queue" aria-label="播放队列，${state.queue.length} 首">${symbol('queue_music')}<span>队列 · ${state.queue.length}</span></button>`}</div></header>`
       : `<header class="sheet-head"><h2 id="dialog-title">${escape(title)}</h2>${iconButton('close-overlay','close','关闭')}</header>`;
     dialog.innerHTML = `${heading}${body}`;
+    requestAnimationFrame(updateLyrics);
     if (wasInDialog) requestAnimationFrame(() => {
       const target = focusedData ? $$('[data-action]',dialog).find(element => !element.disabled && Object.entries(focusedData).every(([key,value]) => element.dataset[key] === value)) : null;
       (target || $('[data-action="toggle-play"]:not(:disabled)',dialog) || $('button:not(:disabled),input:not(:disabled),select', dialog))?.focus({preventScroll:true});
@@ -1025,7 +1041,7 @@
     requestAnimationFrame(() => (state.overlay === 'player' ? $('#dialog [data-action="toggle-play"]:not(:disabled)') : $('#search-input'))?.focus({preventScroll:true}));
   });
   $('#review-reset').addEventListener('click', () => { cancelSearch(); cancelPlayback(); closeQueue(false); closeOverlay(); queueFocusOrigin = null; state = initial(); render(); toast('已恢复原型初始状态'); });
-  new ResizeObserver(syncPanels).observe(product);
+  new ResizeObserver(() => { syncPanels(); updateLyrics(); }).observe(product);
   queueBreakpoint.addEventListener('change',syncPanels);
   setInterval(() => {
     if (!state.playing) return;

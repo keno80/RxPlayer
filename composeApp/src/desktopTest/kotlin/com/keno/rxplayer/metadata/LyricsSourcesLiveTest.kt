@@ -12,7 +12,7 @@ import org.junit.Assume.assumeTrue
 import kotlin.test.*
 
 class LyricsSourcesLiveTest {
-    private val song = SongCandidate(186016, "晴天", listOf("周杰伦"), "叶惠美", 269_000)
+    private val song = SongCandidate(186016, "晴天", listOf("周杰伦"), "叶惠美", 269_000, "https://p1.music.126.net/cover.jpg")
 
     @Test fun realQqSearchAndLyricsWinTheProductionChain() {
         assumeTrue("Opt-in real lyrics requests", System.getenv("RXPLAYER_METADATA_LIVE_TEST") == "1")

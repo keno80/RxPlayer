@@ -41,19 +41,19 @@ internal fun SongMetadataDialog(state: SongMetadataState) {
                             enabled = !state.applying, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(onSearch = { if (!state.searching && !state.applying) state.search() }), shape = RoundedCornerShape(8.dp))
                         Button({ state.search() }, enabled = !state.searching && !state.applying && state.query.isNotBlank()) { Text(if (state.searching) "搜索中…" else "搜索") }
                     }
-                    Text("歌曲候选 · 网易云", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("歌曲候选 · QQ音乐 → 酷狗 → 网易云 → LRCLIB", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     state.candidates.forEach { song ->
-                        TextButton({ state.apply(song) }, enabled = !state.applying && !state.searching, modifier = Modifier.fillMaxWidth().semantics { this.selected = selected?.song?.id == song.id },
+                        TextButton({ state.apply(song) }, enabled = !state.applying && !state.searching, modifier = Modifier.fillMaxWidth().semantics { this.selected = selected?.song?.key == song.key },
                             shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(12.dp),
-                            colors = ButtonDefaults.textButtonColors(containerColor = if (selected?.song?.id == song.id) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onSurface)) {
+                            colors = ButtonDefaults.textButtonColors(containerColor = if (selected?.song?.key == song.key) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onSurface)) {
                             RemoteArtwork(song.artworkUrl, Modifier.size(56.dp), RoundedCornerShape(8.dp))
                             Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(song.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                 Text("${song.artists.joinToString(" / ")} · ${formatTime(song.durationMs)}", style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                 Text(song.album, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(if (selected?.song?.id == song.id) if (selected.lyrics.isEmpty()) "暂无同步歌词" else "同步歌词 · ${selected.lyricsSource.orEmpty()}" else "歌词待查询", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("${song.provider.label} · " + if (selected?.song?.key == song.key) if (selected.lyrics.isEmpty()) "暂无同步歌词" else "同步歌词 · ${selected.lyricsSource.orEmpty()}" else "歌词待查询", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            if (selected?.song?.id == song.id) Icon(PlayerSymbols.Check, "已选择")
+                            if (selected?.song?.key == song.key) Icon(PlayerSymbols.Check, "已选择")
                         }
                     }
                     if (state.searched && !state.searching && state.candidates.isEmpty()) Text("没有找到匹配歌曲，试试修改歌名或歌手。", style = MaterialTheme.typography.bodyMedium)

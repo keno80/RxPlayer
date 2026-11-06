@@ -104,4 +104,33 @@ class SongMetadataStateTest {
         assertEquals(song, offline.savedRecords.single().match!!.song)
         assertTrue(offline.savedRecords.single().match!!.lyrics.isEmpty())
     }
+
+    @Test fun manualSelectionDistinguishesEqualNumericIdsAcrossProviders() = runTest {
+        val qq = song.copy(provider = SongProvider.QQ, providerId = "mid1")
+        val state = SongMetadataState(backgroundScope, details = { details(it) }, searchSongs = { listOf(song, qq) },
+            loadSong = { SongMatch(it) })
+        state.open(track); runCurrent()
+        assertNull(state.apply(qq.copy(providerId = "not-in-results")))
+        state.apply(qq)!!.join()
+        assertEquals(qq, state.savedRecords.single().match!!.song)
+    }
+
+    @Test fun actualFlowerSeaTitleDoesNotClearLoadedQqLyricsBeforeDisplay() = runTest {
+        val video = BilibiliTrack(ContentItem(MusicSource.Bilibili, "BV1E23n6QEBs", "花海 - 周杰伦 【无损音质】", "大西洋电台", null, 266), VideoPart(1, 40415661055, "花海 - 周杰伦 【无损音质】", 266))
+        val selected = SongCandidate(449198, "花海", listOf("周杰伦"), "魔杰座", 264000, provider = SongProvider.QQ, providerId = "003cI52o4daJJL")
+        val loaded = SongMatch(selected, listOf(LyricLine(1000, "原创测试")), "QQ音乐")
+        val state = SongMetadataState(backgroundScope, details = { details(it) }, searchSongs = { listOf(selected) }, loadSong = { loaded })
+        state.open(video); runCurrent(); state.apply(selected)!!.join()
+        assertEquals(loaded, state.savedRecords.single().match)
+        assertEquals(loaded.lyrics, state.display(video).lyrics)
+        var refreshes = 0
+        val cached = loaded.copy(lyrics = emptyList(), lyricsSource = null)
+        val restored = SongMetadataState(backgroundScope, listOf(SongMetadataRecord(video.id, cached, true)), details = { details(it) },
+            searchSongs = { error("Keep the user's selected song") }, loadSong = { refreshes++; loaded })
+        assertNotNull(restored.auto(video)).join()
+        assertEquals(loaded, restored.savedRecords.single().match)
+        assertTrue(restored.savedRecords.single().automaticDisabled)
+        assertNull(restored.auto(video))
+        assertEquals(1, refreshes)
+    }
 }

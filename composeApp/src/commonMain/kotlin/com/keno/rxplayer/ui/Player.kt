@@ -6,16 +6,20 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -358,9 +362,10 @@ private fun SeekBar(state: PlaybackState, modifier: Modifier = Modifier, compact
 
 @Composable
 private fun LyricsPane(state: PlaybackState, track: PlaybackTrack, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)) {
+    Column(modifier.fillMaxSize().padding(24.dp)) {
         Text((track as? com.keno.rxplayer.BilibiliTrack)?.songMetadata?.lyricsSource?.let { "歌词 · $it" } ?: "歌词", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Box(Modifier.fillMaxWidth().heightIn(min = 400.dp).padding(vertical = 48.dp), contentAlignment = Alignment.Center) {
+        Spacer(Modifier.height(16.dp))
+        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
             if (track.lyrics.isEmpty()) Text("暂无歌词", color = MaterialTheme.colorScheme.onSurfaceVariant)
             else LyricsLines(state, track, windowed = false)
         }
@@ -370,26 +375,46 @@ private fun LyricsPane(state: PlaybackState, track: PlaybackTrack, modifier: Mod
 @Composable
 private fun LyricsLines(state: PlaybackState, track: PlaybackTrack, windowed: Boolean) {
     val active = if (state.durationMs > 0) track.lyrics.indexOfLast { state.positionMs >= it.atMs } else -1
-    val indices = if (windowed) (active.coerceAtLeast(0) - 2..active.coerceAtLeast(0) + 2).toList() else track.lyrics.indices.toList()
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(if (windowed) 8.dp else 12.dp)) {
-        indices.forEach { index -> key(index) {
-            val line = track.lyrics.getOrNull(index)
-            if (line == null) Spacer(Modifier.height(56.dp)) else {
-                val current = index == active
-                val bringIntoView = remember { BringIntoViewRequester() }
-                LaunchedEffect(current) { if (current && !windowed) bringIntoView.bringIntoView() }
-                val color by animateColorAsState(if (current) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, if (LocalPlayerReducedMotion.current) snap() else MaterialTheme.motionScheme.fastEffectsSpec())
-                TextButton(
-                    onClick = { state.seek(line.atMs) }, enabled = state.canSeek,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).bringIntoViewRequester(bringIntoView).semantics { if (current) stateDescription = "当前歌词" },
-                    colors = ButtonDefaults.textButtonColors(contentColor = color, disabledContentColor = color),
-                ) {
-                    Text(line.text, fontSize = (if (windowed) if (current) 22 else 18 else if (current) 28 else 24).sp,
-                        lineHeight = (if (windowed) if (current) 28 else 24 else if (current) 36 else 32).sp,
-                        fontWeight = if (current) FontWeight.Bold else FontWeight.Normal, textAlign = TextAlign.Center)
-                }
+    if (windowed) {
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            (active.coerceAtLeast(0) - 2..active.coerceAtLeast(0) + 2).forEach { index -> key(index) {
+                val line = track.lyrics.getOrNull(index)
+                if (line == null) Spacer(Modifier.height(56.dp)) else LyricButton(state, line, index == active, true)
+            } }
+        }
+    } else BoxWithConstraints(Modifier.fillMaxSize()) {
+        val scroll = rememberLazyListState()
+        val target = active.coerceAtLeast(0)
+        val itemHeight by remember(scroll, target) { derivedStateOf { scroll.layoutInfo.visibleItemsInfo.firstOrNull { it.index == target }?.size } }
+        val viewport by remember(scroll) { derivedStateOf { scroll.layoutInfo.viewportStartOffset to scroll.layoutInfo.viewportEndOffset } }
+        val fontScale = LocalDensity.current.fontScale
+        val reducedMotion = LocalPlayerReducedMotion.current
+        val motion = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+        LaunchedEffect(track.id, track.lyrics, target, itemHeight, viewport, maxWidth, fontScale) {
+            val line = scroll.layoutInfo.visibleItemsInfo.firstOrNull { it.index == target }
+            if (line == null) {
+                scroll.scrollToItem(target)
+            } else {
+                val delta = line.offset + line.size / 2f - (viewport.first + viewport.second) / 2f
+                if (reducedMotion) scroll.scrollBy(delta) else scroll.animateScrollBy(delta, motion)
             }
-        } }
+        }
+        LazyColumn(Modifier.fillMaxSize(), state = scroll, contentPadding = PaddingValues(vertical = maxHeight / 2), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            itemsIndexed(track.lyrics) { index, line -> LyricButton(state, line, index == active, false) }
+        }
+    }
+}
+
+@Composable
+private fun LyricButton(state: PlaybackState, line: com.keno.rxplayer.LyricLine, current: Boolean, windowed: Boolean) {
+    val color by animateColorAsState(if (current) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        if (LocalPlayerReducedMotion.current) snap() else MaterialTheme.motionScheme.fastEffectsSpec())
+    TextButton(onClick = { state.seek(line.atMs) }, enabled = state.canSeek,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).semantics { if (current) stateDescription = "当前歌词" },
+        colors = ButtonDefaults.textButtonColors(contentColor = color, disabledContentColor = color)) {
+        Text(line.text, fontSize = (if (windowed) if (current) 22 else 18 else if (current) 28 else 24).sp,
+            lineHeight = (if (windowed) if (current) 28 else 24 else if (current) 36 else 32).sp,
+            fontWeight = if (current) FontWeight.Bold else FontWeight.Normal, textAlign = TextAlign.Center)
     }
 }
 

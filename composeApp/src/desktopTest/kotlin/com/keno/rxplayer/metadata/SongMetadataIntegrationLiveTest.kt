@@ -24,8 +24,8 @@ class SongMetadataIntegrationLiveTest {
                 assertEquals("李佳薇", hint.artist)
                 val candidates = catalog.search("${hint.title} ${hint.artist}")
                 // The catalog's parenthetical subtitle is not in the video: keep automatic matching conservative.
-                assertNull(autoMatch(hint, original, candidates))
-                val selected = assertNotNull(candidates.firstOrNull { it.id == 3399839173L })
+                val selected = assertNotNull(candidates.firstOrNull { it.provider == SongProvider.NETEASE && it.id == 3399839173L })
+                assertNull(autoMatch(hint, original, listOf(selected)))
                 val match = catalog.load(selected)
                 assertTrue(lyricsFit(original, match.song, details.description))
                 assertTrue(match.lyrics.isNotEmpty(), "This opt-in sample should have timed lyrics")

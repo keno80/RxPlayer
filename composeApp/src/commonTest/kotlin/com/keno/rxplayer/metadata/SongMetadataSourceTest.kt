@@ -37,7 +37,7 @@ class SongMetadataSourceTest {
             assertEquals(250_000, song.durationMs)
             assertEquals("现场专辑", song.album)
             assertNull(song.artworkUrl)
-            val request = requests.single()
+            val request = requests.single { it.url.host == "music.163.com" }
             assertEquals("李佳薇 甲乙丙丁", request.url.parameters["s"])
             assertEquals("1", request.url.parameters["type"])
             assertEquals("5", request.url.parameters["limit"])

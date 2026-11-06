@@ -167,10 +167,10 @@ button{color:inherit}a{color:#365e54;text-underline-offset:3px}
 .product .desktop-player .player-volume input[type=range]::-webkit-slider-thumb{height:24px;margin-top:-8px;box-shadow:0 0 0 3px var(--surface)}
 .product .desktop-player .player-volume input[type=range]::-moz-range-track,.product .desktop-player .player-volume input[type=range]::-moz-range-progress{height:8px}
 .product .desktop-player .player-volume input[type=range]::-moz-range-thumb{height:24px}
-.desktop-lyrics{display:flex;flex-direction:column;min-width:0;min-height:0;padding:24px 32px;background:var(--surface-low);border-radius:32px;overflow-y:auto;scrollbar-width:thin}
+.desktop-lyrics{display:flex;flex-direction:column;min-width:0;min-height:0;padding:24px 32px;background:var(--surface-low);border-radius:32px;overflow:hidden}
 .desktop-lyrics h3{font-size:14px;line-height:20px;font-weight:500;color:var(--on-surface-variant);margin:0 0 16px}
-.lyrics-lines{display:flex;flex-direction:column;justify-content:center;gap:8px;flex:1;width:100%;max-width:640px;margin-inline:auto}
-.product .desktop-lyrics .lyric-line{display:block;min-width:0;width:100%;min-height:64px;padding:8px 12px;text-align:left;font-size:24px;line-height:32px;font-weight:500;color:var(--on-surface-variant);border-radius:16px;overflow-wrap:anywhere;transition:color var(--effects),background var(--effects)}
+.lyrics-lines{display:flex;flex-direction:column;justify-content:flex-start;gap:8px;flex:1;min-height:0;width:100%;max-width:640px;margin-inline:auto;overflow-y:auto;scrollbar-width:thin;box-sizing:border-box;overflow-anchor:none}
+.product .desktop-lyrics .lyric-line{display:block;flex-shrink:0;min-width:0;width:100%;min-height:64px;padding:8px 12px;text-align:left;font-size:24px;line-height:32px;font-weight:500;color:var(--on-surface-variant);border-radius:16px;overflow-wrap:anywhere;transition:color var(--effects),background var(--effects)}
 .product .desktop-lyrics .lyric-line.is-active{color:var(--primary);font-size:28px;line-height:36px;font-weight:700}
 .product .desktop-lyrics .lyric-line:hover{background:color-mix(in srgb,var(--primary) 8%,var(--surface-low))}
 .lyrics-empty{display:flex;flex:1;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:var(--on-surface-variant)}

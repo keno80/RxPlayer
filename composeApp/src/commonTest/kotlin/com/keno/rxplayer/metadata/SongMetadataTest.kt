@@ -81,4 +81,46 @@ class SongMetadataTest {
         val record = SongMetadataRecord(original.id, display.songMetadata, true)
         assertEquals(record, decodeSongRecord(original.id, encodeSongRecord(record)))
     }
+
+    @Test fun automaticSelectionUsesProviderPriorityWithoutMergingAmbiguousVersions() {
+        val original = track("李佳薇《甲乙丙丁》")
+        val hint = songHint(original)!!
+        val qq = song.copy(provider = SongProvider.QQ, providerId = "mid1")
+        val kg = song.copy(provider = SongProvider.KUGOU, providerId = "0123456789ABCDEF0123456789ABCDEF")
+        assertEquals(qq, autoMatch(hint, original, listOf(song, kg, qq)))
+        assertEquals(kg, autoMatch(hint, original, listOf(qq, qq.copy(providerId = "mid2"), kg, song)))
+        assertEquals(song, autoMatch(hint, original, listOf(qq.copy(title = "甲乙丙丁 (Live)"), song)))
+        assertNotEquals(qq.key, kg.key)
+        assertNotEquals(qq.key, song.key)
+    }
+
+    @Test fun qualifiedProviderIdentityRoundTripsAndLegacyPayloadStillMeansNetease() {
+        for (provider in SongProvider.entries) {
+            val selected = song.copy(provider = provider, providerId = if (provider == SongProvider.QQ) "mid42" else null)
+            val record = SongMetadataRecord("video", SongMatch(selected), true)
+            assertEquals(record, decodeSongRecord("video", encodeSongRecord(record)))
+        }
+        val legacy = """{"disabled":true,"id":42,"title":"歌名","artists":["歌手"],"album":"专辑","duration":100000,"lyrics":[]}"""
+        assertEquals(SongProvider.NETEASE, decodeSongRecord("video", legacy).match!!.song.provider)
+    }
+
+    @Test fun rawMultiArtistAndBandCreditsRemainCompatibleWithMatchingVideoCredits() {
+        for (credit in listOf("歌手甲 / 歌手乙" to "歌手甲, 歌手乙", "Earth, Wind & Fire" to "Earth, Wind & Fire")) {
+            val original = track("${credit.first}《甲乙丙丁》")
+            assertTrue(lyricsFit(original, song.copy(artists = listOf(credit.second), provider = SongProvider.LRCLIB)))
+        }
+    }
+
+    @Test fun songFirstVideoTitleKeepsQqLyricsAndIgnoresOnlyTechnicalQualityTags() {
+        val video = track("花海 - 周杰伦 【无损音质】", seconds = 266)
+        val selected = SongCandidate(449198, "花海", listOf("周杰伦"), "魔杰座", 264000, provider = SongProvider.QQ, providerId = "003cI52o4daJJL")
+        val hint = assertNotNull(songHint(video))
+        assertFalse(hint.title.contains("无损音质"))
+        assertEquals(selected, autoMatch(hint, video, listOf(selected)))
+        assertTrue(lyricsFit(video, selected))
+        assertTrue(lyricsFit(video, selected, "歌手：周杰伦"))
+        assertFalse(lyricsFit(video, selected, "原唱：周杰伦\n翻唱：另一位歌手"))
+        assertFalse(lyricsFit(video.copy(item = video.item.copy(title = "花海 - 周杰伦 【现场版】")), selected))
+        assertFalse(lyricsFit(video.copy(part = video.part.copy(durationSeconds = 267)), selected))
+    }
 }

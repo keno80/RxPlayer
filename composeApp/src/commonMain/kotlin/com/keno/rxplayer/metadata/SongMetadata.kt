@@ -5,11 +5,16 @@ import com.keno.rxplayer.LyricLine
 import kotlinx.serialization.json.*
 import kotlin.math.abs
 
+enum class SongProvider(val label: String) { QQ("QQ音乐"), KUGOU("酷狗音乐"), NETEASE("网易云音乐"), LRCLIB("LRCLIB") }
 data class SongCandidate(val id: Long, val title: String, val artists: List<String>, val album: String,
-    val durationMs: Int, val artworkUrl: String? = null)
+    val durationMs: Int, val artworkUrl: String? = null, val provider: SongProvider = SongProvider.NETEASE,
+    val providerId: String? = null) {
+    val key: String get() = "${provider.name}:${providerId ?: id}"
+}
 data class SongMatch(val song: SongCandidate, val lyrics: List<LyricLine> = emptyList(), val lyricsSource: String? = null)
 data class SongMetadataRecord(val trackId: String, val match: SongMatch? = null, val automaticDisabled: Boolean = false)
-data class SongHint(val title: String, val artist: String, val versions: Set<String>)
+data class SongHint(val title: String, val artist: String, val versions: Set<String>,
+    val alternateTitle: String? = null, val alternateArtist: String? = null)
 
 internal fun songKey(text: String) = text.lowercase().replace(Regex("[\\s\\p{P}\\p{S}]"), "")
 internal fun songBaseTitle(text: String) = text.replace(Regex("[（(].*?[）)]"), "").trim()
@@ -33,37 +38,53 @@ fun songHint(track: BilibiliTrack, description: String = ""): SongHint? {
     val title = if (track.partCount > 1) track.part.title else track.item.title
     val quoted = Regex("[《〈「]([^》〉」]{1,120})[》〉」]").find(title)
     val separated = Regex("^(.{1,60}?)\\s+[-–—]\\s+(.{1,120})$").find(title)
-    val name = quoted?.groupValues?.get(1) ?: separated?.groupValues?.get(2) ?: return null
     fun credit(label: String) = Regex("(?m)^\\s*(?:$label)\\s*[:：]\\s*([^\\r\\n|]{1,60})").find(description)?.groupValues?.get(1)?.trim()
+    // These labels describe encoding quality, not a singer or a recording edition.
+    fun clean(value: String) = value.replace(Regex("[【\\[]\\s*(?:无损音质|无损|高音质|高品质|HQ|FLAC|Hi-?Res|320K(?:bps)?)\\s*[】\\]]", RegexOption.IGNORE_CASE), "").trim()
+    val left = separated?.groupValues?.get(1)?.let(::clean)
+    val right = separated?.groupValues?.get(2)?.let(::clean)
+    val credited = credit("翻唱") ?: credit("演唱|歌手")
+    val name: String = (quoted?.groupValues?.get(1) ?:
+        (if (credited != null && right != null && songKey(right) == songKey(credited)) left else right)) ?: return null
     val before = quoted?.let { title.substring(0, it.range.first).trim().trimEnd('-', '–', '—', '：', ':') }
         ?.replace(Regex("^\\[[^]]*]\\s*"), "")?.trim()
     val explicit = before?.takeIf { it.length in 1..40 && !Regex("[，。！!｜|…]|我们|现场|翻唱|哭腔|教唱|合集|百万|演唱会").containsMatchIn(it) }
-    val artist = credit("翻唱") ?: credit("演唱|歌手") ?: separated?.groupValues?.get(1)?.trim() ?: explicit
+    val artist = credited ?: left ?: explicit
         ?: Regex("是(.{1,40}?)演唱").find(description)?.groupValues?.get(1)?.trim() ?: return null
-    return SongHint(songBaseTitle(name), artist, songVersions(title + "\n" + description))
+    val ambiguousOrder = quoted == null && credited == null && left != null && right != null
+    return SongHint(songBaseTitle(name), artist, songVersions(title + "\n" + description),
+        if (ambiguousOrder) songBaseTitle(left!!) else null, if (ambiguousOrder) right else null)
 }
 
 fun autoMatch(hint: SongHint, track: BilibiliTrack, candidates: List<SongCandidate>): SongCandidate? {
     if (hint.versions.any { it in setOf("live", "cover", "medley", "speed", "remaster", "unknown-edition") }) return null
     val originalTitle = if (track.partCount > 1) track.part.title else track.item.title
     if (Regex("[（(]").containsMatchIn(originalTitle)) return null
-    return candidates.filter { song ->
+    val eligible = candidates.filter { song ->
         // Catalog parentheses may be an alias or a recording edition. Only the user can resolve that ambiguity.
-        !Regex("[（(]").containsMatchIn(song.title) && songKey(songBaseTitle(song.title)) == songKey(hint.title) && sameSingers(hint.artist, song.artists) &&
+        !Regex("[（(]").containsMatchIn(song.title) && hintMatches(hint, song) &&
             songVersions(song.title) == hint.versions && lyricsFit(track, song)
-    }.singleOrNull()
+    }
+    return SongProvider.entries.firstNotNullOfOrNull { provider -> eligible.filter { it.provider == provider }.singleOrNull() }
 }
 
 fun lyricsFit(track: BilibiliTrack, song: SongCandidate, description: String = ""): Boolean {
     val title = if (track.partCount > 1) track.part.title else track.item.title
     val versions = songVersions(title + "\n" + description)
-    val singer = songHint(track, description)?.artist
+    val hint = songHint(track, description)
     return track.durationMs > 0 && song.durationMs > 0 && abs(track.durationMs.toLong() - song.durationMs) <= 2000 &&
         versions.none { it in setOf("medley", "speed", "unknown-edition") } && versions == songVersions(song.title) &&
-        (singer == null || sameSingers(singer, song.artists))
+        (hint == null || sameSingers(hint.artist, song.artists) || alternateHintMatches(hint, song))
 }
 
-private fun sameSingers(hint: String, artists: List<String>): Boolean {
+private fun hintMatches(hint: SongHint, song: SongCandidate): Boolean =
+    (songKey(songBaseTitle(song.title)) == songKey(hint.title) && sameSingers(hint.artist, song.artists)) || alternateHintMatches(hint, song)
+
+private fun alternateHintMatches(hint: SongHint, song: SongCandidate): Boolean =
+    hint.alternateTitle != null && hint.alternateArtist != null &&
+        songKey(songBaseTitle(song.title)) == songKey(hint.alternateTitle) && sameSingers(hint.alternateArtist, song.artists)
+
+internal fun sameSingers(hint: String, artists: List<String>): Boolean {
     if (artists.size == 1 && songKey(hint) == songKey(artists.single())) return true
     val hinted = hint.split(Regex("[/、,&＆]|\\s+(?:feat|ft)\\.?\\s+", RegexOption.IGNORE_CASE)).map(::songKey).filter { it.isNotEmpty() }.toSet()
     return hinted == artists.map(::songKey).toSet()
@@ -89,6 +110,7 @@ internal fun encodeSongRecord(record: SongMetadataRecord): String = buildJsonObj
     record.match?.let { match ->
         val song = match.song
         put("id", song.id); put("title", song.title); put("album", song.album); put("duration", song.durationMs)
+        put("provider", song.provider.name); song.providerId?.let { put("providerId", it) }
         put("artists", JsonArray(song.artists.map(::JsonPrimitive)))
         song.artworkUrl?.let { put("cover", it) }; match.lyricsSource?.let { put("lyricsSource", it) }
         put("lyrics", JsonArray(match.lyrics.map { line -> buildJsonObject { put("at", line.atMs); put("text", line.text) } }))
@@ -99,7 +121,9 @@ internal fun decodeSongRecord(trackId: String, value: String): SongMetadataRecor
     val data = Json.parseToJsonElement(value).jsonObject
     val song = data["id"]?.jsonPrimitive?.long?.let { id ->
         SongCandidate(id, data.getValue("title").jsonPrimitive.content, data.getValue("artists").jsonArray.map { it.jsonPrimitive.content },
-            data.getValue("album").jsonPrimitive.content, data.getValue("duration").jsonPrimitive.int, data["cover"]?.jsonPrimitive?.content)
+            data.getValue("album").jsonPrimitive.content, data.getValue("duration").jsonPrimitive.int, data["cover"]?.jsonPrimitive?.content,
+            data["provider"]?.jsonPrimitive?.content?.let(SongProvider::valueOf) ?: SongProvider.NETEASE,
+            data["providerId"]?.jsonPrimitive?.content)
     }
     val match = song?.let { SongMatch(it, data.getValue("lyrics").jsonArray.map { line ->
         val row = line.jsonObject; LyricLine(row.getValue("at").jsonPrimitive.int, row.getValue("text").jsonPrimitive.content)
