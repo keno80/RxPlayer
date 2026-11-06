@@ -20,6 +20,10 @@
     id: `${sourceIndex}-${index}`, title, author: authors[index], duration: durations[index],
     source, art: index, hasLyrics: demoLyrics[index].length > 0, type: source === '网易云' ? '歌曲' : '视频',
   })));
+  tracks.push(
+    {id:'0-4',title:'夜航 · 不插电',author:'拾音计划',duration:206,source:'Bilibili',art:1,hasLyrics:false,type:'视频'},
+    {id:'0-5',title:'夜航 · 晚风来信',author:'慢速电台',duration:248,source:'Bilibili',art:3,hasLyrics:false,type:'视频'},
+  );
   {
     const parts = [['现场正片',222],['舞台纯享',183],['幕后片段',198]];
     tracks.forEach(track => { track.hasLyrics = false; });
@@ -32,6 +36,7 @@
     device: matchMedia('(max-width:700px)').matches ? 'android' : 'desktop',
     theme: 'dark', route: 'search', source: 'Bilibili', scene: 'results',
     queries: Object.fromEntries(sources.map(source => [source, '夜航'])),
+    submittedQueries: Object.fromEntries(sources.map(source => [source, '夜航'])), moreLoaded: false,
     favorites: ['0-0:p1'], recent: ['0-0:p1'],
     queue: ['0-0:p1','0-0:p2','0-2','0-1:p1','0-3'], queueOpen: queueBreakpoint.matches, current: '0-0:p1', playing: false, position: 82,
     queueSelection: null, queueBeforeShuffle: null,
@@ -85,6 +90,7 @@
   function runSearch() {
     const fromControl = product.contains(document.activeElement) && document.activeElement.id !== 'search-input';
     cancelSearch();
+    state.submittedQueries[state.source] = state.queries[state.source].trim(); state.moreLoaded = false;
     state.scene = 'loading';
     const ticket = searchTicket, source = state.source;
     render(); announce(`正在搜索 ${source}`);
@@ -100,6 +106,22 @@
     cancelSearch(); state.scene = 'results'; render();
     if (fromCancel) $('#search-input')?.focus({preventScroll:true});
     announce(`${state.source} 搜索已完成`);
+  }
+
+  function loadMore() {
+    if (state.scene === 'page-loading') return;
+    cancelSearch();
+    const ticket = searchTicket, source = state.source;
+    state.scene = 'page-loading'; render(); announce('正在加载后续结果，已有结果和播放保持不变');
+    searchTimer = setTimeout(() => {
+      if (ticket !== searchTicket || source !== state.source || state.scene !== 'page-loading') return;
+      finishMore();
+    }, 700);
+  }
+
+  function finishMore() {
+    cancelSearch(); state.moreLoaded = true; state.scene = 'results'; render();
+    announce('后续结果已加载，当前播放和队列保持不变');
   }
 
   function finishPlayback() {
@@ -184,6 +206,7 @@
 
   function searchPage() {
     const query = state.queries[state.source];
+    const searched = state.submittedQueries[state.source];
     let content;
     if (state.scene === 'idle') {
       content = `<div class="section-head"><h2>最近搜索</h2><button class="text-button" data-action="clear-history">清空</button></div>
@@ -196,10 +219,12 @@
     } else if (state.scene === 'empty') {
       content = empty('search', '还没找到这段声音', '试试更短的关键词，或换一个音源。你也可以直接粘贴视频或歌曲链接。', 'clear-search', '重新搜索');
     } else {
-      const results = tracks.filter(track => !track.partBaseId && track.source === state.source && (!query.trim() || `${track.title} ${track.author}`.toLowerCase().includes(query.trim().toLowerCase())));
+      const matches = tracks.filter(track => !track.partBaseId && track.source === state.source && (!searched.trim() || `${track.title} ${track.author}`.toLowerCase().includes(searched.trim().toLowerCase())));
+      const results = state.moreLoaded ? matches : matches.slice(0,4);
+      const pagination = matches.length > results.length ? `<div class="search-pagination"><button class="text-button" data-action="load-more" ${state.scene === 'page-loading' ? 'disabled aria-busy="true"' : ''}>${state.scene === 'page-loading' ? '加载中…' : state.scene === 'page-error' ? '重试加载' : '加载更多'}</button></div>` : '';
       const expired = state.scene === 'expired' ? `<div class="inline-banner">${symbol('login')}<div class="banner-copy">账号连接已过期<small>匿名可用的内容仍可搜索；账号内内容需要重新连接。</small></div><button class="text-button" data-action="account-settings">查看账号</button></div>` : '';
       content = `${expired}<div class="section-head results-heading"><h2>搜索结果</h2><small role="status">${results.length} 个${state.source === '网易云' ? '歌曲' : '视频'}</small></div>${results.length ? featured(results[0]) : ''}${results.length > 1 ? `<div class="section-head"><h2>更多匹配</h2></div><div class="track-list">${results.slice(1).map(row).join('')}</div>` : ''}
-        <p class="hint">来自 ${state.source} · 保留原始标题与版本信息<br>分P播放与入队已纳入完整原型；其他音源尚未接入。全部内容均为模拟数据。</p>`;
+        ${pagination}<p class="hint">来自 ${state.source} · 保留原始标题与版本信息<br>分P播放与入队已纳入完整原型；其他音源尚未接入。全部内容均为模拟数据。</p>`;
       if (!results.length) content = empty('search', '没有匹配的结果', '换个关键词，再发现一些好声音。', 'clear-search', '重新搜索');
     }
     return `<header class="page-head"><div><p class="eyebrow">RxPlayer</p><h1>搜索</h1><p class="page-intro">歌曲、视频，从这里开始听。</p></div>${iconButton('open-player', 'headphones', '展开播放器')}</header>
@@ -545,7 +570,7 @@
     $('#scene-select').value = state.scene;
     $('#lyrics-layout-select').value = state.lyricsLayout;
     $('#playback-select').value = state.phase;
-    $('#review-complete').hidden = !waitingPhases.includes(state.phase) && state.scene !== 'loading';
+    $('#review-complete').hidden = !waitingPhases.includes(state.phase) && !['loading','page-loading'].includes(state.scene);
     $$('.device-picker button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.deviceChoice === state.device)));
     $('#review-theme').innerHTML = symbol(state.theme === 'light' ? 'dark_mode' : 'light_mode');
     if (state.overlay) renderOverlay();
@@ -719,7 +744,7 @@
       case 'restore-window': state.windowHidden = false; state.exited = false; closeOverlay(); render(); break;
       case 'exit-app': cancelPlayback(); state.wantPlay = false; setPhase('paused'); state.exited = true; state.windowHidden = true; closeQueue(false); closeOverlay(); render(); break;
       case 'navigate': closeOverlay(); state.route = button.dataset.route; state.playlist = null; render(); break;
-      case 'source': cancelSearch(); state.queries[state.source] = $('#search-input').value; state.source = source; state.scene = 'results'; render(); break;
+      case 'source': cancelSearch(); state.queries[state.source] = $('#search-input').value; state.source = source; state.scene = 'results'; state.moreLoaded = false; render(); break;
       case 'go-search': state.route = 'search'; render(); break;
       case 'history': state.queries[state.source] = button.dataset.query; runSearch(); break;
       case 'clear-history': state.history = []; render(); break;
@@ -727,6 +752,7 @@
       case 'cancel-search': cancelSearch(); state.scene = 'idle'; render(); $('#search-input')?.focus(); announce('已取消搜索，当前播放未改变'); break;
       case 'exit-search': product.classList.remove('is-searching'); $('#search-back').hidden = true; $('#search-leading').hidden = false; $('#search-input').blur(); break;
       case 'retry': runSearch(); break;
+      case 'load-more': loadMore(); break;
       case 'play-track': playTrack(id); break;
       case 'choose-parts': openParts(id,'play'); break;
       case 'select-part': {
@@ -882,7 +908,7 @@
   });
 
   document.addEventListener('change', event => {
-    if (event.target.id === 'scene-select') { cancelSearch(); closeQueue(false); closeOverlay(); state.route = 'search'; state.scene = event.target.value; render(); announce(state.scene === 'loading' ? '正在搜索，审核场景保持等待' : '搜索场景已切换，当前播放不变'); }
+    if (event.target.id === 'scene-select') { cancelSearch(); closeQueue(false); closeOverlay(); state.route = 'search'; state.scene = event.target.value; state.moreLoaded = false; render(); if (state.scene === 'page-error') toast('暂时无法连接音源，请检查网络后重试'); announce(state.scene === 'loading' ? '正在搜索，审核场景保持等待' : '搜索场景已切换，当前播放不变'); }
     if (event.target.id === 'playback-select') {
       previewPhase(event.target.value); render();
       if (state.overlay !== 'player') openOverlay('player');
@@ -951,6 +977,7 @@
   $('#review-queue').addEventListener('click', () => { if (!state.queueOpen) toggleQueue(); });
   $('#review-complete').addEventListener('click', () => {
     if (state.overlay === 'player' && waitingPhases.includes(state.phase)) finishPlayback();
+    else if (state.scene === 'page-loading') finishMore();
     else if (state.scene === 'loading') finishSearch();
     else if (waitingPhases.includes(state.phase)) finishPlayback();
     requestAnimationFrame(() => (state.overlay === 'player' ? $('#dialog [data-action="toggle-play"]:not(:disabled)') : $('#search-input'))?.focus({preventScroll:true}));
@@ -982,10 +1009,11 @@
   if (['android','desktop'].includes(review.get('device'))) state.device = review.get('device');
   if (['dark','light'].includes(review.get('theme'))) state.theme = review.get('theme');
   if (review.get('view') === 'playlists') { state.route = 'library'; state.libraryTab = 'playlists'; }
-  if (['results','idle','loading','empty','error','expired'].includes(review.get('scene'))) state.scene = review.get('scene');
+  if (['results','idle','loading','empty','error','expired','page-error','page-loading'].includes(review.get('scene'))) state.scene = review.get('scene');
   if (Object.hasOwn(phaseLabels,review.get('playback'))) previewPhase(review.get('playback'));
   render();
   if (review.get('view') === 'player') openOverlay('player');
   if (review.get('view') === 'tray') { state.device = 'desktop'; render(); openOverlay('tray'); }
   if (review.get('view') === 'queue') { state.queueOpen = true; syncPanels(); }
+  if (state.scene === 'page-error') toast('暂时无法连接音源，请检查网络后重试');
 })();

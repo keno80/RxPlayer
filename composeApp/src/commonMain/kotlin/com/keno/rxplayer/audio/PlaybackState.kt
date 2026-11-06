@@ -7,6 +7,7 @@ import com.keno.rxplayer.PlaybackTrack
 import com.keno.rxplayer.source.AudioStream
 import com.keno.rxplayer.source.SourceFailure
 import com.keno.rxplayer.source.SourceFailureKind
+import com.keno.rxplayer.source.friendlySourceError
 import com.keno.rxplayer.demoTracks
 import com.keno.rxplayer.generated.resources.Res
 import kotlinx.coroutines.CancellationException
@@ -37,6 +38,7 @@ class PlaybackState(
     private var messageId = 0L
     private var prepared = false
     private var automaticRefreshUsed = false
+    private var failureText: String? = null
     private var shuffleOrder by mutableStateOf(emptyList<String>())
     var track: PlaybackTrack? by mutableStateOf(null)
         private set
@@ -107,8 +109,9 @@ class PlaybackState(
         checkpointPositionMs = positionMs
         playWhenReady = autoPlay
         message = null
+        failureText = null
         prepared = false
-        if (!refreshing) automaticRefreshUsed = false
+        automaticRefreshUsed = refreshing
         phase = if (refreshing) PlaybackPhase.Refreshing else PlaybackPhase.Preparing
         try {
             selectionMutex.withLock {
@@ -141,8 +144,12 @@ class PlaybackState(
             if (ticket == generation) reportFailure(failure.failure)
         } catch (failure: SourceFailure) {
             if (ticket == generation) {
-                reportFailure(PlaybackFailure(if (failure.kind in setOf(SourceFailureKind.Unavailable, SourceFailureKind.LoginRequired, SourceFailureKind.Restricted)) PlaybackPhase.Unavailable else PlaybackPhase.Failed))
-                if (failure.kind == SourceFailureKind.LoginRequired) notify("这项内容需要登录，当前尚未接入音源账号")
+                val phase = when {
+                    failure.kind in setOf(SourceFailureKind.Unavailable, SourceFailureKind.LoginRequired, SourceFailureKind.UnsupportedAudio) -> PlaybackPhase.Unavailable
+                    refreshing -> PlaybackPhase.Expired
+                    else -> PlaybackPhase.Failed
+                }
+                reportFailure(PlaybackFailure(phase), friendlySourceError(failure))
             }
         } catch (_: Exception) {
             if (ticket == generation) reportFailure(PlaybackFailure())
@@ -156,7 +163,7 @@ class PlaybackState(
         when {
             isLoading -> cancelPreparation()
             phase == PlaybackPhase.Buffering -> pause()
-            phase == PlaybackPhase.Unavailable -> notify("当前内容不可播放，可换曲或查看音源账号")
+            phase == PlaybackPhase.Unavailable -> notify(failureText ?: "当前内容不可播放，可换曲或查看音源账号")
             phase == PlaybackPhase.Expired -> select(selected, playWhenReady, positionMs, refreshing = true)
             phase == PlaybackPhase.Failed -> select(selected, resumeAt = positionMs)
             phase == PlaybackPhase.Ended -> select(selected)
@@ -323,15 +330,17 @@ class PlaybackState(
         return null
     }
 
-    private fun reportFailure(failure: PlaybackFailure) {
+    private fun reportFailure(failure: PlaybackFailure, description: String? = null) {
         // An engine failure must not leave the previous audio running underneath the error UI.
         try { player.pause() } catch (_: Exception) { /* The failed device may already be closed. */ }
         phase = failure.phase.takeIf { it in faultPhases } ?: PlaybackPhase.Failed
-        notify(when (phase) {
+        val text = description ?: when (phase) {
             PlaybackPhase.Unavailable -> "当前内容不可播放，可换曲或查看音源账号"
             PlaybackPhase.Expired -> "播放地址已失效，点击播放按钮重新获取"
             else -> "播放失败，点击播放按钮重试"
-        })
+        }
+        failureText = text
+        notify(text)
     }
 
     private fun notify(text: String) { message = PlaybackMessage(++messageId, text) }

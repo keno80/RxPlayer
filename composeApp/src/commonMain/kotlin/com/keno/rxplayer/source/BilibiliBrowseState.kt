@@ -21,6 +21,10 @@ class BilibiliBrowseState(
         private set
     var error by mutableStateOf<String?>(null)
         private set
+    var pageError by mutableStateOf<String?>(null)
+        private set
+    var hasMore by mutableStateOf(false)
+        private set
     var selection by mutableStateOf<PartSelection?>(null)
         private set
     var readingDetails by mutableStateOf(false)
@@ -32,7 +36,6 @@ class BilibiliBrowseState(
     private var searchGeneration = 0
     private var detailsGeneration = 0
     private var page = 0
-    private var hasMore = false
     private var feedbackId = 0L
     val partCounts = mutableStateMapOf<String, Int>()
 
@@ -40,10 +43,10 @@ class BilibiliBrowseState(
         val value = query.trim()
         if (value.isEmpty()) return null
         searchJob?.cancel(); cancelSelection()
-        submitted = value; results = emptyList(); page = 0; hasMore = false; error = null
+        submitted = value; results = emptyList(); page = 0; hasMore = false; error = null; pageError = null
         val ticket = ++searchGeneration
+        searching = true
         searchJob = scope.launch {
-            searching = true
             try {
                 val reference = runCatching { BilibiliReference.parse(value) }.getOrNull()
                 if (reference != null) {
@@ -64,18 +67,23 @@ class BilibiliBrowseState(
     }
     fun cancelSearch() {
         ++searchGeneration; searchJob?.cancel(); searchJob = null
-        searching = false; submitted = ""; results = emptyList(); error = null; page = 0; hasMore = false
+        searching = false; submitted = ""; results = emptyList(); error = null; pageError = null; page = 0; hasMore = false
     }
-    fun more(): Job? {
-        if (!hasMore || searching || error != null) return null
+    fun more(): Job? = loadMore(retry = false)
+    fun retryMore(): Job? = loadMore(retry = true)
+
+    private fun loadMore(retry: Boolean): Job? {
+        if (!hasMore || searching || error != null || pageError != null && !retry) return null
         val ticket = searchGeneration
+        val keyword = submitted
+        val nextPage = page + 1
+        searching = true; pageError = null
         searchJob = scope.launch {
-            searching = true
             try {
-                val response = source.search(submitted, page + 1); ensureActive()
+                val response = source.search(keyword, nextPage); ensureActive()
                 if (ticket == searchGeneration) { results = (results + response.items).distinctBy { it.stableKey }; page = response.page; hasMore = response.hasMore }
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (failure: Exception) { if (ticket == searchGeneration) { hasMore = false; notify(friendlySourceError(failure)) } }
+            catch (failure: Exception) { if (ticket == searchGeneration) { pageError = friendlySourceError(failure); notify(pageError!!) } }
             finally { if (ticket == searchGeneration) searching = false }
         }
         return searchJob

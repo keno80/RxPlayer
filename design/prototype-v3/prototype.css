@@ -252,3 +252,4 @@ button{color:inherit}a{color:#365e54;text-underline-offset:3px}
 .product .part-option[aria-current=true]:hover{background:color-mix(in srgb,var(--on-surface) 8%,var(--secondary-container))}.product .part-option:focus-visible{outline-offset:-3px}
 .part-number{width:24px;flex-shrink:0;color:var(--on-surface-variant);font-size:12px}.part-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}.part-copy strong{font-size:16px;line-height:24px;font-weight:500;overflow-wrap:anywhere}.part-copy small{font-size:12px;line-height:16px;color:var(--on-surface-variant)}
 .queue-sort-tools [data-direction="-1"] .symbol{transform:rotate(90deg)}.queue-sort-tools [data-direction="1"] .symbol{transform:rotate(-90deg)}
+.search-pagination{display:flex;justify-content:center;padding-top:8px}
