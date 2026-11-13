@@ -27,9 +27,10 @@ internal fun SongMetadataDialog(state: SongMetadataState) {
     val target = state.target ?: return
     val selected = state.selected(target.id)
     Dialog(state::close, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(24.dp), contentAlignment = Alignment.Center) {
-            Surface(Modifier.widthIn(max = 480.dp).fillMaxWidth().heightIn(max = maxHeight), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().imePadding(), contentAlignment = Alignment.Center) {
+            val inset = UiSpacing.pageInset(maxWidth)
+            Surface(Modifier.padding(inset).widthIn(max = 480.dp).fillMaxWidth().heightIn(max = (maxHeight - inset * 2).coerceAtLeast(0.dp)), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                Column(Modifier.verticalScroll(rememberScrollState()).padding(UiSpacing.panelInset), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text("匹配歌曲信息", Modifier.weight(1f).semantics { heading() }, fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Medium)
                         IconButton(state::close) { Icon(PlayerSymbols.Close, "关闭歌曲匹配") }

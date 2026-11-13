@@ -28,7 +28,7 @@ import com.keno.rxplayer.source.ContentItem
 @Composable
 internal fun MobileSearchWaiting(query: String, cancel: () -> Unit) {
     Surface(Modifier.fillMaxWidth().padding(top = 24.dp), shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-        Column(Modifier.padding(24.dp)) {
+        Column(Modifier.padding(UiSpacing.panelInset)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.primary) }
                 Column(Modifier.weight(1f)) {
@@ -44,7 +44,7 @@ internal fun MobileSearchWaiting(query: String, cancel: () -> Unit) {
 
 @Composable
 internal fun MobileLibraryTabs(selected: Int, onSelect: (Int) -> Unit) {
-    Column(Modifier.padding(vertical = 20.dp)) {
+    Column(Modifier.padding(vertical = UiSpacing.sectionGap)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("收藏", "歌单", "最近播放").forEachIndexed { index, title ->
                 Box(Modifier.weight(1f)) {
@@ -94,13 +94,13 @@ internal fun MobileSettings(dark: Boolean, changeTheme: (Boolean) -> Unit, follo
 }
 
 @Composable private fun MobileSectionTitle(title: String) {
-    Text(title, Modifier.padding(top = 24.dp, bottom = 12.dp).semantics { heading() }, fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold)
+    Text(title, Modifier.padding(top = UiSpacing.sectionGap, bottom = UiSpacing.contentGap).semantics { heading() }, fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold)
 }
 @Composable private fun MobileSettingsGroup(content: @Composable ColumnScope.() -> Unit) {
     Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = Color.Transparent) { Column(verticalArrangement = Arrangement.spacedBy(2.dp), content = content) }
 }
 @Composable private fun MobileSetting(icon: ImageVector, title: String, subtitle: String, control: @Composable () -> Unit) {
-    Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).heightIn(min = 88.dp).padding(horizontal = 12.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).heightIn(min = 88.dp).padding(UiSpacing.cardInset), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(UiSpacing.contentGap)) {
         Box(Modifier.size(40.dp).background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { Icon(icon, null, tint = MaterialTheme.colorScheme.onSecondaryContainer) }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Medium)
@@ -113,8 +113,8 @@ internal fun MobileSettings(dark: Boolean, changeTheme: (Boolean) -> Unit, follo
 @Composable
 internal fun MobileContentMenu(item: ContentItem, favorite: Boolean, close: () -> Unit, action: (ContentAction) -> Unit, toggleFavorite: () -> Unit, partCount: Int?, chooseParts: () -> Unit, playlistActions: PlaylistRowActions? = null, canMatch: Boolean = false) {
     Dialog(close, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.widthIn(max = 480.dp).fillMaxWidth().padding(horizontal = 24.dp), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-            Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp)) {
+        Surface(Modifier.safeDrawingPadding().padding(UiSpacing.compactInset).widthIn(max = 480.dp).fillMaxWidth(), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+            Column(Modifier.verticalScroll(rememberScrollState()).padding(UiSpacing.panelInset)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(item.title, Modifier.weight(1f).semantics { heading() }, fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     IconButton(close, Modifier.size(48.dp)) { Icon(Icons.Outlined.Close, "关闭内容操作") }

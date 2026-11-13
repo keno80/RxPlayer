@@ -104,7 +104,7 @@ internal fun QueuePane(state: PlaybackState, onClose: () -> Unit, onSelect: (Pla
         }
     }
 
-    Column(Modifier.fillMaxSize().padding(start = if (mobile) 16.dp else 20.dp, top = 20.dp, end = if (mobile) 16.dp else 20.dp, bottom = if (mobile) 32.dp else 20.dp)) {
+    Column(Modifier.fillMaxSize().padding(if (mobile) UiSpacing.compactInset else UiSpacing.panelInset)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("播放队列", style = MaterialTheme.typography.titleLarge, modifier = (if (mobile) Modifier else Modifier.weight(1f)).semantics { heading() })
             if (mobile) {

@@ -46,8 +46,9 @@ fun MiniPlayer(
     state: PlaybackState, displayTrack: PlaybackTrack,
     onToggle: () -> Unit, onExpand: () -> Unit, onQueue: () -> Unit,
     expandFocus: FocusRequester, queueFocus: FocusRequester,
+    pageInset: Dp,
 ) {
-    Surface(Modifier.fillMaxWidth().padding(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 4.dp), shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+    Surface(Modifier.fillMaxWidth().padding(start = pageInset, top = 8.dp, end = pageInset, bottom = 4.dp), shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
         Row(Modifier.fillMaxWidth().heightIn(min = 76.dp).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onExpand, modifier = Modifier.weight(1f).focusRequester(expandFocus), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(0.dp)) {
                 Artwork(displayTrack, Modifier.size(48.dp))
@@ -81,19 +82,20 @@ fun PlayerScreen(
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val availableWidth = maxWidth
+            val pageInset = UiSpacing.pageInset(availableWidth)
             val dockQueue = isDesktop && availableWidth > 1100.dp
             if (isDesktop) {
-                Column(Modifier.fillMaxSize().safeDrawingPadding().padding(if (availableWidth < 1000.dp) 24.dp else 32.dp)) {
+                Column(Modifier.fillMaxSize().safeDrawingPadding().padding(pageInset)) {
                     PlayerHeader(onClose, { onSongInformation?.let { SongInformationButton(it) }; QueueButton(state.queue.size, queueOpen, onQueue, Modifier.focusRequester(queueFocus)) }, Modifier.focusRequester(backFocus))
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(UiSpacing.sectionGap))
                     if (availableWidth > 760.dp) {
-                        Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (availableWidth < 1000.dp) 32.dp else 48.dp)) {
+                        Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(UiSpacing.paneGap)) {
                             BoxWithConstraints(Modifier.width(if (availableWidth < 1000.dp) 300.dp else 352.dp).fillMaxHeight()) {
                                 val coverSize = (maxHeight - 392.dp).coerceIn(120.dp, 280.dp)
                                 Column(Modifier.fillMaxSize()) {
                                     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
                                         CoverCard(track, Modifier.width(coverSize).align(Alignment.CenterHorizontally))
-                                        Spacer(Modifier.height(20.dp))
+                                        Spacer(Modifier.height(UiSpacing.sectionGap))
                                         TrackInformation(track, favorite, onFavorite)
                                     }
                                     Spacer(Modifier.height(16.dp))
@@ -110,12 +112,13 @@ fun PlayerScreen(
                         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
                             Column(Modifier.widthIn(max = 352.dp).fillMaxWidth()) {
                                 CoverCard(track, Modifier.width(248.dp).align(Alignment.CenterHorizontally))
-                                Spacer(Modifier.height(24.dp))
+                                Spacer(Modifier.height(UiSpacing.sectionGap))
                                 TrackInformation(track, favorite, onFavorite)
-                                Spacer(Modifier.height(24.dp))
+                                Spacer(Modifier.height(UiSpacing.sectionGap))
                                 SplitControls(state, onToggle, onPrevious, onNext)
                                 PlaybackModes(state, desktop = true)
                             }
+                            Spacer(Modifier.height(UiSpacing.paneGap))
                             LyricsPane(state, track, Modifier.fillMaxWidth().height(480.dp))
                         }
                     }
@@ -132,7 +135,7 @@ fun PlayerScreen(
                         Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(96.dp).background(Brush.verticalGradient(listOf(Color.Transparent, surface))))
                         // The image fills the status area; foreground consumes real system insets.
                         PlayerTheme(dark = true, track = track) {
-                            Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)).padding(horizontal = 24.dp)) {
+                            Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)).padding(horizontal = pageInset)) {
                                 PlayerHeader(onClose, trailing = { onSongInformation?.let { SongInformationButton(it) } }, backModifier = Modifier.focusRequester(backFocus), height = 48.dp)
                                 Box(Modifier.fillMaxWidth().heightIn(min = (stageHeight - 48.dp - topInset).coerceAtLeast(0.dp)).padding(bottom = 96.dp), contentAlignment = Alignment.Center) {
                                     LyricsLines(state, track, windowed = true)
@@ -140,28 +143,28 @@ fun PlayerScreen(
                             }
                         }
                     }
-                    Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)).padding(horizontal = 24.dp)) {
+                    Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)).padding(horizontal = pageInset)) {
                         MobileTrackInformation(track, favorite, onFavorite, compact = true) {
                             QueueButton(state.queue.size, queueOpen, onQueue, Modifier.focusRequester(queueFocus), iconOnly = true)
                         }
-                        Spacer(Modifier.height(20.dp))
+                        Spacer(Modifier.height(UiSpacing.sectionGap))
                         SeekBar(state)
-                        Spacer(Modifier.height(20.dp))
+                        Spacer(Modifier.height(UiSpacing.sectionGap))
                         ConnectedControls(state, onToggle, onPrevious, onNext)
-                        Spacer(Modifier.height(24.dp))
+                        Spacer(Modifier.height(UiSpacing.sectionGap))
                     }
                 }
             } else {
                 val insets = WindowInsets.safeDrawing.asPaddingValues()
                 // Reserve the confirmed controls and two title lines before sizing the cover.
                 val coverSize = (maxHeight - insets.calculateTopPadding() - insets.calculateBottomPadding() - 540.dp).coerceIn(160.dp, 280.dp)
-                Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(pageInset), horizontalAlignment = Alignment.CenterHorizontally) {
                     PlayerHeader(onClose, { onSongInformation?.let { SongInformationButton(it) }; QueueButton(state.queue.size, queueOpen, onQueue, Modifier.focusRequester(queueFocus)) }, Modifier.focusRequester(backFocus), height = 48.dp)
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(UiSpacing.sectionGap))
                     CoverCard(track, Modifier.width(coverSize))
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(UiSpacing.sectionGap))
                     MobileTrackInformation(track, favorite, onFavorite)
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(UiSpacing.sectionGap))
                     SplitControls(state, onToggle, onPrevious, onNext)
                     PlaybackModes(state, desktop = false)
                 }
@@ -362,7 +365,7 @@ private fun SeekBar(state: PlaybackState, modifier: Modifier = Modifier, compact
 
 @Composable
 private fun LyricsPane(state: PlaybackState, track: PlaybackTrack, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxSize().padding(24.dp)) {
+    Column(modifier.fillMaxSize().padding(UiSpacing.panelInset)) {
         Text((track as? com.keno.rxplayer.BilibiliTrack)?.songMetadata?.lyricsSource?.let { "歌词 · $it" } ?: "歌词", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(16.dp))
         Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {

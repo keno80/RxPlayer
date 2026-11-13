@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
@@ -47,18 +48,19 @@ internal fun DesktopMiniPlayer(
     onToggle: () -> Unit, onPrevious: () -> Unit, onNext: () -> Unit,
     onExpand: () -> Unit, onQueue: () -> Unit,
     expandFocus: FocusRequester, queueFocus: FocusRequester,
+    pageInset: Dp,
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val width = maxWidth
         if (width > 904.dp) {
-            Row(Modifier.fillMaxWidth().padding(16.dp, 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(pageInset, 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 TrackIsland(track, onExpand, expandFocus, Modifier.weight(1f))
                 ProgressIsland(state, Modifier.weight(if (width <= 1054.dp) 1.3f else 1.6f))
                 ControlIsland(state, queueOpen, onToggle, onPrevious, onNext, onQueue, queueFocus)
             }
         } else {
-            Column(Modifier.fillMaxWidth().padding(12.dp, 4.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
-                if (width >= 620.dp) {
+            Column(Modifier.fillMaxWidth().padding(pageInset, 4.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                if (width - pageInset * 2 >= 596.dp) {
                     Row(Modifier.fillMaxWidth().height(56.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         TrackIsland(track, onExpand, expandFocus, Modifier.weight(1f), compact = true)
                         ControlIsland(state, queueOpen, onToggle, onPrevious, onNext, onQueue, queueFocus, compact = true)

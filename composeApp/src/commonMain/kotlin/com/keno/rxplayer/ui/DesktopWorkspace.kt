@@ -27,6 +27,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -85,7 +86,7 @@ internal fun SourceWorkspace(
     onQueryFocus: (Boolean) -> Unit, onDarkChange: (Boolean) -> Unit, onArtworkChange: (Boolean) -> Unit,
     playlists: PlaylistState, onPlaylistPlay: (String) -> Unit, onPlaylistAppend: (String) -> Unit, onAddTrack: (BilibiliTrack) -> Unit,
     onMatchTrack: (BilibiliTrack) -> Unit,
-    queueContent: @Composable () -> Unit, transport: @Composable () -> Unit,
+    queueContent: @Composable () -> Unit, transport: @Composable (Dp) -> Unit,
 ) {
     val destination = workspace.destination
     val mobile = !desktop
@@ -104,6 +105,7 @@ internal fun SourceWorkspace(
     }
     BoxWithConstraints(Modifier.fillMaxSize().then(if (desktop) Modifier else Modifier.safeDrawingPadding().imePadding())) {
         val narrow = maxWidth <= 700.dp
+        val pageInset = UiSpacing.pageInset(maxWidth)
         val dockQueue = desktop && queueOpen && maxWidth > 1100.dp
         Row(Modifier.fillMaxSize()) {
             if (desktop) Surface(Modifier.width(if (narrow) 72.dp else 96.dp).fillMaxHeight(), color = MaterialTheme.colorScheme.surfaceContainer) {
@@ -124,7 +126,7 @@ internal fun SourceWorkspace(
             }
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 Row(Modifier.weight(1f).fillMaxWidth()) {
-                    LazyColumn(Modifier.weight(1f).fillMaxHeight(), state = list, contentPadding = PaddingValues(horizontal = if (narrow) 20.dp else 32.dp, vertical = if (mobile) 16.dp else if (narrow) 20.dp else 28.dp)) {
+                    LazyColumn(Modifier.weight(1f).fillMaxHeight(), state = list, contentPadding = PaddingValues(pageInset)) {
                         item(key = "page-heading") {
                             if (destination == WorkspaceDestination.Library && activePlaylist != null) PlaylistDetailHead(activePlaylist, { workspace.playlistId = null }) {
                                 workspace.editingPlaylistId = activePlaylist.id; workspace.playlistDialog = it
@@ -246,7 +248,7 @@ internal fun SourceWorkspace(
                     }
                     if (dockQueue) { VerticalDivider(); Box(Modifier.width(320.dp).fillMaxHeight()) { queueContent() } }
                 }
-                if (!searchActive) transport()
+                if (!searchActive) transport(pageInset)
                 if (mobile && !searchActive) NavigationBar(Modifier.height(76.dp), containerColor = MaterialTheme.colorScheme.surfaceContainer, windowInsets = WindowInsets(0, 0, 0, 0)) {
                     WorkspaceDestination.entries.forEach { item -> NavigationBarItem(destination == item, { workspace.destination = item; workspace.playlistId = null; onQueryFocus(false) }, { Icon(item.icon, null) }, label = { Text(item.label) }) }
                 }
@@ -257,7 +259,7 @@ internal fun SourceWorkspace(
 }
 
 @Composable private fun PageHead(title: String, intro: String?, expand: (() -> Unit)?, mobile: Boolean = false, eyebrow: String = "RxPlayer", addPlaylist: (() -> Unit)? = null) {
-    Row(Modifier.fillMaxWidth().padding(bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(bottom = UiSpacing.sectionGap), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(eyebrow, fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Normal, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
             Text(title, fontSize = if (mobile) 32.sp else 36.sp, lineHeight = if (mobile) 40.sp else 44.sp, fontWeight = FontWeight.Medium, modifier = Modifier.semantics { heading() })
@@ -283,7 +285,7 @@ internal fun SourceWorkspace(
     }
 }
 @Composable private fun SectionHead(title: String, detail: String? = null) {
-    Row(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(top = UiSpacing.sectionGap, bottom = UiSpacing.contentGap), verticalAlignment = Alignment.CenterVertically) {
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).semantics { heading() })
         if (detail != null) Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -295,7 +297,7 @@ internal fun SourceWorkspace(
     LaunchedEffect(selection) { if (restore && selection?.details?.item?.id == item.id) sawSelection = true; if (restore && sawSelection && selection == null) { focus.requestFocus(); restore = false; sawSelection = false } }
     fun request(next: ContentAction) { restore = true; action(next) }
     Surface(shape = RoundedCornerShape(if (mobile) 20.dp else 24.dp), color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
-        Row(Modifier.fillMaxWidth().padding(if (mobile) 12.dp else 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (narrow) 12.dp else 20.dp)) {
+        Row(Modifier.fillMaxWidth().padding(UiSpacing.cardInset), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (narrow) 12.dp else 20.dp)) {
             RemoteArtwork(item.artworkUrl, (if (mobile) Modifier.size(72.dp, 88.dp) else Modifier.size(if (narrow) 64.dp else 104.dp)).clickable(onClickLabel = "播放 ${item.title}", onClick = { request(ContentAction.Play) }), RoundedCornerShape(8.dp))
             Column(Modifier.weight(1f)) {
                 Text("最佳匹配 · Bilibili", fontSize = if (mobile) 11.sp else 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
@@ -379,8 +381,8 @@ internal fun SourceWorkspace(
 internal fun PartsDialog(selection: PartSelection, currentId: String?, choose: (VideoPart) -> Unit, cancel: () -> Unit, mobile: Boolean = false) {
     val focus = remember { FocusRequester() }
     Dialog(cancel, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.widthIn(max = 480.dp).fillMaxWidth().padding(if (mobile) 24.dp else 16.dp), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-            Column(Modifier.padding(24.dp)) {
+        Surface(Modifier.padding(if (mobile) UiSpacing.compactInset else UiSpacing.panelInset).widthIn(max = 480.dp).fillMaxWidth(), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+            Column(Modifier.padding(UiSpacing.panelInset)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("选择分P", style = if (mobile) MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Medium) else MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f).semantics { heading() })
                     IconButton(cancel, Modifier.size(48.dp)) { Icon(Icons.Outlined.Close, "关闭分P选择") }
@@ -391,7 +393,7 @@ internal fun PartsDialog(selection: PartSelection, currentId: String?, choose: (
                     itemsIndexed(selection.details.parts, key = { _, part -> part.cid }) { index, part ->
                         val current = currentId == "${selection.details.item.stableKey}:${part.cid}"
                         Surface(onClick = { choose(part) }, modifier = Modifier.fillMaxWidth().then(if (index == 0) Modifier.focusRequester(focus) else Modifier).heightIn(min = 72.dp).semantics { selected = current }, shape = RoundedCornerShape(topStart = if (mobile && index == 0) 20.dp else 12.dp, topEnd = if (mobile && index == 0) 20.dp else 12.dp, bottomStart = if (mobile && index == selection.details.parts.lastIndex) 20.dp else 12.dp, bottomEnd = if (mobile && index == selection.details.parts.lastIndex) 20.dp else 12.dp), color = if (current) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer) {
-                            Row(Modifier.padding(horizontal = if (mobile) 16.dp else 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(Modifier.padding(horizontal = UiSpacing.cardInset, vertical = UiSpacing.contentGap), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text(if (mobile) "${part.number}" else "P${part.number}", modifier = if (mobile) Modifier.width(24.dp) else Modifier, style = if (mobile) MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp) else MaterialTheme.typography.labelLarge)
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (mobile) 4.dp else 0.dp)) {
                                     Text(part.title, maxLines = if (mobile) Int.MAX_VALUE else 2, overflow = TextOverflow.Ellipsis, fontSize = 16.sp, lineHeight = 24.sp, fontWeight = if (mobile) FontWeight.Medium else FontWeight.Normal)

@@ -2,6 +2,8 @@
 
 package com.keno.rxplayer.audio
 
+import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.runtime.snapshots.SnapshotStateObserver
 import com.keno.rxplayer.demoTracks
 import com.keno.rxplayer.BilibiliTrack
 import com.keno.rxplayer.MusicSource
@@ -14,6 +16,25 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
 class PlaybackStateTest {
+    @Test fun preparingAudioInvalidatesTheVolumeControlCapability() = runTest {
+        val state = PlaybackState(MemoryAudioPlayer()) { byteArrayOf(1) }
+        var invalidations = 0
+        val observer = SnapshotStateObserver { it() }
+        observer.start()
+        try {
+            observer.observeReads(Any(), { _: Any -> invalidations++ }) {
+                assertFalse(state.canChangeVolume)
+            }
+            state.select(demoTracks[0])
+            Snapshot.sendApplyNotifications()
+            assertTrue(state.canChangeVolume)
+            assertTrue(invalidations > 0, "音频准备完成必须刷新音量控件的可用状态")
+        } finally {
+            observer.stop()
+            observer.clear()
+        }
+    }
+
     @Test fun reorderPreservesPlaybackAndAdvancesInTheVisibleOrder() = runTest {
         val engine = MemoryAudioPlayer()
         val state = PlaybackState(engine) { byteArrayOf(1) }

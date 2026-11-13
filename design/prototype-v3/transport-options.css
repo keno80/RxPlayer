@@ -25,7 +25,7 @@
 .product[data-device=desktop][data-transport] .transport .track-sub{max-width:240px}
 .product[data-device=desktop][data-transport] .transport-right{display:flex;gap:4px}
 .product[data-device=desktop][data-transport] .volume{width:80px}
-.product[data-device=desktop][data-transport=c] .transport{height:88px;padding:8px 16px;background:var(--surface);border-top:0;grid-template-columns:minmax(160px,1fr) minmax(160px,1.6fr) auto;gap:12px}
+.product[data-device=desktop][data-transport=c] .transport{height:88px;padding:8px var(--page-inset);background:var(--surface);border-top:0;grid-template-columns:minmax(160px,1fr) minmax(160px,1.6fr) auto;gap:12px}
 .product[data-device=desktop][data-transport=c] .transport .now-track{height:72px;background:var(--surface-low);padding:12px!important;border-radius:20px}
 .product[data-device=desktop][data-transport=c] .compact-progress{height:72px;background:var(--surface-low);padding:12px 16px;border-radius:20px;display:flex;align-items:center}
 .product[data-device=desktop][data-transport=c] .control-island{height:72px;display:flex;align-items:center;gap:8px;padding:8px;background:var(--surface-high);border-radius:28px}
@@ -47,14 +47,14 @@
 .product[data-device=desktop][data-transport=c] .volume-popover input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:var(--primary)}
 .product[data-device=desktop][data-transport=c] .control-island:has(.volume-popover:not([hidden])){position:relative;z-index:50}
 @media(max-width:1150px){
- .product[data-device=desktop][data-transport] .transport{padding-inline:16px;gap:8px}
+ .product[data-device=desktop][data-transport] .transport{padding-inline:var(--page-inset);gap:8px}
  .product[data-device=desktop][data-transport] .transport .track-sub{max-width:140px}
  .product[data-device=desktop][data-transport] .transport-right .volume,.product[data-device=desktop][data-transport] .transport-right .volume-icon{display:inline-flex}
  .product[data-device=desktop][data-transport=c] .transport{grid-template-columns:minmax(150px,1fr) minmax(140px,1.3fr) auto}
 }
 @media(max-width:1000px){
  .product[data-device=desktop][data-transport] .transport-right .volume,.product[data-device=desktop][data-transport] .transport-right .volume-icon{display:none}
- .product[data-device=desktop][data-transport] .transport{height:112px;display:grid;grid-template-columns:minmax(150px,1fr) auto auto;grid-template-rows:56px 48px;padding:4px 12px;gap:0 8px}
+ .product[data-device=desktop][data-transport] .transport{height:112px;display:grid;grid-template-columns:minmax(150px,1fr) auto auto;grid-template-rows:56px 48px;padding:4px var(--page-inset);gap:0 8px}
  .product[data-device=desktop][data-transport] .transport .now-track{grid-column:1;grid-row:1;max-width:100%;height:48px;padding:0!important;margin:0;background:none}
  .product[data-device=desktop][data-transport] .compact-controls{grid-column:2;grid-row:1;height:56px;padding:0;border-radius:0;background:none}
  .product[data-device=desktop][data-transport] .compact-progress{grid-column:1/4;grid-row:2;width:100%;height:48px;padding:0;background:none}

@@ -36,7 +36,7 @@ class PlaybackState(
     private var generation = 0L
     private var loadingJob: Job? = null
     private var messageId = 0L
-    private var prepared = false
+    private var prepared by mutableStateOf(false)
     private var automaticRefreshUsed = false
     private var failureText: String? = null
     private var shuffleOrder by mutableStateOf(emptyList<String>())

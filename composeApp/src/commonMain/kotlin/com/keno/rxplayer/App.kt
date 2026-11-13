@@ -92,10 +92,10 @@ private fun AppContent(runtime: PlaybackRuntime, isForeground: Boolean, isDeskto
                         onPlaylistAppend = runtime::appendPlaylist, onAddTrack = runtime::preparePlaylistCandidate,
                         onMatchTrack = runtime.songs::open,
                         queueContent = { PlayerTheme(dark, track, followArtwork) { Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) { DesktopQueuePane(playback, { queueOpen = false }, ::select) } } },
-                        transport = {
+                        transport = { pageInset ->
                             if (displayTrack != null) PlayerTheme(dark, displayTrack, followArtwork) {
-                                if (isDesktop) DesktopMiniPlayer(playback, displayTrack, queueOpen, ::toggle, { step(-1) }, { step(1) }, { if (track != null) expanded = true else queueOpen = true }, { queueOpen = !queueOpen }, miniExpandFocus, miniQueueFocus)
-                                else MiniPlayer(playback, displayTrack, ::toggle, { if (track != null) expanded = true else queueOpen = true }, { queueOpen = !queueOpen }, miniExpandFocus, miniQueueFocus)
+                                if (isDesktop) DesktopMiniPlayer(playback, displayTrack, queueOpen, ::toggle, { step(-1) }, { step(1) }, { if (track != null) expanded = true else queueOpen = true }, { queueOpen = !queueOpen }, miniExpandFocus, miniQueueFocus, pageInset)
+                                else MiniPlayer(playback, displayTrack, ::toggle, { if (track != null) expanded = true else queueOpen = true }, { queueOpen = !queueOpen }, miniExpandFocus, miniQueueFocus, pageInset)
                             }
                         },
                     ) else PlayerTheme(dark, track, followArtwork) {

@@ -29,7 +29,7 @@ internal data class PlaylistRowActions(val index: Int, val count: Int, val move:
 
 @Composable
 internal fun PlaylistDetailHead(list: LocalPlaylist, back: () -> Unit, edit: (String) -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(bottom = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(Modifier.fillMaxWidth().padding(bottom = UiSpacing.sectionGap), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         IconButton(back) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "返回音乐库") }
         Column(Modifier.weight(1f)) {
             Text("本地歌单 · ${list.tracks.size} 首", fontSize = 12.sp, lineHeight = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -46,7 +46,7 @@ internal fun PlaylistGrid(lists: List<LocalPlaylist>, open: (String) -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 row.forEach { list ->
                     Surface(onClick = { open(list.id) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
-                        Column(Modifier.padding(12.dp)) {
+                        Column(Modifier.padding(UiSpacing.cardInset)) {
                             val artwork = list.tracks.firstOrNull()?.item?.artworkUrl
                             if (artwork != null) RemoteArtwork(artwork, Modifier.fillMaxWidth().aspectRatio(1.4f), RoundedCornerShape(12.dp))
                             else Surface(Modifier.fillMaxWidth().aspectRatio(1.4f), shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
@@ -66,7 +66,7 @@ internal fun PlaylistGrid(lists: List<LocalPlaylist>, open: (String) -> Unit) {
 @Composable
 internal fun PlaylistBatchControls(list: LocalPlaylist, play: () -> Unit, append: () -> Unit) {
     Text("按分 P 收藏，按自己的顺序听。", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    Row(Modifier.padding(top = 24.dp, bottom = 24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.padding(vertical = UiSpacing.sectionGap), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
         Button(play, enabled = list.tracks.isNotEmpty(), modifier = Modifier.heightIn(min = 48.dp)) { Icon(Icons.Outlined.PlayArrow, null); Spacer(Modifier.width(8.dp)); Text("播放全部") }
         TextButton(append, enabled = list.tracks.isNotEmpty(), modifier = Modifier.heightIn(min = 48.dp)) { Icon(Icons.Outlined.QueueMusic, null); Spacer(Modifier.width(8.dp)); Text("加入队列") }
     }
@@ -140,9 +140,10 @@ internal fun PlaylistDialogs(runtime: PlaybackRuntime, workspace: WorkspaceState
 @Composable
 private fun PlaylistDialog(title: String, dismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     Dialog(dismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(24.dp), contentAlignment = Alignment.Center) {
-            Surface(Modifier.widthIn(max = 480.dp).fillMaxWidth().heightIn(max = maxHeight), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp)) {
+        BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().imePadding(), contentAlignment = Alignment.Center) {
+            val inset = UiSpacing.pageInset(maxWidth)
+            Surface(Modifier.padding(inset).widthIn(max = 480.dp).fillMaxWidth().heightIn(max = (maxHeight - inset * 2).coerceAtLeast(0.dp)), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                Column(Modifier.verticalScroll(rememberScrollState()).padding(UiSpacing.panelInset)) {
                     Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(title, Modifier.weight(1f).semantics { heading() }, fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Medium)
                         IconButton(dismiss) { Icon(Icons.Outlined.Close, "关闭歌单操作") }
