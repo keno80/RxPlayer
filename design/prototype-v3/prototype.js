@@ -974,7 +974,7 @@
   });
 
   document.addEventListener('focusout', event => {
-    if (event.target.id !== 'search-input' || !product.classList.contains('is-searching')) return;
+    if (!event.target.closest('#search-form') || !product.classList.contains('is-searching')) return;
     if (event.relatedTarget?.closest('#search-form')) return;
     product.classList.remove('is-searching');
     $('#search-back').hidden = true;
