@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -44,7 +45,7 @@ internal fun MobileSearchWaiting(query: String, cancel: () -> Unit) {
 
 @Composable
 internal fun MobileLibraryTabs(selected: Int, onSelect: (Int) -> Unit) {
-    Column(Modifier.padding(vertical = UiSpacing.sectionGap)) {
+    Column(Modifier.padding(bottom = UiSpacing.sectionGap)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("收藏", "歌单", "最近播放").forEachIndexed { index, title ->
                 Box(Modifier.weight(1f)) {
@@ -59,7 +60,7 @@ internal fun MobileLibraryTabs(selected: Int, onSelect: (Int) -> Unit) {
 
 @Composable
 internal fun MobileSettings(dark: Boolean, changeTheme: (Boolean) -> Unit, followArtwork: Boolean, changeArtwork: (Boolean) -> Unit, notify: (String) -> Unit) {
-    MobileSectionTitle("外观")
+    MobileSectionTitle("外观", top = 0.dp)
     MobileSettingsGroup {
         MobileSetting(Icons.Outlined.DarkMode, "主题", "选择舒服的明暗") {
             var open by remember { mutableStateOf(false) }
@@ -93,8 +94,8 @@ internal fun MobileSettings(dark: Boolean, changeTheme: (Boolean) -> Unit, follo
     }
 }
 
-@Composable private fun MobileSectionTitle(title: String) {
-    Text(title, Modifier.padding(top = UiSpacing.sectionGap, bottom = UiSpacing.contentGap).semantics { heading() }, fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold)
+@Composable private fun MobileSectionTitle(title: String, top: Dp = UiSpacing.sectionGap) {
+    Text(title, Modifier.padding(top = top, bottom = UiSpacing.contentGap).semantics { heading() }, fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold)
 }
 @Composable private fun MobileSettingsGroup(content: @Composable ColumnScope.() -> Unit) {
     Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = Color.Transparent) { Column(verticalArrangement = Arrangement.spacedBy(2.dp), content = content) }

@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.*
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -82,7 +83,7 @@ internal class WorkspaceState(
 internal fun SourceWorkspace(
     workspace: WorkspaceState, browse: BilibiliBrowseState, playback: PlaybackState, favorites: Map<String, ContentItem>, recent: List<BilibiliTrack>,
     desktop: Boolean, dark: Boolean, followArtwork: Boolean, queueOpen: Boolean, onQueueClose: () -> Unit,
-    onSelect: (PlaybackTrack) -> Unit, onFavorite: (ContentItem) -> Unit, onExpand: () -> Unit,
+    onSelect: (PlaybackTrack) -> Unit, onFavorite: (ContentItem) -> Unit,
     onQueryFocus: (Boolean) -> Unit, onDarkChange: (Boolean) -> Unit, onArtworkChange: (Boolean) -> Unit,
     playlists: PlaylistState, onPlaylistPlay: (String) -> Unit, onPlaylistAppend: (String) -> Unit, onAddTrack: (BilibiliTrack) -> Unit,
     onMatchTrack: (BilibiliTrack) -> Unit,
@@ -126,123 +127,136 @@ internal fun SourceWorkspace(
             }
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 Row(Modifier.weight(1f).fillMaxWidth()) {
-                    LazyColumn(Modifier.weight(1f).fillMaxHeight(), state = list, contentPadding = PaddingValues(pageInset)) {
-                        item(key = "page-heading") {
-                            if (destination == WorkspaceDestination.Library && activePlaylist != null) PlaylistDetailHead(activePlaylist, { workspace.playlistId = null }) {
-                                workspace.editingPlaylistId = activePlaylist.id; workspace.playlistDialog = it
-                            } else if (!searchActive) PageHead(destination.label,
-                                when { destination == WorkspaceDestination.Search -> "歌曲、视频，从这里开始听。"; mobile && destination == WorkspaceDestination.Settings -> "外观、音源与播放偏好。"; else -> null },
-                                playback.track?.let { onExpand }, mobile,
-                                if (destination == WorkspaceDestination.Library) "为喜欢的声音留个位置" else "RxPlayer",
-                                if (destination == WorkspaceDestination.Library) ({ workspace.playlistDialog = "create" }) else null)
-                        }
-                        when(destination) {
-                            WorkspaceDestination.Search -> {
-                                item(key = "search-controls") {
-                                    SearchField(browse.query, { browse.query = it }, { browse.submit() }, { searchFocused = it; onQueryFocus(it) }, mobile)
-                                    Spacer(Modifier.height(16.dp))
-                                    Row(Modifier.widthIn(max = 480.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                        listOf(MusicSource.Bilibili, MusicSource.Netease, MusicSource.YouTube).forEachIndexed { index, item ->
-                                            val active = item == MusicSource.Bilibili
-                                            Surface(onClick = {}, enabled = active, modifier = Modifier.weight(1f).heightIn(min = 48.dp).semantics { selected = active; role = Role.RadioButton },
-                                                shape = if (active) RoundedCornerShape(24.dp) else RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp, topEnd = if (index == 2) 24.dp else 8.dp, bottomEnd = if (index == 2) 24.dp else 8.dp),
-                                                color = if (active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-                                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (active) 1f else .38f)) {
-                                                Row(Modifier.padding(horizontal = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
-                                                    if (active) Icon(Icons.Outlined.Check, null, Modifier.size(if (mobile) 16.dp else 18.dp))
-                                                    Text(item.label, style = if (mobile) TextStyle(fontSize = 12.sp, lineHeight = 18.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium) else MaterialTheme.typography.labelLarge, maxLines = 1)
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if (!mobile || !browse.searching || browse.results.isNotEmpty()) SectionHead("搜索结果", if (browse.results.isEmpty()) null else "${browse.results.size} 个视频")
-                                    if (!mobile && (browse.readingDetails || browse.searching)) LinearProgressIndicator(Modifier.fillMaxWidth().height(4.dp))
-                                }
-                                when {
-                                    mobile && browse.searching && browse.results.isEmpty() -> item { MobileSearchWaiting(browse.submitted, browse::cancelSearch) }
-                                    browse.error != null -> item { EmptyContent("暂时没有找到声音", browse.error!!, mobile) { browse.submit() } }
-                                    browse.submitted.isEmpty() -> item { EmptyContent("想听点什么？", "搜索关键词，或粘贴 Bilibili 视频链接、BV/AV 号。", mobile) }
-                                    browse.results.isEmpty() && !browse.searching -> item { EmptyContent("没有匹配的结果", "换个关键词，再发现一些好声音。", mobile) }
-                                    browse.results.isNotEmpty() -> {
-                                        item { FeaturedContent(browse.results.first(), narrow, browse.results.first().stableKey in favorites, browse.selection, mobile, browse.partCounts[browse.results.first().id],
-                                            { if (mobile) focusManager.clearFocus(); browse.request(browse.results.first(), it) }, { onFavorite(browse.results.first()) }) }
-                                        if (browse.results.size > 1) item { SectionHead("更多匹配") }
-                                        itemsIndexed(browse.results.drop(1), key = { _, item -> item.stableKey }) { index, item ->
-                                            ContentRow(item, playback, item.stableKey in favorites, index == 0, index == browse.results.size - 2, narrow,
-                                                browse.partCounts[item.id], browse.selection, { action -> if (mobile) focusManager.clearFocus(); browse.request(item, action) }, { onFavorite(item) }, mobile)
-                                        }
-                                        if (browse.hasMore) item(key = "search-pagination") {
-                                            Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
-                                                TextButton(onClick = { if (browse.pageError == null) browse.more() else browse.retryMore() }, enabled = !browse.searching) {
-                                                    Text(if (browse.searching) "加载中…" else if (browse.pageError != null) "重试加载" else "加载更多")
-                                                }
-                                            }
-                                        }
-                                        item { Text("来自 Bilibili · 保留原标题与版本信息", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp)) }
-                                    }
-                                }
+                    val showLibraryFab = destination == WorkspaceDestination.Library && activePlaylist == null && (!queueOpen || dockQueue)
+                    Box(Modifier.weight(1f).fillMaxHeight()) {
+                        LazyColumn(
+                            Modifier.fillMaxSize(),
+                            state = list,
+                            contentPadding = PaddingValues(
+                                start = pageInset, top = pageInset, end = pageInset,
+                                bottom = pageInset + if (showLibraryFab) 72.dp else 0.dp,
+                            ),
+                        ) {
+                            item(key = "page-heading") {
+                                if (destination == WorkspaceDestination.Library && activePlaylist != null) PlaylistDetailHead(activePlaylist, { workspace.playlistId = null }) {
+                                    workspace.editingPlaylistId = activePlaylist.id; workspace.playlistDialog = it
+                                } else if (!searchActive) PageHead(if (destination == WorkspaceDestination.Search) "RxPlayer" else destination.label, mobile)
                             }
-                            WorkspaceDestination.Library -> {
-                                if (activePlaylist != null) {
-                                    item { PlaylistBatchControls(activePlaylist, { onPlaylistPlay(activePlaylist.id) }, { onPlaylistAppend(activePlaylist.id) }) }
-                                    if (activePlaylist.tracks.isEmpty()) item { EmptyContent("留一份属于你的声音", "在搜索结果或曲目的更多操作中选择“添加到歌单”。", mobile, "去搜索") { workspace.destination = WorkspaceDestination.Search } }
-                                    itemsIndexed(activePlaylist.tracks, key = { _, track -> track.id }) { index, track ->
-                                        val display = track.item.copy(title = track.title, durationSeconds = track.part.durationSeconds)
-                                        ContentRow(display, playback, track.item.stableKey in favorites, index == 0, index == activePlaylist.tracks.lastIndex, narrow,
-                                            track.partCount, browse.selection, { action -> when (action) {
-                                                ContentAction.Play -> onSelect(track)
-                                                ContentAction.AddToPlaylist -> onAddTrack(track)
-                                                ContentAction.MatchSong -> onMatchTrack(track)
-                                                ContentAction.Enqueue, ContentAction.Next -> { playback.enqueue(track, action == ContentAction.Next); browse.notify(if (action == ContentAction.Next) "已设为下一首播放" else "已加入播放队列") }
-                                            } }, { onFavorite(track.item) }, mobile, track.id, { browse.request(track.item, ContentAction.Play) },
-                                            PlaylistRowActions(index, activePlaylist.tracks.size, { target -> playlists.move(activePlaylist.id, track.id, target) }, { playlists.remove(activePlaylist.id, track.id); browse.notify("已从歌单移除") }))
+                            when(destination) {
+                                WorkspaceDestination.Search -> {
+                                    item(key = "search-controls") {
+                                        SearchField(browse.query, { browse.query = it }, { browse.submit() }, { searchFocused = it; onQueryFocus(it) }, mobile)
+                                        Spacer(Modifier.height(16.dp))
+                                        Row(Modifier.widthIn(max = 480.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                            listOf(MusicSource.Bilibili, MusicSource.Netease, MusicSource.YouTube).forEachIndexed { index, item ->
+                                                val active = item == MusicSource.Bilibili
+                                                Surface(onClick = {}, enabled = active, modifier = Modifier.weight(1f).heightIn(min = 48.dp).semantics { selected = active; role = Role.RadioButton },
+                                                    shape = if (active) RoundedCornerShape(24.dp) else RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp, topEnd = if (index == 2) 24.dp else 8.dp, bottomEnd = if (index == 2) 24.dp else 8.dp),
+                                                    color = if (active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+                                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (active) 1f else .38f)) {
+                                                    Row(Modifier.padding(horizontal = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+                                                        if (active) Icon(Icons.Outlined.Check, null, Modifier.size(if (mobile) 16.dp else 18.dp))
+                                                        Text(item.label, style = if (mobile) TextStyle(fontSize = 12.sp, lineHeight = 18.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium) else MaterialTheme.typography.labelLarge, maxLines = 1)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        if (!mobile || !browse.searching || browse.results.isNotEmpty()) SectionHead("搜索结果", if (browse.results.isEmpty()) null else "${browse.results.size} 个视频")
+                                        if (!mobile && (browse.readingDetails || browse.searching)) LinearProgressIndicator(Modifier.fillMaxWidth().height(4.dp))
                                     }
-                                    if (activePlaylist.tracks.isNotEmpty()) item { Text("在曲目的更多操作中移除或调整顺序；修改歌单不会改变当前播放。", Modifier.padding(top = 16.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                                } else {
-                                item {
-                                    MobileLibraryTabs(workspace.libraryTab) { workspace.libraryTab = it }
+                                    when {
+                                        mobile && browse.searching && browse.results.isEmpty() -> item { MobileSearchWaiting(browse.submitted, browse::cancelSearch) }
+                                        browse.error != null -> item { EmptyContent("暂时没有找到声音", browse.error!!, mobile) { browse.submit() } }
+                                        browse.submitted.isEmpty() -> item { EmptyContent("想听点什么？", "搜索关键词，或粘贴 Bilibili 视频链接、BV/AV 号。", mobile) }
+                                        browse.results.isEmpty() && !browse.searching -> item { EmptyContent("没有匹配的结果", "换个关键词，再发现一些好声音。", mobile) }
+                                        browse.results.isNotEmpty() -> {
+                                            item { FeaturedContent(browse.results.first(), narrow, browse.results.first().stableKey in favorites, browse.selection, mobile, browse.partCounts[browse.results.first().id],
+                                                { if (mobile) focusManager.clearFocus(); browse.request(browse.results.first(), it) }, { onFavorite(browse.results.first()) }) }
+                                            if (browse.results.size > 1) item { SectionHead("更多匹配") }
+                                            itemsIndexed(browse.results.drop(1), key = { _, item -> item.stableKey }) { index, item ->
+                                                ContentRow(item, playback, item.stableKey in favorites, index == 0, index == browse.results.size - 2, narrow,
+                                                    browse.partCounts[item.id], browse.selection, { action -> if (mobile) focusManager.clearFocus(); browse.request(item, action) }, { onFavorite(item) }, mobile)
+                                            }
+                                            if (browse.hasMore) item(key = "search-pagination") {
+                                                Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
+                                                    TextButton(onClick = { if (browse.pageError == null) browse.more() else browse.retryMore() }, enabled = !browse.searching) {
+                                                        Text(if (browse.searching) "加载中…" else if (browse.pageError != null) "重试加载" else "加载更多")
+                                                    }
+                                                }
+                                            }
+                                            item { Text("来自 Bilibili · 保留原标题与版本信息", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp)) }
+                                        }
+                                    }
                                 }
-                                val recentTab = workspace.libraryTab == 2
-                                val playlistTab = workspace.libraryTab == 1
-                                val saved = if (recentTab) recent.map { it.item.copy(title = it.title, durationSeconds = it.part.durationSeconds) } else favorites.values.toList()
-                                if (playlistTab) {
+                                WorkspaceDestination.Library -> {
+                                    if (activePlaylist != null) {
+                                        item { PlaylistBatchControls(activePlaylist, { onPlaylistPlay(activePlaylist.id) }, { onPlaylistAppend(activePlaylist.id) }) }
+                                        if (activePlaylist.tracks.isEmpty()) item { EmptyContent("留一份属于你的声音", "在搜索结果或曲目的更多操作中选择“添加到歌单”。", mobile, "去搜索") { workspace.destination = WorkspaceDestination.Search } }
+                                        itemsIndexed(activePlaylist.tracks, key = { _, track -> track.id }) { index, track ->
+                                            val display = track.item.copy(title = track.title, durationSeconds = track.part.durationSeconds)
+                                            ContentRow(display, playback, track.item.stableKey in favorites, index == 0, index == activePlaylist.tracks.lastIndex, narrow,
+                                                track.partCount, browse.selection, { action -> when (action) {
+                                                    ContentAction.Play -> onSelect(track)
+                                                    ContentAction.AddToPlaylist -> onAddTrack(track)
+                                                    ContentAction.MatchSong -> onMatchTrack(track)
+                                                    ContentAction.Enqueue, ContentAction.Next -> { playback.enqueue(track, action == ContentAction.Next); browse.notify(if (action == ContentAction.Next) "已设为下一首播放" else "已加入播放队列") }
+                                                } }, { onFavorite(track.item) }, mobile, track.id, { browse.request(track.item, ContentAction.Play) },
+                                                PlaylistRowActions(index, activePlaylist.tracks.size, { target -> playlists.move(activePlaylist.id, track.id, target) }, { playlists.remove(activePlaylist.id, track.id); browse.notify("已从歌单移除") }))
+                                        }
+                                        if (activePlaylist.tracks.isNotEmpty()) item { Text("在曲目的更多操作中移除或调整顺序；修改歌单不会改变当前播放。", Modifier.padding(top = 16.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                                    } else {
                                     item {
-                                        Row(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            Text("我的歌单", Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                            TextButton({ workspace.playlistDialog = "create" }) { Icon(Icons.Outlined.Add, null); Text("新建") }
+                                        MobileLibraryTabs(workspace.libraryTab) { workspace.libraryTab = it }
+                                    }
+                                    val recentTab = workspace.libraryTab == 2
+                                    val playlistTab = workspace.libraryTab == 1
+                                    val saved = if (recentTab) recent.map { it.item.copy(title = it.title, durationSeconds = it.part.durationSeconds) } else favorites.values.toList()
+                                    if (playlistTab) {
+                                        item {
+                                            Row(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                Text("我的歌单", Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                            }
+                                            PlaylistGrid(playlists.lists) { id -> workspace.playlistId = id; scope.launch { workspace.playlistScroll.scrollToItem(0) } }
                                         }
-                                        PlaylistGrid(playlists.lists) { id -> workspace.playlistId = id; scope.launch { workspace.playlistScroll.scrollToItem(0) } }
+                                        if (playlists.lists.isEmpty()) item { EmptyContent("还没有歌单", "新建歌单，把喜欢的声音收在一起。", mobile) }
                                     }
-                                    if (playlists.lists.isEmpty()) item { EmptyContent("还没有歌单", "新建歌单，把喜欢的声音收在一起。", mobile, "新建歌单") { workspace.playlistDialog = "create" } }
-                                }
-                                else {
-                                    item { SectionHead(if (recentTab) "最近听过" else "喜欢的声音", "${saved.size} ${if (mobile) "首" else "个视频"}") }
-                                    if (saved.isEmpty()) item { EmptyContent(if (recentTab) "还没有播放记录" else "把喜欢的声音留在这里", if (recentTab) "播放过的内容会出现在这里。" else "在曲目旁点击收藏，就可以随时回来再听。", mobile, "去搜索") { workspace.destination = WorkspaceDestination.Search } }
-                                    itemsIndexed(saved, key = { index, item -> if (recentTab) recent[index].id else item.stableKey }) { index, item ->
-                                        val history = if (recentTab) recent[index] else null
-                                        val original = history?.item ?: item
-                                        ContentRow(item, playback, original.stableKey in favorites, index == 0, index == saved.size - 1, narrow, browse.partCounts[original.id], browse.selection,
-                                            { action -> if (history == null) browse.request(item, action) else when (action) {
-                                                ContentAction.Play -> onSelect(history)
-                                                ContentAction.AddToPlaylist -> onAddTrack(history)
-                                                ContentAction.MatchSong -> onMatchTrack(history)
-                                                ContentAction.Enqueue, ContentAction.Next -> { playback.enqueue(history, action == ContentAction.Next); browse.notify(if (action == ContentAction.Next) "已设为下一首播放" else "已加入播放队列") }
-                                            } }, { onFavorite(original) }, mobile, history?.id, { browse.request(original, ContentAction.Play) })
+                                    else {
+                                        item { SectionHead(if (recentTab) "最近听过" else "喜欢的声音", "${saved.size} ${if (mobile) "首" else "个视频"}") }
+                                        if (saved.isEmpty()) item { EmptyContent(if (recentTab) "还没有播放记录" else "把喜欢的声音留在这里", if (recentTab) "播放过的内容会出现在这里。" else "在曲目旁点击收藏，就可以随时回来再听。", mobile, "去搜索") { workspace.destination = WorkspaceDestination.Search } }
+                                        itemsIndexed(saved, key = { index, item -> if (recentTab) recent[index].id else item.stableKey }) { index, item ->
+                                            val history = if (recentTab) recent[index] else null
+                                            val original = history?.item ?: item
+                                            ContentRow(item, playback, original.stableKey in favorites, index == 0, index == saved.size - 1, narrow, browse.partCounts[original.id], browse.selection,
+                                                { action -> if (history == null) browse.request(item, action) else when (action) {
+                                                    ContentAction.Play -> onSelect(history)
+                                                    ContentAction.AddToPlaylist -> onAddTrack(history)
+                                                    ContentAction.MatchSong -> onMatchTrack(history)
+                                                    ContentAction.Enqueue, ContentAction.Next -> { playback.enqueue(history, action == ContentAction.Next); browse.notify(if (action == ContentAction.Next) "已设为下一首播放" else "已加入播放队列") }
+                                                } }, { onFavorite(original) }, mobile, history?.id, { browse.request(original, ContentAction.Play) })
+                                        }
+                                    }
                                     }
                                 }
+                                WorkspaceDestination.Settings -> {
+                                    item {
+                                        if (mobile) MobileSettings(dark, onDarkChange, followArtwork, onArtworkChange, browse::notify) else {
+                                        SectionHead("外观", top = 0.dp)
+                                        SettingRow("深色主题", "选择舒服的明暗") { Switch(dark, onDarkChange) }
+                                        Spacer(Modifier.height(2.dp))
+                                        SettingRow("封面舞台底色", "从当前封面提取播放配色") { Switch(followArtwork, onArtworkChange) }
+                                        SectionHead("音源账号", "尚未接入")
+                                        listOf(MusicSource.Bilibili, MusicSource.Netease, MusicSource.YouTube).forEach { item -> SettingRow(item.label, "未连接 · 账号接入尚未实现") { Text("未连接", style = MaterialTheme.typography.labelMedium) }; Spacer(Modifier.height(2.dp)) }
+                                        }
+                                    }
                                 }
                             }
-                            WorkspaceDestination.Settings -> {
-                                item {
-                                    if (mobile) MobileSettings(dark, onDarkChange, followArtwork, onArtworkChange, browse::notify) else {
-                                    SectionHead("外观")
-                                    SettingRow("深色主题", "选择舒服的明暗") { Switch(dark, onDarkChange) }
-                                    Spacer(Modifier.height(2.dp))
-                                    SettingRow("封面舞台底色", "从当前封面提取播放配色") { Switch(followArtwork, onArtworkChange) }
-                                    SectionHead("音源账号", "尚未接入")
-                                    listOf(MusicSource.Bilibili, MusicSource.Netease, MusicSource.YouTube).forEach { item -> SettingRow(item.label, "未连接 · 账号接入尚未实现") { Text("未连接", style = MaterialTheme.typography.labelMedium) }; Spacer(Modifier.height(2.dp)) }
-                                    }
-                                }
+                        }
+                        if (showLibraryFab) {
+                            FloatingActionButton(
+                                onClick = { workspace.playlistDialog = "create" },
+                                modifier = Modifier.align(Alignment.BottomEnd).padding(end = pageInset, bottom = UiSpacing.cardInset),
+                            ) {
+                                Icon(Icons.Outlined.Add, "新建歌单")
                             }
                         }
                     }
@@ -258,34 +272,38 @@ internal fun SourceWorkspace(
     }
 }
 
-@Composable private fun PageHead(title: String, intro: String?, expand: (() -> Unit)?, mobile: Boolean = false, eyebrow: String = "RxPlayer", addPlaylist: (() -> Unit)? = null) {
-    Row(Modifier.fillMaxWidth().padding(bottom = UiSpacing.sectionGap), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(eyebrow, fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Normal, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
-            Text(title, fontSize = if (mobile) 32.sp else 36.sp, lineHeight = if (mobile) 40.sp else 44.sp, fontWeight = FontWeight.Medium, modifier = Modifier.semantics { heading() })
-            if (intro != null) Text(intro, fontSize = if (mobile) 12.sp else 16.sp, lineHeight = if (mobile) 20.sp else 24.sp, fontWeight = FontWeight.Normal, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = if (mobile) 6.dp else 8.dp))
-        }
-        val trailing = addPlaylist ?: expand
-        if (trailing != null) IconButton(trailing, Modifier.size(48.dp), colors = IconButtonDefaults.iconButtonColors(containerColor = if (mobile) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent, contentColor = if (mobile) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant)) { Icon(if (addPlaylist != null) Icons.Outlined.Add else Icons.Outlined.Headphones, if (addPlaylist != null) "新建歌单" else "展开播放器") }
-    }
+@Composable private fun PageHead(title: String, mobile: Boolean) {
+    Text(
+        title,
+        modifier = Modifier.fillMaxWidth().padding(bottom = UiSpacing.cardInset).semantics { heading() },
+        fontSize = if (mobile) 32.sp else 36.sp,
+        lineHeight = if (mobile) 40.sp else 44.sp,
+        fontWeight = FontWeight.Medium,
+    )
 }
 @Composable private fun SearchField(query: String, change: (String) -> Unit, submit: () -> Unit, focus: (Boolean) -> Unit, mobile: Boolean = false) {
     var focused by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh, border = if (mobile && focused) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(start = 16.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (mobile && focused) IconButton({ focusManager.clearFocus() }, Modifier.size(48.dp)) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "退出搜索输入") } else Icon(Icons.Outlined.Search, null)
+        Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (mobile && focused) IconButton({ focusManager.clearFocus() }, Modifier.size(48.dp)) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "退出搜索输入") } else IconButton(submit, Modifier.size(48.dp)) { Icon(Icons.Outlined.Search, "执行搜索") }
             val inputStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = if (mobile) 14.sp else 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal, color = MaterialTheme.colorScheme.onSurface)
-            BasicTextField(query, change, Modifier.weight(1f).padding(start = 8.dp).heightIn(min = 48.dp).onFocusChanged { focused = it.isFocused; focus(it.isFocused) }.semantics { contentDescription = "搜索歌曲、视频或内容链接" },
+            BasicTextField(query, change, Modifier.weight(1f).padding(start = 4.dp).heightIn(min = 48.dp)
+                .onPreviewKeyEvent { event ->
+                    if (mobile || event.key != Key.Enter) false
+                    else {
+                        if (event.type == KeyEventType.KeyUp) submit()
+                        true
+                    }
+                }.onFocusChanged { focused = it.isFocused; focus(it.isFocused) }.semantics { contentDescription = "搜索歌曲、视频或内容链接" },
                 singleLine = true, textStyle = inputStyle, cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(onSearch = { if (mobile) focusManager.clearFocus(); submit() }), decorationBox = { field -> Box(contentAlignment = Alignment.CenterStart) { if (query.isEmpty()) Text("歌曲、视频，或粘贴链接", style = inputStyle, color = MaterialTheme.colorScheme.onSurfaceVariant); field() } })
             if (query.isNotEmpty()) IconButton({ change("") }, Modifier.size(48.dp)) { Icon(Icons.Outlined.Close, "清空搜索") }
-            IconButton({ if (mobile) focusManager.clearFocus(); submit() }, Modifier.size(48.dp)) { Icon(Icons.Outlined.Search, "执行搜索") }
         }
     }
 }
-@Composable private fun SectionHead(title: String, detail: String? = null) {
-    Row(Modifier.fillMaxWidth().padding(top = UiSpacing.sectionGap, bottom = UiSpacing.contentGap), verticalAlignment = Alignment.CenterVertically) {
+@Composable private fun SectionHead(title: String, detail: String? = null, top: Dp = UiSpacing.sectionGap) {
+    Row(Modifier.fillMaxWidth().padding(top = top, bottom = UiSpacing.contentGap), verticalAlignment = Alignment.CenterVertically) {
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).semantics { heading() })
         if (detail != null) Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }

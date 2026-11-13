@@ -86,7 +86,7 @@ private fun AppContent(runtime: PlaybackRuntime, isForeground: Boolean, isDeskto
                 }.focusable()) {
                     if (!expanded || track == null) SourceWorkspace(
                         workspace, browse, playback, favorites, recent, isDesktop, dark, followArtwork, queueOpen,
-                        { queueOpen = false }, ::select, ::favorite, { queryFocused = false; expanded = true }, { queryFocused = it },
+                        { queueOpen = false }, ::select, ::favorite, { queryFocused = it },
                         { runtime.themeOverride = it }, { runtime.followArtwork = it },
                         playlists = runtime.playlists, onPlaylistPlay = { runtime.playPlaylist(it) },
                         onPlaylistAppend = runtime::appendPlaylist, onAddTrack = runtime::preparePlaylistCandidate,

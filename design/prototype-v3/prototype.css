@@ -22,6 +22,13 @@ button{color:inherit}a{color:#365e54;text-underline-offset:3px}
 /* M3 page margins; component gaps below are RxPlayer choices on the 4/8px grid. */
 .product{--page-inset:24px;--section-gap:24px;--content-gap:12px;--card-inset:16px;--dialog-inset:24px;--pane-gap:24px}
 .product[data-device=android]{--page-inset:16px}
+.product .main-pane .page-head{margin-bottom:16px}
+.product .page-head + .tabs,
+.product .settings-columns > section > .section-head:first-child{margin-top:0}
+.product .main-pane.has-library-fab{padding-bottom:calc(var(--page-inset) + 72px)}
+.product .library-fab{position:absolute;z-index:21;display:grid;place-items:center;width:56px;height:56px;border-radius:16px;background:var(--primary-container);color:var(--on-primary-container);box-shadow:0 3px 8px #0004}
+.product .library-fab:hover{background:color-mix(in srgb,var(--on-primary-container) 8%,var(--primary-container))}
+.product .search-form{padding-inline:8px}
 @media(max-width:599px){.product[data-device=desktop]{--page-inset:16px}}
 .product button{border:0;background:none;position:relative}.product button:focus-visible,.product input:focus-visible,.product select:focus-visible{outline:3px solid var(--primary);outline-offset:3px}.product button:disabled:hover{background:inherit}
 .product input{color:var(--on-surface)}

@@ -7,14 +7,14 @@
   <title>RxPlayer · 完整交互原型</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="colors.css">
-  <link rel="stylesheet" href="prototype.css?revision=spacing-20261106">
+  <link rel="stylesheet" href="prototype.css?revision=workspace-search-20261113">
   <link rel="stylesheet" href="transport-options.css?revision=spacing-20261106">
   <script defer src="cover-palettes.js"></script>
-  <script defer src="prototype.js?revision=spacing-20261106"></script>
+  <script defer src="prototype.js?revision=workspace-search-20261113"></script>
 </head>
 <body>
   <header class="review-tools">
-    <div class="review-title"><strong>RxPlayer</strong><span>完整原型</span><span class="review-badge">页面间距已确认</span></div>
+    <div class="review-title"><strong>RxPlayer</strong><span>完整原型</span><span class="review-badge">双端页头与搜索已确认</span></div>
     <div class="review-controls">
       <div class="device-picker" role="group" aria-label="预览平台">
         <button data-device-choice="android" aria-pressed="false">Android</button>
@@ -41,6 +41,7 @@
         <nav id="rail" class="rail" aria-label="主导航"></nav>
         <section id="main-pane" class="main-pane" aria-label="主内容"></section>
       </div>
+      <button id="library-fab" class="library-fab" type="button" data-action="new-playlist" aria-label="新建歌单" data-tip="新建歌单" hidden><span class="symbol filled" aria-hidden="true">add</span></button>
       <footer id="transport" class="transport" aria-label="播放控制"></footer>
       <nav id="bottom-nav" class="bottom-nav" aria-label="主导航"></nav>
       <div class="phone-gesture" aria-hidden="true"><span></span></div>

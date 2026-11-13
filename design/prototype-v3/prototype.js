@@ -238,13 +238,12 @@
         ${pagination}<p class="hint">来自 ${state.source} · 保留原始标题与版本信息<br>分P播放与入队已纳入完整原型；其他音源尚未接入。全部内容均为模拟数据。</p>`;
       if (!results.length) content = empty('search', '没有匹配的结果', '换个关键词，再发现一些好声音。', 'clear-search', '重新搜索');
     }
-    return `<header class="page-head"><div><p class="eyebrow">RxPlayer</p><h1>搜索</h1><p class="page-intro">歌曲、视频，从这里开始听。</p></div>${iconButton('open-player', 'headphones', '展开播放器')}</header>
+    return `<header class="page-head"><h1>RxPlayer</h1></header>
       <form class="search-form" id="search-form" role="search">
-        <span id="search-leading" class="symbol" aria-hidden="true">search</span>
+        <button id="search-leading" class="icon-button" type="submit" aria-label="执行搜索">${symbol('search')}</button>
         <button type="button" id="search-back" class="icon-button" data-action="exit-search" aria-label="退出搜索输入" hidden>${symbol('arrow_back')}</button>
         <input id="search-input" aria-label="搜索歌曲、视频或内容链接" placeholder="歌曲、视频，或粘贴链接" value="${escape(query)}" enterkeyhint="search" autocomplete="off">
         ${iconButton('clear-search', 'close', '清空搜索')}
-        <button class="icon-button" type="submit" aria-label="执行搜索" data-tip="搜索">${symbol('search')}</button>
       </form>${sourceSelector()}${content}`;
   }
 
@@ -255,17 +254,17 @@
     const tabs = [['favorites', '收藏'], ['playlists', '歌单'], ['recent', '最近播放']];
     let content;
     if (state.libraryTab === 'playlists') {
-      content = `<div class="section-head"><h2>我的歌单</h2><button class="text-button" data-action="new-playlist">${symbol('add')}新建</button></div><div class="playlist-grid">${state.playlists.map((list, index) => `<button class="playlist-card" data-action="open-playlist" data-index="${index}">${art({art:list.art})}<span><strong>${escape(list.name)}</strong><small>${list.ids.length} 首 · 本地歌单</small></span></button>`).join('')}</div>`;
+      content = `<div class="section-head"><h2>我的歌单</h2></div><div class="playlist-grid">${state.playlists.map((list, index) => `<button class="playlist-card" data-action="open-playlist" data-index="${index}">${art({art:list.art})}<span><strong>${escape(list.name)}</strong><small>${list.ids.length} 首 · 本地歌单</small></span></button>`).join('')}</div>`;
     } else {
       const ids = state.libraryTab === 'favorites' ? state.favorites : state.recent;
       content = ids.length ? `<div class="section-head"><h2>${state.libraryTab === 'favorites' ? '喜欢的声音' : '最近听过'}</h2><small>${ids.length} 首</small></div><div class="track-list">${ids.map(trackById).map(row).join('')}</div>` : empty('favorite', '把喜欢的声音留在这里', '在曲目旁点击收藏，就可以随时回来再听。', 'go-search', '去搜索');
     }
-    return `<header class="page-head"><div><p class="eyebrow">为喜欢的声音留个位置</p><h1>音乐库</h1></div>${iconButton('new-playlist', 'add', '新建歌单')}</header>
+    return `<header class="page-head"><h1>音乐库</h1></header>
       <div class="tabs" role="tablist" aria-label="音乐库分类">${tabs.map(([id, label]) => `<button class="tab" role="tab" aria-selected="${state.libraryTab === id}" data-action="library-tab" data-tab="${id}" id="tab-${id}" aria-controls="library-content">${label}</button>`).join('')}</div><section id="library-content" role="tabpanel" aria-labelledby="tab-${state.libraryTab}">${content}</section>`;
   }
 
   function settingsPage() {
-    return `<header class="page-head"><div><p class="eyebrow">RxPlayer</p><h1>设置</h1><p class="page-intro">外观、音源与播放偏好。</p></div></header><div class="settings-columns"><section>
+    return `<header class="page-head"><h1>设置</h1></header><div class="settings-columns"><section>
       <div class="section-head"><h2>外观</h2></div><div class="settings-group">
         <label class="settings-row"><span class="setting-icon">${symbol(state.theme === 'dark' ? 'dark_mode' : 'light_mode')}</span><span class="row-copy"><strong>主题</strong><small>选择舒服的明暗</small></span><select id="theme-select" aria-label="应用主题"><option value="light" ${state.theme === 'light' ? 'selected' : ''}>浅色</option><option value="dark" ${state.theme === 'dark' ? 'selected' : ''}>深色</option></select></label>
         <label class="settings-row"><span class="setting-icon">${symbol('album')}</span><span class="row-copy"><strong>封面舞台底色</strong><small>用封面取色衬托封面</small></span><span class="switch"><input type="checkbox" id="artwork-switch" aria-label="封面舞台底色" ${state.artworkColor ? 'checked' : ''}></span></label>
@@ -415,6 +414,15 @@
     $('#queue-scrim').hidden = !queueModal();
     $('#overlay').hidden = !state.overlay;
     $('#overlay').inert = queueModal();
+    const showLibraryFab = state.route === 'library' && state.playlist === null && !state.windowHidden && !state.overlay && !queueModal();
+    const libraryFab = $('#library-fab');
+    libraryFab.hidden = !showLibraryFab;
+    $('#main-pane').classList.toggle('has-library-fab', showLibraryFab);
+    if (showLibraryFab) {
+      const content = $('#main-pane');
+      libraryFab.style.bottom = `${product.getBoundingClientRect().bottom - product.clientTop - content.getBoundingClientRect().bottom + 16}px`;
+      libraryFab.style.right = `${product.getBoundingClientRect().right - product.clientLeft - content.getBoundingClientRect().right + parseFloat(getComputedStyle(content).paddingRight)}px`;
+    }
     for (const element of [$('.workspace'),$('#transport'),$('#bottom-nav')]) element.inert = !!state.overlay || queueModal();
     $('#dialog').setAttribute('role',state.overlay === 'player' ? 'region' : 'dialog');
     if (modal) $('#dialog').setAttribute('aria-modal','true');
@@ -958,11 +966,19 @@
 
   document.addEventListener('focusin', event => {
     if (!event.target.closest('.volume-control')) closeVolume();
-    if (event.target.id === 'search-input') {
+    if (state.device === 'android' && event.target.id === 'search-input') {
       product.classList.add('is-searching');
       $('#search-back').hidden = false;
       $('#search-leading').hidden = true;
     }
+  });
+
+  document.addEventListener('focusout', event => {
+    if (event.target.id !== 'search-input' || !product.classList.contains('is-searching')) return;
+    if (event.relatedTarget?.closest('#search-form')) return;
+    product.classList.remove('is-searching');
+    $('#search-back').hidden = true;
+    $('#search-leading').hidden = false;
   });
 
   document.addEventListener('change', event => {
